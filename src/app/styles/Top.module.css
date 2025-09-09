@@ -1,0 +1,17 @@
+.top {
+  position: relative;
+  width: 100%;
+  height: 100vh; /* 必要なら 100svh */
+  overflow: hidden;
+  z-index: 0;                /* 背面 */
+}
+
+.canvas {
+  position: absolute;        /* ← これが無いと重なり順が不安定 */
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 0;                /* 背面 */
+  pointer-events: none;      /* クリック貫通（操作をブロックしない） */
+}

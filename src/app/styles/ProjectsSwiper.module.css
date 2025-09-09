@@ -1,0 +1,145 @@
+/* Swiper切替直後のリセット（CSS Modules対応） */
+:global(.swiper-slide).gsap-init {
+  transform: none !important;
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+/* プレースホルダ（初回アニメ画面） */
+.swiperPlaceholder {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100svh;
+  overflow: hidden;
+  width: 100vw; 
+}
+
+/* ラッパ（Top の canvas より前に） */
+.projectsWrapper {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 80; /* 必要ならさらに上げる */
+  perspective: 1200px;
+  width: 100%;
+}
+
+/* 初回アニメ用カード：中央に重ねる（ここが肝） */
+.card {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%); /* これを残す */
+  width: min(80%, 640px);
+  height: 50vh;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0,0,0,.25);
+  /* background: #000; */
+  opacity: 0; /* GSAPが上書き */
+}
+
+.card img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Swiper切替後のカード */
+.cardInitial {
+  width: min(80%, 640px);
+  height: 50vh;
+  margin: 0 auto;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  /* background: #000; */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.cardInitial img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* オーバーレイ */
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  opacity: 0;
+  font-size: 1.8rem;
+  font-weight: 600;
+  transition: opacity .3s ease;
+}
+.card:hover .overlay,
+.cardInitial:hover .overlay { opacity: 1; }
+.card img, .cardInitial img { user-select: none; -webkit-user-drag: none; }
+/* クロスフェード制御 */
+.hiddenPlaceholder { opacity: 0; pointer-events: none; transition: opacity .2s ease; }
+.swiperMounting     { opacity: 0; transition: opacity .2s ease; }
+.swiperReady        { opacity: 1; transition: opacity .2s ease; }
+
+/* Swiper 本体（グローバル） */
+:global(.swiper){ width:100%; }
+:global(.swiper-slide){
+  display:flex; justify-content:center; align-items:center;
+  transform: scale(.8) translateZ(-100px);
+  z-index:1; opacity:.5; filter: blur(.5px) brightness(.7);
+  transition: transform .4s ease, z-index .4s ease, filter .4s ease, opacity .4s ease;
+}
+:global(.swiper-slide-active){
+  transform: scale(1) translateZ(0);
+  z-index:10; opacity:1; filter: none;
+}
+:global(.swiper-slide-prev),
+:global(.swiper-slide-next){
+  transform: scale(.7) rotateY(15deg) translateZ(-200px);
+  z-index:0; filter: brightness(.4) blur(1.5px);
+}
+
+/* タイトル */
+.titleArea{
+  position: fixed; left:0; right:0;
+  bottom: clamp(16px, 4vh, 52px);
+  text-align:center; font-size:clamp(1.2rem, 2.4vw, 1.8rem);
+  font-weight:600; color:#fff; pointer-events:none;
+}
+
+/* レスポンシブ */
+@media (max-width: 768px){
+  .card, .cardInitial{ width:92vw; height:52vh; border-radius:14px; }
+}
+@media (min-width: 1200px){
+  .card, .cardInitial{ max-width:720px; height:56vh; }
+}
+
+/* Swiperのフェードイン用シェル */
+.swiperShell {
+  opacity: 0;
+  transition: opacity .25s ease;
+  width: 100%;
+  display: grid;
+  place-items: center;
+}
+.swiperVisible {
+  opacity: 1;
+}
+
+/* プレースホルダのフェードアウト */
+.hiddenPlaceholder {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s ease;
+}

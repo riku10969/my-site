@@ -1,0 +1,26 @@
+.page {
+  min-height: 100vh;
+  background: #0b0b0c;
+  color: white;
+}
+
+/* 上部の順序表示（任意） */
+.breadcrumbs {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px 24px 8px;
+  color: #9aa0a6;
+  font-size: 13px;
+}
+
+.crumb {
+  opacity: 0.9;
+}
+
+/* 各セクションの余白 */
+.section {
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+.section:first-of-type {
+  border-top: none;
+}

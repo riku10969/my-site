@@ -1,0 +1,57 @@
+/* 共通（既存そのまま） */
+.wrap{ color:#e8f1ef; padding:48px 16px; }
+.h3{ text-align:center; font-size:clamp(28px,3.5vw,40px); margin:0 0 16px; }
+.tabs{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; max-width:920px; margin:0 auto 12px; }
+.tab{ background:transparent; border:none; color:inherit; padding:8px 4px; cursor:pointer; opacity:.85; border-bottom:2px solid transparent; }
+.tab:hover{ opacity:1; }
+.active{ border-color:currentColor; }
+
+.panel{
+  --panel:#5a37a6; --panelEdge:#2ccdb9; --bar:#11a98b; --textColor:#e8f1ef;
+  max-width:920px; margin:0 auto; padding:clamp(16px,2.5vw,28px);
+  background:var(--panel); border:2px solid var(--panelEdge);
+  border-radius:8px; box-shadow:0 0 0 1px rgba(44,205,185,.15),0 10px 30px rgba(0,0,0,.35);
+  color:var(--textColor);
+}
+
+.row{ display:grid; grid-template-columns:110px 1fr 56px; align-items:center; gap:12px; padding:10px 0; }
+.label{ white-space:nowrap; }
+.value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--valueColor); /* ← /5 だけ専用色 */
+}
+
+/* === 5メモリ用 === */
+.track5{
+  display:grid;
+  grid-template-columns:repeat(5, 1fr);
+  gap:8px;
+}
+
+.cell{
+  position:relative;
+  height:12px;
+  border-radius:999px;
+  background:#fff;            /* 未充填の白 */
+  overflow:hidden;
+}
+
+/* 充填レイヤ（伸びアニメ） */
+.cellFill{
+  position:absolute;
+  left:0; top:0; bottom:0;
+  width:100%;
+  transform:scaleX(0);
+  transform-origin:left center;
+  background:var(--bar);
+  border-radius:999px;
+  transition:transform 420ms cubic-bezier(.2,.8,.2,1);
+  will-change: transform;
+}
+.cellPlay{ transform:scaleX(1); }
+
+/* レスポンシブ */
+@media (max-width:560px){
+  .row{ grid-template-columns:90px 1fr 44px; gap:8px; }
+}

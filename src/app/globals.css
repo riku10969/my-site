@@ -1,4 +1,108 @@
 @import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---- bulbs: soft glow ---- */
+@keyframes bulb-glow {
+  0%   { box-shadow: 0 0 6px rgba(255,255,255,.9), 0 0 18px rgba(255,255,255,.65); }
+  50%  { box-shadow: 0 0 10px rgba(255,255,255,1), 0 0 26px rgba(255,255,255,.9); }
+  100% { box-shadow: 0 0 6px rgba(255,255,255,.9), 0 0 18px rgba(255,255,255,.65); }
+}
+.bulb-glow {
+  animation: bulb-glow 1.8s ease-in-out infinite;
+  filter: drop-shadow(0 0 2px rgba(255,255,255,.8));
+}
+
+/* --- scroll-in (左右から) --- */
+.reveal {
+  opacity: 0;
+  transform: translateX(var(--reveal-x, 0));
+  transition: transform .7s cubic-bezier(.22,.8,.32,1), opacity .7s ease;
+  will-change: transform, opacity;
+}
+.reveal.in {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.yarl__slide_image {
+  object-fit: contain;  /* 余白ありで揃える */
+  max-height: 80vh;     /* 高さを統一 */
+  max-width: 100vh;
+}
+
+/* ===== ネオン管ヘッダー用 ===== */
+.contact-section .neon-tube-wrap {
+  display: inline-block;
+  line-height: 1;
+}
+.contact-section .neon-tube {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.contact-section .neon-tube .tube {
+  fill: none;
+  paint-order: stroke fill;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  /* SVG でも効く */
+  font-family: inherit;
+  font-weight: 800;
+  letter-spacing: .02em;
+  font-size: clamp(36px, 6vw, 72px);
+  transition: opacity .28s ease, filter .28s ease, stroke .28s ease;
+}
+
+/* 後ろのカラー管（OFF時はうっすら） */
+.contact-section .tube-back {
+  stroke: hsl(var(--tube-hue) 95% 60%);
+  stroke-width: 16;
+  opacity: .35;
+}
+
+/* 近距離グロー（点灯で現れる） */
+.contact-section .tube-glow1 {
+  stroke: hsl(var(--tube-hue) 100% 60%);
+  stroke-width: 16;
+  filter: none;
+  opacity: 0;
+}
+
+/* 遠距離グロー（点灯でふわっと） */
+.contact-section .tube-glow2 {
+  stroke: hsl(var(--tube-hue) 100% 55%);
+  stroke-width: 16;
+  filter: none;
+  opacity: 0;
+}
+
+/* 中央の白い管（芯） */
+.contact-section .tube-core {
+  stroke: #eaffff;
+  stroke-width: 6;
+  opacity: .8;
+  /* 線の輪郭をシャープに */
+  filter: saturate(1.05);
+}
+
+/* ARMED：見えてから待機中（ほんのり） */
+.contact-section .is-armed .tube-back   { opacity: .75; }
+.contact-section .is-armed .tube-core   { opacity: .9;  }
+
+/* ON：本点灯（“パッ”） */
+.contact-section .is-on .tube-back    { opacity: 1; }
+.contact-section .is-on .tube-glow1   { opacity: .85; filter: url(#glow-strong); }
+.contact-section .is-on .tube-glow2   { opacity: .45; filter: url(#glow-wide);  }
+.contact-section .is-on .tube-core    { opacity: 1; }
+
+/* 追加のギラッ（任意）：ホバーで少し強く */
+@media (hover:hover) {
+  .contact-section .is-on .neon-tube-wrap:hover .tube-glow1 { opacity: .95; }
+  .contact-section .is-on .neon-tube-wrap:hover .tube-glow2 { opacity: .55; }
+}
+
 
 :root {
   --background: #ffffff;
