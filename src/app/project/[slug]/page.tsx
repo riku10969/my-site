@@ -1,61 +1,76 @@
-// app/project/[slug]/page.tsx （例）
+// app/[slug]/page.tsx
+import type { Metadata, PageProps } from "next";
 
-// クリックされた slug (about/works/contact) を先頭にして
-// About / Works / Contact の3セクションを縦に並べて表示するページ
-import { orderBySlugFirst, CANONICAL } from "../../../lib/projects";
-import type { SectionSlug } from "../../../lib/projects";  // ← type-only に変更！
-import styles from "../../styles/DetailPage.module.css";
+// ▼ あなたの実装に合わせて相対パスを調整してください
 import AboutSection from "../../components/sections/AboutSection";
 import WorksSection from "../../components/sections/WorksSection";
 import ContactSection from "../../components/sections/ContactSection";
-import type { Metadata } from "next";
+import styles from "../../styles/DetailPage.module.css";
 
-// generateMetadata は params を「オブジェクト」で受ける
+/** 取りうるセクションの slug 型 */
+type SectionSlug = "about" | "works" | "contact";
+
+/** 並び順の基準（slug を先頭にして他を続ける） */
+const ALL_SECTIONS: SectionSlug[] = ["about", "works", "contact"];
+const orderBySlugFirst = (first: SectionSlug): SectionSlug[] => [
+  first,
+  ...ALL_SECTIONS.filter((s) => s !== first),
+];
+
+/** サイトのベース URL（env にある場合はそちらを優先） */
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "") ?? "https://example.com";
+
+/** SSG 用（/about, /works, /contact を事前生成） */
+export async function generateStaticParams() {
+  return ALL_SECTIONS.map((slug) => ({ slug }));
+}
+
+/** メタデータ（Next 15: PageProps を使用し、params を await する） */
 export async function generateMetadata(
-  { params }: { params: { slug: SectionSlug } }
+  { params }: PageProps<{ slug: SectionSlug }>
 ): Promise<Metadata> {
-  const Title = params.slug.charAt(0).toUpperCase() + params.slug.slice(1);
-  return { title: `${Title} – Portfolio` };
+  const { slug } = await params;
+  const title = slug.charAt(0).toUpperCase() + slug.slice(1);
+  const canonical = `${SITE_URL}/${slug}`;
+
+  return {
+    title,
+    alternates: { canonical },
+    openGraph: {
+      title,
+      url: canonical,
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+    },
+  };
 }
 
-// SSG 対象の slug 一覧
-export function generateStaticParams(): Array<{ slug: SectionSlug }> {
-  // CANONICAL が SectionSlug[] で型付けされていない場合に備えて as で合わせる
-  return CANONICAL.map((slug) => ({ slug })) as Array<{ slug: SectionSlug }>;
-}
-
-// 必須ではないが、静的パスのみ許可したいなら false に
-// export const dynamicParams = false;
-
-const SECTION_MAP: Record<SectionSlug, React.ComponentType> = {
-  about: AboutSection,
-  works: WorksSection,
-  contact: ContactSection,
-};
-
-export default function ProjectDetailPage(
-  { params }: { params: { slug: SectionSlug } }
+/** ページ本体（Next 15: PageProps を使用し、params を await する） */
+export default async function Page(
+  { params }: PageProps<{ slug: SectionSlug }>
 ) {
-  const order = orderBySlugFirst(params.slug);
+  const { slug } = await params;
+
+  const ordered = orderBySlugFirst(slug);
+
+  // セクションのマップ（必要に応じて props を渡す形にしてもOK）
+  const SectionMap: Record<SectionSlug, () => JSX.Element> = {
+    about: AboutSection,
+    works: WorksSection,
+    contact: ContactSection,
+  };
 
   return (
-    <main className={styles.page}>
-      {/* ページ上部に現在の並びを小さく表示（任意） */}
-      <nav className={styles.breadcrumbs} aria-label="Sections order">
-        {order.map((s, i) => (
-          <span key={s} className={styles.crumb}>
-            {s.charAt(0).toUpperCase() + s.slice(1)}
-            {i < order.length - 1 ? " · " : ""}
-          </span>
-        ))}
-      </nav>
-
-      {/* セクション本体（縦積み） */}
-      {order.map((slug) => {
-        const Comp = SECTION_MAP[slug];
+    <main className={styles.container}>
+      {ordered.map((s) => {
+        const Section = SectionMap[s];
         return (
-          <section id={slug} key={slug} className={styles.section}>
-            <Comp />
+          <section key={s} id={s} className={styles.section}>
+            <Section />
           </section>
         );
       })}
