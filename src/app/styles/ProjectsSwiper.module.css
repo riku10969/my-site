@@ -1,9 +1,3 @@
-/* Swiper切替直後のリセット（CSS Modules対応） */
-:global(.swiper-slide).gsap-init {
-  transform: none !important;
-  opacity: 1 !important;
-  filter: none !important;
-}
 
 /* プレースホルダ（初回アニメ画面） */
 .swiperPlaceholder {
@@ -91,23 +85,7 @@
 .swiperMounting     { opacity: 0; transition: opacity .2s ease; }
 .swiperReady        { opacity: 1; transition: opacity .2s ease; }
 
-/* Swiper 本体（グローバル） */
-:global(.swiper){ width:100%; }
-:global(.swiper-slide){
-  display:flex; justify-content:center; align-items:center;
-  transform: scale(.8) translateZ(-100px);
-  z-index:1; opacity:.5; filter: blur(.5px) brightness(.7);
-  transition: transform .4s ease, z-index .4s ease, filter .4s ease, opacity .4s ease;
-}
-:global(.swiper-slide-active){
-  transform: scale(1) translateZ(0);
-  z-index:10; opacity:1; filter: none;
-}
-:global(.swiper-slide-prev),
-:global(.swiper-slide-next){
-  transform: scale(.7) rotateY(15deg) translateZ(-200px);
-  z-index:0; filter: brightness(.4) blur(1.5px);
-}
+
 
 /* タイトル */
 .titleArea{

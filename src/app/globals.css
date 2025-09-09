@@ -103,6 +103,36 @@
   .contact-section .is-on .neon-tube-wrap:hover .tube-glow2 { opacity: .55; }
 }
 
+/* === Swiper global fixes === */
+.swiper{ width:100%; }
+.swiper-slide{
+  display:flex; justify-content:center; align-items:center;
+}
+
+/* Swiper 本体（グローバル） */
+.swiper{ width:100%; }
+.swiper-slide{
+  display:flex; justify-content:center; align-items:center;
+  transform: scale(.8) translateZ(-100px);
+  z-index:1; opacity:.5; filter: blur(.5px) brightness(.7);
+  transition: transform .4s ease, z-index .4s ease, filter .4s ease, opacity .4s ease;
+}
+.swiper-slide-active{
+  transform: scale(1) translateZ(0);
+  z-index:10; opacity:1; filter: none;
+}
+.swiper-slide-prev,
+.swiper-slide-next{
+  transform: scale(.7) rotateY(15deg) translateZ(-200px);
+  z-index:0; filter: brightness(.4) blur(1.5px);
+}
+/* Swiper切替直後のリセット（CSS Modules対応） */
+.swiper-slide.gsap-init {
+  transform: none !important;
+  opacity: 1 !important;
+  filter: none !important;
+}
+
 
 :root {
   --background: #ffffff;

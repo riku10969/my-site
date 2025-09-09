@@ -234,7 +234,7 @@ export default function DistortOverlay({
       style={{
         position: "fixed",
         inset: 0,
-        width: "100%",
+        width: "100vw",
         height: "100vh",
         pointerEvents: "none", // 下のUIをブロックしない
         zIndex: 10,
