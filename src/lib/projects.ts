@@ -1,7 +1,7 @@
 // src/lib/projects.ts
 
-export type SectionSlug = "about" | "works" | "contact";
-export const CANONICAL: SectionSlug[] = ["about", "works", "contact"];
+export const CANONICAL = ['about', 'works', 'contact'] as const;
+export type SectionSlug = typeof CANONICAL[number];
 
 export type Project = {
   title: string;

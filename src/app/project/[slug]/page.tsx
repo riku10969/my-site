@@ -1,21 +1,31 @@
+// app/project/[slug]/page.tsx （例）
+
 // クリックされた slug (about/works/contact) を先頭にして
 // About / Works / Contact の3セクションを縦に並べて表示するページ
-import { orderBySlugFirst, CANONICAL, SectionSlug } from "../../../lib/projects";
+import { orderBySlugFirst, CANONICAL } from "../../../lib/projects";
+import type { SectionSlug } from "../../../lib/projects";  // ← type-only に変更！
 import styles from "../../styles/DetailPage.module.css";
 import AboutSection from "../../components/sections/AboutSection";
 import WorksSection from "../../components/sections/WorksSection";
 import ContactSection from "../../components/sections/ContactSection";
 import type { Metadata } from "next";
 
-export function generateMetadata({ params }: { params: { slug: "about"|"works"|"contact" } }): Metadata {
+// generateMetadata は params を「オブジェクト」で受ける
+export async function generateMetadata(
+  { params }: { params: { slug: SectionSlug } }
+): Promise<Metadata> {
   const Title = params.slug.charAt(0).toUpperCase() + params.slug.slice(1);
   return { title: `${Title} – Portfolio` };
 }
 
-export function generateStaticParams() {
-  // /project/about, /project/works, /project/contact を事前生成
-  return CANONICAL.map((slug) => ({ slug }));
+// SSG 対象の slug 一覧
+export function generateStaticParams(): Array<{ slug: SectionSlug }> {
+  // CANONICAL が SectionSlug[] で型付けされていない場合に備えて as で合わせる
+  return CANONICAL.map((slug) => ({ slug })) as Array<{ slug: SectionSlug }>;
 }
+
+// 必須ではないが、静的パスのみ許可したいなら false に
+// export const dynamicParams = false;
 
 const SECTION_MAP: Record<SectionSlug, React.ComponentType> = {
   about: AboutSection,
@@ -23,13 +33,11 @@ const SECTION_MAP: Record<SectionSlug, React.ComponentType> = {
   contact: ContactSection,
 };
 
-export default function ProjectDetailPage({
-  params,
-}: {
-  params: { slug: SectionSlug };
-}) {
+export default function ProjectDetailPage(
+  { params }: { params: { slug: SectionSlug } }
+) {
   const order = orderBySlugFirst(params.slug);
-  
+
   return (
     <main className={styles.page}>
       {/* ページ上部に現在の並びを小さく表示（任意） */}
