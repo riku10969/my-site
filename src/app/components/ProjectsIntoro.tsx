@@ -76,11 +76,6 @@ export default function ProjectsIntro() {
     return (
       <Loader
         onFinish={() => setLoaded(true)}
-        assetsToPreload={[
-          "/projects/project1.jpg",
-          "/projects/project2.jpg",
-          "/projects/project3.jpg",
-        ]}
       />
     );
   }
