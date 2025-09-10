@@ -1,5 +1,6 @@
 // src/app/project/[slug]/page.tsx
 import type { Metadata } from "next";
+import type { ComponentType } from "react";
 
 import AboutSection from "../../components/sections/AboutSection";
 import WorksSection from "../../components/sections/WorksSection";
@@ -44,7 +45,7 @@ export default async function Page(
   const { slug } = await params;
   const ordered = orderBySlugFirst(slug);
 
-  const SectionMap: Record<SectionSlug, () => JSX.Element> = {
+  const SectionMap: Record<SectionSlug, ComponentType> = {
     about: AboutSection,
     works: WorksSection,
     contact: ContactSection,
