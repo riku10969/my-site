@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import AboutSection from "../../components/sections/AboutSection";
 import WorksSection from "../../components/sections/WorksSection";
 import ContactSection from "../../components/sections/ContactSection";
-import styles from "../../../styles/DetailPage.module.css";
+import styles from "../../styles/DetailPage.module.css";
 
 type SectionSlug = "about" | "works" | "contact";
 const ALL_SECTIONS: SectionSlug[] = ["about", "works", "contact"];
