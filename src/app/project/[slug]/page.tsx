@@ -1,12 +1,12 @@
-// app/[slug]/page.tsx
+// src/app/project/[slug]/page.tsx
 import type { Metadata } from "next";
+
 import AboutSection from "../../components/sections/AboutSection";
 import WorksSection from "../../components/sections/WorksSection";
 import ContactSection from "../../components/sections/ContactSection";
-import styles from "../../styles/DetailPage.module.css";
+import styles from "../../../styles/DetailPage.module.css";
 
 type SectionSlug = "about" | "works" | "contact";
-
 const ALL_SECTIONS: SectionSlug[] = ["about", "works", "contact"];
 const orderBySlugFirst = (first: SectionSlug): SectionSlug[] => [
   first,
@@ -16,21 +16,18 @@ const orderBySlugFirst = (first: SectionSlug): SectionSlug[] => [
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "") ?? "https://example.com";
 
-/** Next 14/15 両対応：値 or Promise のどちらでも受けられる */
-type Awaitable<T> = T | Promise<T>;
-
-/** /about, /works, /contact を事前生成 */
+/** /project/about, /project/works, /project/contact を事前生成 */
 export async function generateStaticParams() {
   return ALL_SECTIONS.map((slug) => ({ slug }));
 }
 
-/** メタデータ（Next 14/15 両対応） */
+/** Next 15 仕様：params は Promise で受ける */
 export async function generateMetadata(
-  { params }: { params: Awaitable<{ slug: SectionSlug }> }
+  { params }: { params: Promise<{ slug: SectionSlug }> }
 ): Promise<Metadata> {
-  const { slug } = await Promise.resolve(params);
+  const { slug } = await params;
   const title = slug.charAt(0).toUpperCase() + slug.slice(1);
-  const canonical = `${SITE_URL}/${slug}`;
+  const canonical = `${SITE_URL}/project/${slug}`;
 
   return {
     title,
@@ -40,11 +37,11 @@ export async function generateMetadata(
   };
 }
 
-/** ページ本体（Next 14/15 両対応） */
+/** ページ本体（同じく Promise で受ける） */
 export default async function Page(
-  { params }: { params: Awaitable<{ slug: SectionSlug }> }
+  { params }: { params: Promise<{ slug: SectionSlug }> }
 ) {
-  const { slug } = await Promise.resolve(params);
+  const { slug } = await params;
   const ordered = orderBySlugFirst(slug);
 
   const SectionMap: Record<SectionSlug, () => JSX.Element> = {
