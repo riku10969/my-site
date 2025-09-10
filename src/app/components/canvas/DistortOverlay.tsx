@@ -3,6 +3,11 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 
+type ImagePlaneHandle = {
+  update(): boolean;
+  dispose(): void;
+};
+
 type Props = {
   /** 歪ませたい <img> のセレクタ（例: 'img[data-distort]'） */
   selector?: string;
@@ -42,8 +47,8 @@ export default function DistortOverlay({
   const frameRef    = useRef(0);
 
   // img→plane の対応
-  const planesMapRef = useRef<Map<HTMLImageElement, ImagePlane>>(new Map());
-
+  const planesMapRef = useRef<Map<HTMLImageElement, ImagePlaneHandle>>(new Map());
+  
   useEffect(() => {
     // --- renderer / camera / scene ---
     const canvas = canvasRef.current!;
