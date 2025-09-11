@@ -22,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
          {/* <IntroGate>
           <div style={{ position: "relative", zIndex: 1 }}>{children}</div>
         </IntroGate> */}
-        <div className="mx-auto max-w-6xl px-4 pt-20">{/* ヘッダー分の余白 */}
+        <div className="w-full pt-16">
           {children}
         </div>
       </body>

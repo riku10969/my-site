@@ -112,7 +112,7 @@ export default function ContactSection() {
   return (
     <section
       ref={ref}
-      className="contact-section relative w-full py-24 md:py-28"
+      className="contact-section relative w-full pt-0 py-24 md:py-28"
       style={{} as React.CSSProperties}
     >
       <div className="mx-auto max-w-4xl px-6">
@@ -187,7 +187,7 @@ export default function ContactSection() {
 
       {/* === CSS（グローバル・このセクション限定） === */}
       <style jsx global>{`
-        .contact-section { background: #2f2f2f; }
+        .contact-section { background: #000000; }
 
         /* OFF: 下地だけ（弱発光） */
         .contact-section .neon,

@@ -8,7 +8,7 @@ import HobbySection from "../HobbySection";
 export default function AboutSection() {
   return (
     <section className="w-full bg-[#121316] text-white">
-      <div className="max-w-[1100px] mx-auto px-6 py-14">
+      <div className="max-w-[1100px] mx-auto px-6 pt-25 pb-14">
         {/* 上段 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
           <div className="leading-[1.02]">
@@ -32,7 +32,7 @@ export default function AboutSection() {
               backgroundPosition: "center",
               backgroundSize: "cover",
               backgroundRepeat: "no-repeat",
-              // backgroundImage: "url(/projects/about-visual.jpg)",
+              backgroundImage: "url(/projects/about-visual.jpg)",
             }}
             aria-label="About visual"
             role="img"
@@ -57,11 +57,11 @@ export default function AboutSection() {
         </p>
 
         {/* 下段：MarqueeFrame */}
-        <div className="mt-10 flex justify-center">
+        {/* <div className="mt-10 flex justify-center">
           <div style={{ width: 300, height: 400 }}>
             <MarqueeFrame />
           </div>
-        </div>
+        </div> */}
 
         <div className="mt-16">
           <SkillBarsAbout />
