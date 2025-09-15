@@ -47,7 +47,7 @@ export default async function Page(
   const { slug } = await params;
   const ordered = orderBySlugFirst(slug);
 
-  const SectionMap: Record<SectionSlug, ComponentType> = {
+const SectionMap: Record<SectionSlug, ComponentType<any>> = {
     about: AboutSection,
     works: WorksSection,
     contact: ContactSection,
