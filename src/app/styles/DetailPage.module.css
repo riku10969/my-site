@@ -24,3 +24,14 @@
 .section:first-of-type {
   border-top: none;
 }
+
+.glitch{ position:relative; }
+.glitch::before,.glitch::after{
+  content:attr(data-text); position:absolute; left:0; top:0; clip-path:inset(0 0 0 0);
+  opacity:0; mix-blend-mode:screen
+}
+@keyframes g1{ 0%{transform:translate(0,0)} 20%{transform:translate(2px,-1px)} 40%{transform:translate(-1px,1px)} 100%{transform:none} }
+@keyframes g2{ 0%{clip-path:inset(0 0 85% 0)} 40%{clip-path:inset(0 0 0 0)} 100%{clip-path:inset(85% 0 0 0)} }
+.glitch.on{ animation:g1 .5s ease both }
+.glitch.on::before{ color:#ff3d; animation:g2 .5s steps(8) both }
+.glitch.on::after{ color:#3df; animation:g2 .5s steps(8) .05s reverse both }

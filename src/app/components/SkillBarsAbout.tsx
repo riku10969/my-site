@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "../styles/SkillBars.module.css";
+import GlitchText from "./GlitchText";
 
 type Skill = { label: string; blocks: number }; // 0..5
 type Group = {
@@ -140,54 +141,68 @@ export default function SkillBarsAbout({
   };
 
   const rows = useMemo(
-    () =>
-      theme.skills.map((s) => {
-        // 5マス配列を生成（左から埋める）
-        const cells = Array.from({ length: 5 }, (_, i) => i < s.blocks);
-        return (
-          <div className={styles.row} key={s.label}>
-            <span className={styles.label}>{s.label}</span>
+  () =>
+    theme.skills.map((s, rowIndex) => {
+      const cells = Array.from({ length: 5 }, (_, i) => i < s.blocks);
+      return (
+        <div className={styles.row} key={s.label}>
+          {/* ← ラベルをグリッチ化（行ごとに少し遅延、ホバーで再生） */}
+          <GlitchText
+            as="span"
+            text={s.label}
+            className={styles.label}
+            delaySec={rowIndex * 0.06}
+            replayOnHover
+          />
 
-            <div className={styles.track5} aria-hidden="true">
-              {cells.map((filled, i) =>
-                seen ? (
-                  <Cell
-                    key={i}
-                    filled={filled}
-                    delayMs={i * perCellDelayMs}
-                    restartKey={restartKey}
-                  />
-                ) : (
-                  <div key={i} className={styles.cell} />
-                )
-              )}
-            </div>
-
-            <span className={styles.value}>{s.blocks}/5</span>
+          <div className={styles.track5} aria-hidden="true">
+            {cells.map((filled, i) =>
+              seen ? (
+                <Cell
+                  key={i}
+                  filled={filled}
+                  delayMs={i * perCellDelayMs}
+                  restartKey={restartKey}
+                />
+              ) : (
+                <div key={i} className={styles.cell} />
+              )
+            )}
           </div>
-        );
-      }),
-    [theme, seen, perCellDelayMs, restartKey]
-  );
+
+          {/* 数値にも掛けたいなら下をアンコメント */}
+          <GlitchText as="span" text={`${s.blocks}/5`} className={styles.value} delaySec={rowIndex*0.06+0.1} replayOnHover />
+        </div>
+      );
+    }),
+  [theme, seen, perCellDelayMs, restartKey]
+);
 
   return (
     <section className={styles.wrap} ref={ref}>
-      <h3 className={styles.h3}>{title}</h3>
+      <h3 className={styles.h3}>
+        <GlitchText 
+        as="span" text={title} trigger="scroll"/>
+      </h3>
 
       <div className={styles.tabs} role="tablist" aria-label="Skill groups">
-        {GROUPS.map((g, i) => (
-          <button
-            key={g.name}
-            type="button"
-            role="tab"
-            aria-selected={i === active}
-            className={`${styles.tab} ${i === active ? styles.active : ""}`}
-            onClick={() => setActive(i)}
-          >
-            {g.name}
-          </button>
-        ))}
-      </div>
+  {GROUPS.map((g, i) => (
+    <button
+      key={g.name}
+      type="button"
+      role="tab"
+      aria-selected={i === active}
+      className={`${styles.tab} ${i === active ? styles.active : ""}`}
+      onClick={() => setActive(i)}
+    >
+      {i === active ? (
+        <GlitchText as="span" text={g.name} />
+      ) : (
+        <span>{g.name}</span>
+      )}
+    </button>
+  ))}
+</div>
 
       <div className={styles.panel} style={cssVars}>
         {rows}

@@ -1,23 +1,27 @@
 "use client";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Image from "next/image";
-
-type Dir = "left" | "right";
+import { useMemo } from "react";
 
 type Props = {
   images: string[];
-  direction?: Dir;
-  /** 1周にかかる秒数（小さいほど速い） */
+  direction?: "left" | "right";
   speed?: number;
-  /** 各カードの幅(px)。レスポンシブで変えたい時はbreakpoint別にコンポを分けるか、CSSで調整してOK */
   itemWidth?: number;
-  /** カード間の隙間(px) */
   gap?: number;
-  /** ホバーで一時停止（PC向け） */
   pauseOnHover?: boolean;
-  /** 角丸 */
   radius?: number;
+  onItemClick?: (index: number, src: string) => void;
+  renderItem?: (opts: {
+    index: number;
+    src: string;
+    width: number;
+    height: number;       // ← 追加
+    radius: number;
+    onClick?: () => void;
+  }) => React.ReactNode;
 };
+
 
 export default function InfiniteMarquee({
   images,
@@ -27,80 +31,120 @@ export default function InfiniteMarquee({
   gap = 16,
   pauseOnHover = true,
   radius = 12,
+  onItemClick,
+  renderItem,
 }: Props) {
   const hostRef = useRef<HTMLDivElement | null>(null);
-  const [repeat, setRepeat] = useState(1); // “画面幅を超えるまで”の繰り返し回数
+  const [repeat, setRepeat] = useState(1);
 
-  // ── 1) 画面幅に応じて「ベースセットの繰り返し回数」を計算
-  useLayoutEffect(() => {
-    const el = hostRef.current;
-    if (!el) return;
-
-    const ro = new ResizeObserver(() => {
-      const containerW = el.clientWidth;
-      // 画像N枚 + (N-1) * ギャップの合計
-      const baseW = images.length * itemWidth + (images.length - 1) * gap;
-      // ベースを何回繰り返せば “最低でも画面幅” を超えるか
-      const minRepeats = Math.max(1, Math.ceil(containerW / baseW));
-      setRepeat(minRepeats);
+  const [maxAspect, setMaxAspect] = useState(1); // height / width
+  useEffect(() => {
+    let alive = true;
+    Promise.all(
+      Array.from(new Set(images)).map(
+        (src) =>
+          new Promise<number>((resolve) => {
+            const img = new window.Image();
+            img.onload = () => resolve(img.naturalHeight / Math.max(1, img.naturalWidth));
+            img.onerror = () => resolve(1);
+            img.src = src;
+          })
+      )
+    ).then((ratios) => {
+      if (!alive) return;
+      const m = Math.max(1, ...ratios); // たとえば縦長が混ざってたらここが最大
+      setMaxAspect(m);
     });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [images.length, itemWidth, gap]);
+    return () => {
+      alive = false;
+    };
+  }, [images]);
 
-  // ── 2) ベースセット（画面幅を満たすまで複製）
-  const baseSet = Array.from({ length: repeat })
-    .flatMap(() => images);
+  const itemHeight = Math.round(itemWidth * maxAspect);
 
-  // ── 3) ベースセットを2回並べて無限ループ（-50%の移動で継ぎ目ゼロ）
+  const baseSet = Array.from({ length: repeat }).flatMap(() => images);
   const doubled = [...baseSet, ...baseSet];
+  
+  useLayoutEffect(() => {
+  const el = hostRef.current;
+  if (!el) return;
+
+  const ro = new ResizeObserver(() => {
+    const containerW = el.clientWidth;
+
+    // 1カードの占有幅（カード幅 + ギャップ）
+    const unit = itemWidth + gap;
+
+    // ベース配列1周の幅（最後の要素の右にも“ループ用”に gap を確保しておくと継ぎ目が滑らか）
+    const baseW = images.length * unit;
+
+    // 少し余裕を見て +unit しておくと「帯」が出にくい
+    const minRepeats = Math.max(2, Math.ceil((containerW + unit) / baseW));
+    setRepeat(minRepeats);
+  });
+  ro.observe(el);
+  return () => ro.disconnect();
+}, [images.length, itemWidth, gap]);
 
   return (
     <div
       ref={hostRef}
-      className={`relative w-full overflow-hidden ${pauseOnHover ? "group" : ""}`}
+      className="relative w-full overflow-hidden"
       style={{ ["--gap" as any]: `${gap}px` }}
     >
       <div
         className={`flex items-center will-change-transform whitespace-nowrap
-          ${direction === "left" ? "animate-marquee-left" : "animate-marquee-right"}
-          ${pauseOnHover ? "group-hover:[animation-play-state:paused]" : ""}
-        `}
-        style={
-          {
-            ["--duration" as any]: `${speed}s`,
-          } as React.CSSProperties
-        }
+          ${direction === "left" ? "animate-marquee-left" : "animate-marquee-right"}`}
+        style={{ ["--duration" as any]: `${speed}s` } as React.CSSProperties}
       >
-        {doubled.map((src, i) => (
-          <div
-            key={`${src}-${i}`}
-            className="shrink-0"
-            style={{ width: itemWidth, marginRight: i === doubled.length - 1 ? 0 : `var(--gap)` }}
-          >
-            <Image
-              src={src}
-              alt=""
-              width={itemWidth}
-              height={itemWidth}
-              className="block"
-              style={{ borderRadius: radius }}
-              loading="lazy"
-              draggable={false}
-              decoding="async"
-            />
-          </div>
-        ))}
+        {doubled.map((src, i) => {
+        const origLen   = images.length;
+        const baseIndex = i % origLen;                 // ← 元配列で正規化
+        const onClick   = () => onItemClick?.(baseIndex, src);
+
+          return (
+            <div
+  key={`${src}-${i}`}
+  className="shrink-0"
+  style={{
+    width: itemWidth,
+    marginRight: i === doubled.length - 1 ? 0 : `${gap}px`,
+  }}
+>
+              {renderItem ? (
+                renderItem({ index: baseIndex, src, width: itemWidth, height: itemHeight, radius, onClick })
+              ) : (
+                // デフォルト表示（枠だけ）
+                <button type="button" onClick={onClick} className="block w-full">
+                  <div
+                    className="relative bg-[#121212] rounded-2xl"
+                    style={{ width: itemWidth, height: itemHeight, borderRadius: radius }}
+                  >
+                    <Image
+                      src={src}
+                      alt=""
+                      fill
+                      sizes={`${itemWidth}px`}
+                      style={{ objectFit: "contain", borderRadius: radius }}
+                      loading="lazy"
+                      draggable={false}
+                      decoding="async"
+                    />
+                  </div>
+                </button>
+              )}
+            </div>
+          );
+        })}
       </div>
 
-      {/* keyframes とユーティリティ */}
       <style jsx global>{`
         @keyframes marquee-left {
-          0%   { transform: translateX(0); }
+          0% { transform: translateX(0); }
           100% { transform: translateX(-50%); }
         }
         @keyframes marquee-right {
-          0%   { transform: translateX(-50%); }
+          0% { transform: translateX(-50%); }
           100% { transform: translateX(0); }
         }
         .animate-marquee-left  { animation: marquee-left  var(--duration, 22s) linear infinite; }

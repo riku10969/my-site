@@ -1,11 +1,13 @@
 // src/app/project/[slug]/page.tsx
 import type { Metadata } from "next";
 import type { ComponentType } from "react";
+import Footer from "../../components/Footer";
 
 import AboutSection from "../../components/sections/AboutSection";
 import WorksSection from "../../components/sections/WorksSection";
 import ContactSection from "../../components/sections/ContactSection";
 import styles from "../../styles/DetailPage.module.css";
+import PageLoaderGate from "../../components/PageLoaderGate";
 
 type SectionSlug = "about" | "works" | "contact";
 const ALL_SECTIONS: SectionSlug[] = ["about", "works", "contact"];
@@ -52,15 +54,18 @@ export default async function Page(
   };
 
   return (
-    <main className={styles.container}>
-      {ordered.map((s) => {
-        const Section = SectionMap[s];
-        return (
-          <section key={s} id={s} className={styles.section}>
-            <Section />
-          </section>
-        );
-      })}
-    </main>
+    <PageLoaderGate>
+      <main className={styles.container}>
+        {ordered.map((s) => {
+          const Section = SectionMap[s];
+          return (
+            <section key={s} id={s} className={styles.section}>
+            <Section />      
+            </section>
+          );
+        })}
+        <Footer/>
+      </main>
+    </PageLoaderGate>
   );
 }

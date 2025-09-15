@@ -1,11 +1,12 @@
 "use client";
 
-import Image from "next/image";
-import React, { useEffect, useRef, useState } from "react";
+import NextImage from "next/image";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
+import GlitchText from "./GlitchText";
 
 /* =====================
-   Tilt（3Dチルト）Hook
+   Tilt（3Dチルト）Hook（変更なし）
    ===================== */
 type TiltOpts = { enabled?: boolean; maxTilt?: number; scale?: number };
 function useTilt<T extends HTMLElement>({
@@ -36,14 +37,9 @@ function useTilt<T extends HTMLElement>({
       el.style.boxShadow = `0 10px 30px rgba(0,0,0,0.40), 0 0 0 1px rgba(44,205,185,0.12)`;
     };
 
-    const handleDown = () => {
-      el.style.transition = "transform 80ms";
-    };
-    const handleUp = () => {
-      el.style.transition = "transform 240ms ease";
-    };
+    const handleDown = () => { el.style.transition = "transform 80ms"; };
+    const handleUp = () => { el.style.transition = "transform 240ms ease"; };
 
-    // 初期状態
     el.style.transition = "transform 240ms ease, box-shadow 240ms ease";
     handleLeave();
 
@@ -63,85 +59,309 @@ function useTilt<T extends HTMLElement>({
   return ref;
 }
 
-/* ================
-   画像モーダル
-   ================ */
-function ImageModal({
+/* ==================
+   ZoomImageModal（新規）
+   ================== */
+/* ==================
+   ZoomImageModal（正方形版に置換）
+   ================== */
+
+function computeSquareSide(vw: number, vh: number) {
+  const SIDE_VW = 0.8;  // 横は 80vw まで
+  const SIDE_VH = 0.4;  // 縦は 80vh まで
+  const MAX = 1000;     // 上限 px（好みで調整）
+  const MIN = 280;      // 下限 px（スマホで小さすぎ防止）
+  const side = Math.min(vw * SIDE_VW, vh * SIDE_VH, MAX);
+  return Math.max(MIN, Math.round(side));
+}
+
+function ZoomImageModal({
   open,
-  src,
-  alt,
-  label,
-  description,
-  onClose,
+  item,
+  originEl,
+  onRequestClose,
 }: {
   open: boolean;
-  src: string | null;
-  alt: string;
-  label?: string;
-  description?: string;
-  onClose: () => void;
+  item: { src: string; alt: string; label?: string; description?: string } | null;
+  originEl: HTMLElement | null;
+  onRequestClose: () => void;
 }) {
   const [mounted, setMounted] = useState(false);
+  const [animating, setAnimating] = useState(false);
+  const [visible, setVisible] = useState(false); // フレーム＆UIの可視
+  const [box, setBox] = useState<number | null>(null); // 正方形の一辺
+  const cloneRef = useRef<HTMLImageElement | null>(null);
+  const backdropRef = useRef<HTMLDivElement | null>(null);
+
+  const prefersNoMotion =
+    typeof window !== "undefined" &&
+    window.matchMedia &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
   useEffect(() => setMounted(true), []);
 
+  // 一辺を算出（オープン時＆リサイズ時）
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const recalc = () => {
+      const { innerWidth: vw, innerHeight: vh } = window;
+      setBox(computeSquareSide(vw, vh));
+    };
+    recalc();
+    window.addEventListener("resize", recalc);
+    return () => window.removeEventListener("resize", recalc);
+  }, [open]);
+
+  // Escで閉じる＋スクロール固定
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
     document.addEventListener("keydown", onKey);
-    document.documentElement.style.overflow = "hidden";
+    const { style } = document.documentElement;
+    const prev = style.overflow;
+    style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.documentElement.style.overflow = "";
+      style.overflow = prev;
     };
-  }, [open, onClose]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
-  if (!mounted || !open || !src) return null;
+  const playOpen = useCallback(async () => {
+    if (!item || !originEl || box == null) return;
+    const rect = originEl.getBoundingClientRect();
+    const { innerWidth: vw, innerHeight: vh } = window;
 
+    // 目標位置（中央の正方形）
+    const targetW = box;
+    const targetH = box;
+    const targetX = Math.round((vw - targetW) / 2);
+    const targetY = Math.round((vh - targetH) / 2);
+
+    // クローン（遷移中だけ使用）
+    const clone = document.createElement("img");
+    clone.src = item.src;
+    clone.alt = item.alt;
+    Object.assign(clone.style, {
+      position: "fixed",
+      left: rect.left + "px",
+      top: rect.top + "px",
+      width: rect.width + "px",
+      height: rect.height + "px",
+      objectFit: "cover",
+      borderRadius: getComputedStyle(originEl).borderRadius || "16px",
+      boxShadow: "0 20px 60px rgba(0,0,0,.45)",
+      willChange: "transform, width, height, left, top, opacity, border-radius",
+      zIndex: "1000",
+    } as CSSStyleDeclaration);
+    cloneRef.current = clone;
+
+    // バックドロップ
+    const backdrop = document.createElement("div");
+    Object.assign(backdrop.style, {
+      position: "fixed",
+      inset: "0",
+      background: "rgba(0,0,0,0)",
+      backdropFilter: "blur(0px)",
+      transition: prefersNoMotion ? "none" : "background 240ms ease, backdrop-filter 240ms ease",
+      zIndex: "900",
+    } as CSSStyleDeclaration);
+    backdropRef.current = backdrop;
+
+    document.body.appendChild(backdrop);
+    document.body.appendChild(clone);
+
+    setAnimating(true);
+    requestAnimationFrame(() => {
+      if (!prefersNoMotion) {
+        backdrop.style.background = "rgba(0,0,0,.70)";
+        backdrop.style.backdropFilter = "blur(2px)";
+      } else {
+        backdrop.style.background = "rgba(0,0,0,.70)";
+      }
+
+      clone
+        .animate(
+          [
+            {
+              left: rect.left + "px",
+              top: rect.top + "px",
+              width: rect.width + "px",
+              height: rect.height + "px",
+              borderRadius: clone.style.borderRadius,
+            },
+            {
+              left: targetX + "px",
+              top: targetY + "px",
+              width: targetW + "px",
+              height: targetH + "px",
+              borderRadius: "16px",
+            },
+          ],
+          prefersNoMotion
+            ? 0
+            : { duration: 360, easing: "cubic-bezier(.2,.8,.2,1)", fill: "forwards" }
+        )
+        .finished.then(() => {
+          setAnimating(false);
+          setVisible(true); // 正方形フレームUIを表示
+        // ← 追加：クローンを除去して二重表示を防ぐ
+        if (cloneRef.current) {
+          cloneRef.current.remove();
+          cloneRef.current = null;
+        }
+        });
+    });
+  }, [item, originEl, box, prefersNoMotion]);
+
+  const playClose = useCallback(async () => {
+    if (!item || !originEl || box == null) return;
+    const rect = originEl.getBoundingClientRect();
+    const { innerWidth: vw, innerHeight: vh } = window;
+
+    let clone = cloneRef.current;
+    if (!clone) {
+      clone = document.createElement("img");
+      clone.src = item.src;
+      clone.style.position = "fixed";
+      clone.style.zIndex = "1000";
+      document.body.appendChild(clone);
+      cloneRef.current = clone;
+    }
+
+    // UI を隠してクローンで戻す
+    setVisible(false);
+
+    const targetW = box;
+    const targetH = box;
+    const targetX = Math.round((vw - targetW) / 2);
+    const targetY = Math.round((vh - targetH) / 2);
+
+    Object.assign(clone.style, {
+      left: targetX + "px",
+      top: targetY + "px",
+      width: targetW + "px",
+      height: targetH + "px",
+      objectFit: "contain",
+      borderRadius: "16px",
+      boxShadow: "0 20px 60px rgba(0,0,0,.45)",
+    } as CSSStyleDeclaration);
+
+    const backdrop = backdropRef.current;
+
+    setAnimating(true);
+    await Promise.all([
+      clone
+        .animate(
+          [
+            {
+              left: targetX + "px",
+              top: targetY + "px",
+              width: targetW + "px",
+              height: targetH + "px",
+              borderRadius: "16px",
+            },
+            {
+              left: rect.left + "px",
+              top: rect.top + "px",
+              width: rect.width + "px",
+              height: rect.height + "px",
+              borderRadius: getComputedStyle(originEl).borderRadius || "16px",
+            },
+          ],
+          prefersNoMotion
+            ? 0
+            : { duration: 320, easing: "cubic-bezier(.2,.8,.2,1)", fill: "forwards" }
+        )
+        .finished,
+      new Promise<void>((resolve) => {
+        if (!backdrop) return resolve();
+        if (prefersNoMotion) {
+          backdrop.style.background = "rgba(0,0,0,0)";
+          backdrop.style.backdropFilter = "blur(0px)";
+          resolve();
+        } else {
+          backdrop
+            .animate(
+              [
+                { background: "rgba(0,0,0,.70)", backdropFilter: "blur(2px)" },
+                { background: "rgba(0,0,0,0)", backdropFilter: "blur(0px)" },
+              ],
+              { duration: 240, easing: "linear", fill: "forwards" }
+            )
+            .finished.then(() => resolve());
+        }
+      }),
+    ]);
+
+    clone.remove();
+    cloneRef.current = null;
+    if (backdrop) {
+      backdrop.remove();
+      backdropRef.current = null;
+    }
+    setAnimating(false);
+    onRequestClose();
+  }, [item, originEl, box, onRequestClose, prefersNoMotion]);
+
+  const close = useCallback(() => {
+    if (animating) return;
+    playClose();
+  }, [animating, playClose]);
+
+  // オープン時にアニメ開始
+  useEffect(() => {
+    if (open && item && originEl && box != null && mounted) {
+      playOpen();
+    }
+  }, [open, item, originEl, box, mounted, playOpen]);
+
+  if (!mounted || !open || !item || box == null) return null;
+
+  // 表示UI（正方形フレーム内に object-contain）
   return createPortal(
-    <div
-      className="fixed inset-0 z-[70] flex items-center justify-center"
-      aria-modal="true"
-      role="dialog"
-      onClick={onClose}
-    >
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-[2px]" />
-      <div
-        className="relative max-w-5xl w-[92vw] md:w-[80vw] max-h-[90vh]
-                   grid grid-rows-[1fr_auto] rounded-2xl overflow-hidden
-                   ring-1 ring-white/15 shadow-2xl bg-black"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* 画像 */}
-        <div className="relative row-start-1 min-h-[40vh]">
-          <Image
-            src={src}
-            alt={alt}
-            fill
-            className="object-contain"
-            sizes="(min-width: 768px) 80vw, 92vw"
-            priority
-          />
-        </div>
+    <>
+      <div className="fixed inset-0 z-[950]" aria-modal="true" role="dialog" onClick={close} />
+      {visible && (
+        <div className="fixed inset-0 z-[980] flex items-center justify-center pointer-events-none" aria-hidden>
+          <div
+            className="relative rounded-2xl overflow-hidden ring-1 ring-white/15 shadow-2xl bg-black/60 backdrop-blur-[2px] pointer-events-auto"
+            style={{ width: `${box}px` }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* 画像エリア（正方形） */}
+            <div className="relative" style={{ width: `${box}px`, height: `${box}px` }}>
+              <NextImage
+                src={item.src}
+                alt={item.alt}
+                fill
+                className="object-contain"
+                sizes={`${box}px`}
+                priority
+              />
+            </div>
 
-        {/* キャプション */}
-        {(label || description) && (
-          <div className="row-start-2 px-6 py-4 text-center bg-black/70 text-white space-y-2">
-            {label && <h4 className="text-lg font-semibold">{label}</h4>}
-            {description && (
-              <p className="text-sm leading-relaxed text-white/85">{description}</p>
+            {/* キャプション（画像サイズに影響させない：必要なら削除可） */}
+            {(item.label || item.description) && (
+              <div className="px-6 py-4 text-center bg-black/70 text-white space-y-2">
+                {item.label && <h4 className="text-lg font-semibold">{item.label}</h4>}
+                {item.description && (
+                  <p className="text-sm leading-relaxed text-white/85">{item.description}</p>
+                )}
+              </div>
             )}
-          </div>
-        )}
 
-        <button
-          aria-label="Close"
-          onClick={onClose}
-          className="absolute top-3 right-3 rounded-full bg-white/90 text-black px-3 py-1 text-sm hover:bg-white"
-        >
-          ✕
-        </button>
-      </div>
-    </div>,
+            <button
+              aria-label="Close"
+              onClick={close}
+              className="absolute top-3 right-3 rounded-full bg-white/90 text-black px-3 py-1 text-sm hover:bg-white"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+    </>,
     document.body
   );
 }
@@ -152,11 +372,11 @@ function ImageModal({
 type Hobby = {
   src: string;
   alt: string;
-  label?: string; // タイトル
-  description?: string; // 説明文
+  label?: string;
+  description?: string;
 };
 
-/* 子コンポーネント：ここで useTilt を呼ぶ */
+/* 子コンポーネント：useTilt + originEl を親に渡す */
 function HobbyTile({
   item,
   index,
@@ -164,9 +384,14 @@ function HobbyTile({
 }: {
   item: Hobby;
   index: number;
-  onOpen: (h: Hobby) => void;
+  onOpen: (h: Hobby, el: HTMLElement) => void;
 }) {
   const tiltRef = useTilt<HTMLDivElement>({ enabled: true, maxTilt: 14, scale: 1.03 });
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+
+  const handleOpen = () => {
+    if (wrapperRef.current) onOpen(item, wrapperRef.current);
+  };
 
   return (
     <article
@@ -176,16 +401,19 @@ function HobbyTile({
                  transition-transform duration-300 ease-out"
     >
       <div
-        ref={tiltRef}
+        ref={(el) => {
+          wrapperRef.current = el;
+          if (tiltRef && "current" in tiltRef) (tiltRef as any).current = el;
+        }}
         className="h-full w-full cursor-pointer"
-        onClick={() => onOpen(item)}
+        onClick={handleOpen}
         onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) =>
-          (e.key === "Enter" || e.key === " ") && onOpen(item)
+          (e.key === "Enter" || e.key === " ") && handleOpen()
         }
         tabIndex={0}
         aria-label={`${item.alt} enlarge`}
       >
-        <Image
+        <NextImage
           src={item.src}
           alt={item.alt}
           fill
@@ -224,10 +452,18 @@ export default function HobbySection({
 }) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<Hobby | null>(null);
+  const [originEl, setOriginEl] = useState<HTMLElement | null>(null);
 
-  const openModal = (item: Hobby) => {
+  const openModal = (item: Hobby, el: HTMLElement) => {
     setSelected(item);
+    setOriginEl(el);
     setOpen(true);
+  };
+
+  const closeModal = () => {
+    setOpen(false);
+    setSelected(null);
+    setOriginEl(null);
   };
 
   return (
@@ -240,11 +476,11 @@ export default function HobbySection({
                      text-[36px] md:text-[44px]
                      text-[#b6fff6] drop-shadow-[0_2px_10px_rgba(182,255,246,0.25)]"
         >
-          {title}
+          <GlitchText as="span" text={title} trigger="scroll"/>
         </h3>
       </div>
 
-      {/* グリッド（チルト＋クリックで拡大） */}
+      {/* グリッド */}
       <div className="max-w-[1100px] mx-auto px-6 py-10">
         <div className="grid grid-cols-3 sm:grid-cols-2 md:grid-cols-3 gap-8" role="list">
           {items.map((it, i) => (
@@ -253,14 +489,12 @@ export default function HobbySection({
         </div>
       </div>
 
-      {/* モーダル */}
-      <ImageModal
+      {/* ズームモーダル */}
+      <ZoomImageModal
         open={open}
-        src={selected?.src ?? null}
-        alt={selected?.alt ?? "Hobby image"}
-        label={selected?.label ?? selected?.alt}
-        description={selected?.description}
-        onClose={() => setOpen(false)}
+        item={selected}
+        originEl={originEl}
+        onRequestClose={closeModal}
       />
     </section>
   );

@@ -1,11 +1,14 @@
 /* 共通（既存そのまま） */
 .wrap{ color:#e8f1ef; padding:48px 16px; }
-.h3{ text-align:center; font-size:clamp(28px,3.5vw,40px); margin:0 0 16px; }
+.h3{ text-align:center; font-family: serif; font-size:clamp(28px,3.5vw,40px); margin:0 0 16px; }
 .tabs{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; max-width:920px; margin:0 auto 12px; }
 .tab{ background:transparent; border:none; color:inherit; padding:8px 4px; cursor:pointer; opacity:.85; border-bottom:2px solid transparent; }
 .tab:hover{ opacity:1; }
 .active{ border-color:currentColor; }
 
+/* "mt-10 text-center font-serif tracking-wide
+                     text-[36px] md:text-[44px]
+                     text-[#b6fff6] drop-shadow-[0_2px_10px_rgba(182,255,246,0.25)]" */
 .panel{
   --panel:#5a37a6; --panelEdge:#2ccdb9; --bar:#11a98b; --textColor:#e8f1ef;
   max-width:920px; margin:0 auto; padding:clamp(16px,2.5vw,28px);
@@ -50,6 +53,12 @@
   will-change: transform;
 }
 .cellPlay{ transform:scaleX(1); }
+
+.panel :global(.glitch::before),
+.panel :global(.glitch::after){
+  mix-blend-mode: normal;
+  color: currentColor;
+}
 
 /* レスポンシブ */
 @media (max-width:560px){
