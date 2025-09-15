@@ -3,21 +3,28 @@
 import { useEffect, useState } from "react";
 import MintGridLoader from "./MintGridLoader";
 
-export default function PageLoaderGate({ children }: { children: React.ReactNode }) {
-  const [show, setShow] = useState(true);     // ローダーをDOMから消すか
-  const [reveal, setReveal] = useState(false); // 退場アニメを始めるか
+  type Props = {
+  /** レンダープロップ: isLoaded を受け取って描画 */
+  children: React.ReactNode | ((isLoaded: boolean) => React.ReactNode);
+  /** ローディング時間（ms）任意 */
+  minDuration?: number;
+};
+
+  export default function PageLoaderGate({ children, minDuration = 1200 }: Props) {
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    // ここは実データ完了をトリガーにしてOK（下はデモで少し待つ）
-    const t = setTimeout(() => setReveal(true), 400);
+    const t = setTimeout(() => setIsLoaded(true), minDuration);
     return () => clearTimeout(t);
-  }, []);
+  }, [minDuration]);
 
-  if (!show) return <>{children}</>;
-  return (
-    <>
-      {children}
-      <MintGridLoader reveal={reveal} onFinish={() => setShow(false)} />
-    </>
-  );
+  if (!isLoaded) {
+    return <MintGridLoader onFinish={() => setIsLoaded(true)} />;
+  }
+
+  // ★ children が関数なら呼び出して isLoaded を渡す
+  return typeof children === "function"
+    ? (children as (isLoaded: boolean) => React.ReactNode)(isLoaded)
+    : children;
 }
+

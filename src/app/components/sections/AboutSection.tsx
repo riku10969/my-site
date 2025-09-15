@@ -17,7 +17,7 @@ export default function AboutSection({ isLoaded }: { isLoaded: boolean }) {
               key={`riku-${isLoaded ? "on" : "off"}`}
               as="div"
               text="Riku"
-              delaySec={3}
+              delaySec={0.5}
               className="text-[48px] md:text-[72px] font-serif"
               trigger="scroll"
               armed={isLoaded}    
@@ -27,7 +27,7 @@ export default function AboutSection({ isLoaded }: { isLoaded: boolean }) {
               key={`ohashi-${isLoaded ? "on" : "off"}`}
               as="div"
               text="Ohashi"
-              delaySec={3}
+              delaySec={0.5}
               className="text-[48px] md:text-[72px] font-serif"
               trigger="scroll"
               armed={isLoaded}    
@@ -53,7 +53,7 @@ export default function AboutSection({ isLoaded }: { isLoaded: boolean }) {
             key={`profile-${isLoaded ? "on" : "off"}`}
             as="span"
             text="大橋 陸　1999年生まれ、埼玉県出身"
-            delaySec={0.5}
+            delaySec={1}
             trigger="scroll"
             armed={isLoaded}    
           />
@@ -61,9 +61,9 @@ export default function AboutSection({ isLoaded }: { isLoaded: boolean }) {
 
         <p className="mt-4 text-[14px] md:text-[15px] leading-7 text-[#d6d8de]">
           高校卒業後、職人として現場で働いた経験から、丁寧さと粘り強さを大切にする姿勢を培いました。
-          その後、フロントエンドエンジニアとして実務を経験し、ReactやNext.jsを中心にWebサイトの開発を担当。
+          その後、フロントエンドエンジニアとして実務を経験し、Reactを中心にWebサイトの開発を担当。
           デジリグに入校してデザインを体系的に学び、現在は<strong>「デザイン × 実装」</strong>
-          両面から提案できるUI/UXデザイナーとして活動しています。
+          両面から提案することが可能です。
           ユーザーにとって直感的で心地よい体験を生み出すことを目指しています。
         </p>
 
@@ -74,12 +74,12 @@ export default function AboutSection({ isLoaded }: { isLoaded: boolean }) {
         <div className="mt-8">
           <HobbySection
             items={[
-              { src: "/hobby/figaro.jpg", alt: "Figaro", label: "My Dog Figaro", description: "チワワとペキニーズのミックス犬。毎日の癒しと相棒です。" },
-              { src: "/hobby/camera.jpg", alt: "Photography", label: "Photography", description: "街のスナップや旅先の風景を撮影するのが好きです。" },
-              { src: "/hobby/movie.jpg", alt: "Cinema", label: "パーマ", description: "夜のドライブで眺める街灯りやテールランプが最高。" },
-              { src: "/hobby/snow.jpg", alt: "Snow Trip", label: "ゆき", description: "夜のドライブで眺める街灯りやテールランプが最高。" },
-              { src: "/hobby/car.jpg", alt: "Car", label: "Car", description: "夜のドライブで眺める街灯りやテールランプが最高。" },
-              { src: "/hobby/aquarium.jpg", alt: "Aquarium", label: "クラゲ", description: "夜のドライブで眺める街灯りやテールランプが最高。" },
+              { src: "/hobby/figaro.jpg", alt: "Figaro", label: "フィガロ", description: "チワワとペキニーズのミックス犬。毎日の癒しです。" },
+              { src: "/hobby/camera.jpg", alt: "Photography", label: "写真", description: "最近はデジカメにハマってます。" },
+              { src: "/hobby/movie.jpg", alt: "Cinema", label: "映画", description: "休日は映画館で映画をよく観ています。" },
+              { src: "/hobby/snow.jpg", alt: "Snow Trip", label: "スノーボード", description: "唯一の体を動かす趣味です。" },
+              { src: "/hobby/car.jpg", alt: "Car", label: "CIVIC", description: "" },
+              { src: "/hobby/Guam.jpg", alt: "Guam", label: "グアム", description: "いろんな国に旅行に行くのが夢です。" },
             ]}
           />
         </div>

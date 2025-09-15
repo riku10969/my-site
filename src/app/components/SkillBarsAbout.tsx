@@ -26,7 +26,7 @@ const GROUPS: Group[] = [
     skills: [
       { label: "HTML", blocks: 5 },
       { label: "CSS", blocks: 4 },
-      { label: "JS", blocks: 3 },
+      { label: "JS", blocks: 4 },
       { label: "TS", blocks: 3 },
       { label: "Next.js", blocks: 3 },
     ],
@@ -39,9 +39,9 @@ const GROUPS: Group[] = [
     textColor: "#e8f1ef",
     valueColor: "#e8f1ef",
     skills: [
-      { label: "PHP", blocks: 3 },
-      { label: "Laravel", blocks: 3 },
-      { label: "AWS", blocks: 3 },
+      { label: "PHP", blocks: 2 },
+      { label: "Laravel", blocks: 2 },
+      { label: "AWS", blocks: 2 },
     ],
   },
   {
@@ -54,8 +54,8 @@ const GROUPS: Group[] = [
     skills: [
       { label: "Figma", blocks: 4 },
       { label: "Illustrator", blocks: 5},
-      { label: "Photoshop", blocks: 4},
-      { label: "XD", blocks: 5}
+      { label: "Photoshop", blocks: 3},
+      { label: "XD", blocks: 3}
     ],
   },
   {
@@ -66,7 +66,7 @@ const GROUPS: Group[] = [
     textColor: "#000000",
     valueColor: "#000000",
     skills: [
-      { label: "Git", blocks: 4 },
+      { label: "Git", blocks: 5 },
       { label: "VBA", blocks: 5 }
     ],
   },

@@ -245,6 +245,21 @@
   pointer-events:none;
 }
 
+/* 初期状態：左(または右)へオフセット & 透明 */
+.reveal { 
+  opacity: 0;
+  transform: translateX(var(--reveal-x, 0));
+  transition: opacity .5s ease, transform .5s ease;
+}
+
+/* 発火後：不透明 & 位置リセット */
+.reveal.in {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+
+
 /* パララックス用のCSS変数（JSで更新） */
 .watermark{
   transform:translateY(var(--wm-y,24px));

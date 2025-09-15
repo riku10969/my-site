@@ -7,12 +7,11 @@ import { usePathname } from "next/navigation";
 
 type NavItem = { label: string; path: string };
 
+// ★ Collection / My Hobbys を削除
 const navItems: NavItem[] = [
-  { label: "About",       path: "/project/about" },
-  { label: "Works",       path: "/project/works" },
-  { label: "Collection",  path: "/project/collection" },
-  { label: "My Hobbys",   path: "/project/hobbys" },
-  { label: "Contact",     path: "/project/contact" },
+  { label: "About",  path: "/project/about" },
+  { label: "Works",  path: "/project/works" },
+  { label: "Contact",path: "/project/contact" },
 ];
 
 export default function Header() {
@@ -27,7 +26,7 @@ export default function Header() {
   return (
     <header
       className="
-        fixed top-0 left-0 z-50 w-full
+        fixed top-0 left-0 z-1000 w-full
         bg-black/70 backdrop-blur
         border-b border-white/10
       "
@@ -62,16 +61,14 @@ export default function Header() {
             alt="UI/UX RIKU"
             width={140}
             height={40}
-            className="h-10 w-auto md:ml-14" /* 旧CSSの「ハンバーガー分の余白」を再現 */
+            className="h-10 w-auto md:ml-14"
             priority
           />
         </Link>
 
         {/* Center: Desktop Nav */}
         <nav
-          className="
-            hidden md:flex flex-1 justify-center
-          "
+          className="hidden md:flex flex-1 justify-center"
           aria-label="Main navigation"
         >
           <ul className="flex gap-[7rem]">
@@ -89,7 +86,6 @@ export default function Header() {
                   >
                     <span className="relative">
                       {item.label}
-                      {/* 下線アニメーション（:after代替） */}
                       <span
                         className={`
                           absolute left-0 -bottom-1 h-[2px] w-full origin-left scale-x-0
@@ -108,7 +104,6 @@ export default function Header() {
 
         {/* Right spacer for layout balance */}
         <div className="w-10 md:w-14" aria-hidden />
-
       </div>
 
       {/* Mobile Drawer */}

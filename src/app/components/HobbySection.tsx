@@ -60,9 +60,6 @@ function useTilt<T extends HTMLElement>({
 }
 
 /* ==================
-   ZoomImageModal（新規）
-   ================== */
-/* ==================
    ZoomImageModal（正方形版に置換）
    ================== */
 

@@ -47,10 +47,10 @@ export default function Works() {
       itemWidth: cardW,
       gap,
       items: [
-        { src: "/works/graphic1.png", title: "Poster A", description: "展示会用ポスターA案。", tools: ["Figma","Illustrator"], languages: [], period: "2025.04", kind: "graphic" },
-        { src: "/works/graphic2.png", title: "Poster B", description: "写真合成を中心にしたB案。", tools: ["Photoshop"], languages: [], period: "2025.05", kind: "graphic" },
-        { src: "/works/graphic3.png", title: "Poster C", description: "タイポ重視のC案。", tools: ["Figma","Photoshop"], languages: [], period: "2025.06", kind: "graphic" },
-        { src: "/works/graphic4.png", title: "Space Kelvin", description: "POPタイポ＆ロゴ展開。", tools: ["Illustrator","Photoshop"], languages: [], period: "2025.06", kind: "graphic" },
+        { src: "/works/graphic1.png", title: "名刺作成", description: "", tools: ["Illustrator"], period: "2024.11", kind: "graphic" },
+        { src: "/works/graphic2.png", title: "COWCOW Burger", description: "知人のクライアントワークでハンバーガー屋さんのロゴ作成。", tools: ["Photoshop"], languages: [], period: "2024.12", kind: "graphic" },
+        { src: "/works/graphic3.png", title: "Dog Run Party", description: "彩の森公園のイベント　ドッグランパーティーポスターのリデザイン", tools: ["Illustrator","Photoshop"], period: "2025.01", kind: "graphic" },
+        { src: "/works/graphic4.png", title: "Space Kelvin", description: "架空店の広告物作成。宇宙をテーマにしたアイス屋さんのロゴとポスター作成", tools: ["Illustrator","Photoshop"], period: "2025.02", kind: "graphic" },
       ],
     },
     {
@@ -62,9 +62,9 @@ export default function Works() {
       itemWidth: cardW,
       gap,
       items: [
-        { src: "/works/web1.png", title: "LP Design", description: "Next.js + Tailwind LP。", tools: ["Figma","Next.js","Tailwind"], languages: ["TypeScript","HTML","CSS"], period: "2025.02", kind: "web", link: "https://example.com/lp" },
-        { src: "/works/web2.png", title: "Dashboard", description: "管理画面設計＆GSAP遷移。", tools: ["React","GSAP"], languages: ["TypeScript"], period: "2025.03", kind: "web", link: "https://example.com/dashboard" },
-        { src: "/works/web3.png", title: "Portfolio", description: "3Dヒーロー演出のPF。", tools: ["Three.js","GSAP","Next.js"], languages: ["TypeScript"], period: "2025.07", kind: "web", link: "https://example.com/portfolio" },
+        { src: "/works/web1.png", title: "デジリグHP 作成 (課題)", description: "デジリグHPのリデザイン", tools: ["Figma"], languages: ["Figma"], period: "2025.04", kind: "web", link: "https://www.figma.com/design/4u1f7qzDBmwDh2kvIfOXa5/LIG?node-id=0-1&t=aAxCldnMJRNgwzyQ-1" },
+        { src: "/works/web2.png", title: "NailSalon BB", description: "今後オープン予定のネイルサロンのサイト作成。フェミニン風をベースで作成。", languages: ["React", "TypeScript"], period: "2025.06〜2025.07", kind: "web", link: "https://nail-salon-gsnvip9rj-riku10969s-projects.vercel.app/" },
+        { src: "/works/web3.png", title: "ポートフォリオ", description: "本サイト", languages: ["React","TypeScript", "Three.js","GSAP","Next.js","WebGL","TailWindCss"], period: "2025.07〜", kind: "web" },
       ],
     },
   ], [cardW, gap, speedGraphic, speedWeb]);
@@ -104,8 +104,14 @@ export default function Works() {
         const images = sec.items.map(i => i.src);
         return (
           <div key={sec.key} className="mb-12">
-            <h3 className={`${sec.accentClass} text-2xl font-semibold ml-6 mb-5`}>
-              {sec.label}
+            <h3 className={`${sec.accentClass} text-5xl font-serif ml-6 mb-5`}>
+              <FadeInText
+          text={sec.label}
+          from="left"
+          stagger={0.08}
+          baseDelay={0.3}
+          className="text-4xl md:text-5xl font-serif"
+        />
             </h3>
 
             <InfiniteMarquee
