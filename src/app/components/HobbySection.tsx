@@ -441,7 +441,7 @@ export default function HobbySection({
     { src: "/hobby/aquarium.jpg", alt: "Aquarium" },
     { src: "/hobby/camera.jpg", alt: "Photography" },
     { src: "/hobby/movie.jpg", alt: "Cinema" },
-    { src: "/hobby/car.jpg", alt: "Car" },
+    { src: "/hobby/car.JPG", alt: "Car" },
   ],
 }: {
   title?: string;
