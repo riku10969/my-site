@@ -3,6 +3,8 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import GlitchText from "../components/GlitchText";   
+import FadeInText from "../components/FadeInText";   // 例: components/FadeInText.tsx
 
 function LogoStack() {
   return (
@@ -116,40 +118,87 @@ export default function Footer() {
 
         {/* ナビ：モバイル=2列グリッド / タブレット=等間隔 / PC=大きめ間隔 */}
         <nav className="justify-self-center w-full md:w-auto">
-          <ul
-            className="
-              grid grid-cols-2 gap-4
-              sm:grid-cols-4 sm:gap-6
-              md:flex md:flex-wrap md:gap-12 lg:gap-20
-              text-[18px] sm:text-[20px] md:text-[22px] lg:text-[26px]
-              tracking-wide
-              justify-items-center md:justify-items-start
-            "
-          >
-            {[
-              { href: "/", label: "TOP" },
-              { href: "/project/about", label: "About" },
-              { href: "/project/works", label: "Works" },
-              { href: "/project/contact", label: "Contact" },
-            ].map((item) => (
-              <li key={item.href} className="w-full sm:w-auto">
-                <Link
-                  href={item.href}
-                  className={`
-                    link-glow ${neonClass}
-                    inline-flex items-center justify-center
-                    rounded px-3 py-2 sm:px-3.5 sm:py-2.5
-                    text-[color:var(--a1)]
-                    focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--a2)]/40
-                    transition-colors
-                  `}
-                >
-                  {item.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
+  <ul
+    className="
+      grid grid-cols-2 gap-4
+      sm:grid-cols-4 sm:gap-6
+      md:flex md:flex-wrap md:gap-12 lg:gap-20
+      text-[18px] sm:text-[20px] md:text-[22px] lg:text-[26px]
+      tracking-wide
+      justify-items-center md:justify-items-start
+    "
+  >
+    {/* TOP（要件外なのでシンプルに白＋ホバー下線だけ） */}
+    <li className="w-full sm:w-auto">
+      <Link
+        href="/"
+        className="
+          link-glow inline-flex items-center justify-center
+          rounded px-3 py-2 sm:px-3.5 sm:py-2.5
+          text-white
+          focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40
+          transition-colors
+        "
+      >
+        TOP
+      </Link>
+    </li>
+
+    {/* About：スクロールでグリッチ、ホバーで白い下線 */}
+    <li className="w-full sm:w-auto">
+      <Link
+        href="/project/about"
+        className="
+          link-glow inline-flex items-center justify-center
+          rounded px-3 py-2 sm:px-3.5 sm:py-2.5
+          text-white
+          focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40
+          transition-colors
+        "
+      >
+        <GlitchText
+          text="About"
+          trigger="scroll-once"
+          variant="mono"
+          // hover時に ::before/::after を走らせたいなら以下を追加（任意）
+          className="glitch-hover"
+        />
+      </Link>
+    </li>
+
+    {/* Works：スクロールでFadeInText、ホバーで白い下線 */}
+    <li className="w-full sm:w-auto">
+      <Link
+        href="/project/works"
+        className="
+          link-glow inline-flex items-center justify-center
+          rounded px-3 py-2 sm:px-3.5 sm:py-2.5
+          text-white
+          focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40
+          transition-colors
+        "
+      >
+        <FadeInText text="Works" from="left" />
+      </Link>
+    </li>
+
+    {/* Contact：スクロールで白ネオン、ホバーで白い下線 */}
+    <li className="w-full sm:w-auto">
+      <Link
+        href="/project/contact"
+        className={`
+          link-glow inline-flex items-center justify-center
+          rounded px-3 py-2 sm:px-3.5 sm:py-2.5
+          text-white
+          focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40
+          transition-colors
+        `}
+      >
+        <span className={neonStage === "once" ? "neon-white" : ""}>Contact</span>
+      </Link>
+    </li>
+  </ul>
+</nav>
       </div>
     </footer>
   );

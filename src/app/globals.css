@@ -217,6 +217,58 @@
   color:var(--a1);
 }
 
+/* === Neon text utilities (共通) === */
+.neon-cyan {
+  --c-main: #2ccdb9;
+  color: var(--c-main);
+  text-shadow:
+    0 0 6px var(--c-main),
+    0 0 14px var(--c-main),
+    0 0 28px rgba(44,205,185,.8),
+    0 0 56px rgba(44,205,185,.6);
+}
+.neon-purple {
+  --c-main: #8a5cff;
+  color: var(--c-main);
+  text-shadow:
+    0 0 6px var(--c-main),
+    0 0 14px var(--c-main),
+    0 0 28px rgba(138,92,255,.8),
+    0 0 56px rgba(138,92,255,.6);
+}
+.neon-amber {
+  --c-main: #ffb34d;
+  color: var(--c-main);
+  text-shadow:
+    0 0 6px var(--c-main),
+    0 0 14px var(--c-main),
+    0 0 28px rgba(255,179,77,.85),
+    0 0 56px rgba(255,179,77,.6);
+}
+.neon-white{
+  color:#fff;
+  text-shadow:
+    0 0 6px rgba(255,255,255,.95),
+    0 0 14px rgba(255,255,255,.85),
+    0 0 28px rgba(255,255,255,.7),
+    0 0 52px rgba(255,255,255,.55);
+}
+.flicker {
+  animation: flicker 2.8s ease-in-out infinite;
+}
+@keyframes flicker {
+  0% { opacity: 1; }
+  8% { opacity: .85; }
+  10% { opacity: 1; }
+  22% { opacity: .92; }
+  30% { opacity: 1; }
+  45% { opacity: .88; }
+  55% { opacity: 1; }
+  70% { opacity: .93; }
+  100% { opacity: 1; }
+}
+
+
 /* 到達時に1回だけ強め→穏やかにゆらぐ */
 @keyframes neon-once{
   0%{filter:brightness(1)}

@@ -147,7 +147,18 @@ export default function ProjectsIntro() {
             </SwiperSlide>
           ))}
         </Swiper>
-        <div className={styles.titleArea}>{projects[activeIndex]?.title}</div>
+       
+       <div
+  className={`${styles.titleArea} ${
+    activeIndex % 3 === 0
+      ? "neon-cyan flicker"
+      : activeIndex % 3 === 1
+      ? "neon-purple flicker"
+      : "neon-amber flicker"
+  }`}
+>
+  {projects[activeIndex]?.title}
+</div>
       </div>
 
       {/* 通常運転は“控えめ”設定 */}
