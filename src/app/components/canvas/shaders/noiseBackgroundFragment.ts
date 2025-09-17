@@ -8,6 +8,10 @@ export const noiseBackgroundFragment = `
 
   void main() {
     float n = random(vUv * 10.0 + uTime * 0.2); // 密度上げる
-    gl_FragColor = vec4(vec3(n), 0.1); // ← ここを 0.07〜0.1 にUP
+    float base = 0.06;          // 0.04〜0.10 あたりをお好みで
+    float amp  = 0.14;          // 0.10〜0.20 あたりをお好みで
+    vec3 color = vec3(base + amp * n);
+
+    gl_FragColor = vec4(color, 1.0); // ここは不透明でOK
   }
 `;

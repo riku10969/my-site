@@ -15,7 +15,9 @@ export default function Top() {
 
   return (
     <section className={styles.top}>
+      <div className="bgHost">
       <canvas ref={canvasRef} className={styles.canvas}></canvas>
+      </div>
     </section>
   );
 }

@@ -15,3 +15,14 @@
   z-index: 0;                /* 背面 */
   pointer-events: none;      /* クリック貫通（操作をブロックしない） */
 }
+.bgHost{
+  position: fixed;
+  inset: 0;
+  background: #000; /* ← 常に黒 */
+  z-index: 0;
+}
+.bgHost canvas{
+  width: 100vw;
+  height: 100vh;
+  display: block;
+}

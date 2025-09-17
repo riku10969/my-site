@@ -42,11 +42,11 @@ export default function ProjectsIntro() {
       const W = window.innerWidth || 1;
 
       // 初期状態：右外 + 透明
-      gsap.set(cards, {
-        x: W,
-        opacity: 0,
-        willChange: "transform,opacity",
-      });
+      // gsap.set(cards, {
+      //   x: W,
+      //   opacity: 0,
+      //   willChange: "transform,opacity",
+      // });
 
       // 3枚目 → 2枚目 → 1枚目（残す）
       gsap
