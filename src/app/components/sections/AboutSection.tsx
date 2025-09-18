@@ -76,7 +76,7 @@ export default function AboutSection({ isLoaded }: { isLoaded: boolean }) {
             items={[
               { src: "/hobby/figaro.jpg", alt: "Figaro", label: "フィガロ", description: "チワワとペキニーズのミックス犬。毎日の癒しです。" },
               { src: "/hobby/camera.jpg", alt: "Photography", label: "写真", description: "最近はデジカメにハマってます。" },
-              { src: "/hobby/movie.jpg", alt: "Cinema", label: "映画", description: "休日は映画館で映画をよく観ています。" },
+              { src: "/hobby/movie1.jpg", alt: "Cinema", label: "映画", description: "休日は映画館で映画をよく観ています。" },
               { src: "/hobby/snow.jpg", alt: "Snow Trip", label: "スノーボード", description: "唯一の体を動かす趣味です。" },
               { src: "/hobby/car.jpg", alt: "Car", label: "CIVIC", description: "" },
               { src: "/hobby/NewYork.jpg", alt: "NewYork", label: "ニューヨーク", description: "いろんな国に旅行に行くのが夢です。" },

@@ -440,7 +440,7 @@ export default function HobbySection({
     { src: "/hobby/snow.jpg", alt: "Snow Trip" },
     { src: "/hobby/NewYork.jpg", alt: "NewYork" },
     { src: "/hobby/camera.jpg", alt: "Photography" },
-    { src: "/hobby/movie.jpg", alt: "Cinema" },
+    { src: "/hobby/movie1.jpg", alt: "Cinema" },
     { src: "/hobby/car.jpg", alt: "Car" },
   ],
 }: {
