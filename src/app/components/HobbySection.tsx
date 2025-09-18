@@ -438,7 +438,7 @@ export default function HobbySection({
   items = [
     { src: "/hobby/figaro.jpg", alt: "Figaro" },
     { src: "/hobby/snow.jpg", alt: "Snow Trip" },
-    { src: "/hobby/aquarium.jpg", alt: "Aquarium" },
+    { src: "/hobby/NewYork.jpg", alt: "NewYork" },
     { src: "/hobby/camera.jpg", alt: "Photography" },
     { src: "/hobby/movie.jpg", alt: "Cinema" },
     { src: "/hobby/car.jpg", alt: "Car" },
