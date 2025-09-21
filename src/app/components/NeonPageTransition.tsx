@@ -8,7 +8,7 @@ import React, {
   useState,
   useEffect,
 } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import gsap from "gsap";
 
 const PageTransitionCtx = createContext<{
@@ -34,10 +34,9 @@ export function PageTransitionProvider({
   duration?: number;
 }) {
   const router = useRouter();
-  const pathname = usePathname();
   const [playing, setPlaying] = useState(false);
 
-  // クライアントマウント後のみオーバーレイを描画
+  // クライアントマウント後のみオーバーレイを描画（SSR差異回避）
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -50,51 +49,33 @@ export function PageTransitionProvider({
     return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   }, []);
 
-  // 入場（ページ切替後のカーテン剥がし）
+  // ✅ 初期状態セットのみ（入場アニメは無効）
   useLayoutEffect(() => {
-    if (!mounted) return; // マウント前は触らない（SSR差異を避ける）
-    if (!layerRef.current) return;
+    if (!mounted || !layerRef.current) return;
 
-    if (prefersReduced) {
-      // 動きを抑制：オーバーレイを即座に非表示へ
-      gsap.set([mintRef.current, purpleRef.current], { clearProps: "all" });
-      gsap.set(layerRef.current, { opacity: 0, pointerEvents: "none" });
-      return; // cleanup 不要
-    }
+    gsap.set(layerRef.current, { opacity: 0, pointerEvents: "none" });
 
-    // gsap.context でこの effect で触った要素/アニメをまとめて管理
-    const ctx = gsap.context(() => {
-      const tl = gsap.timeline();
-
-      tl.set(layerRef.current, { opacity: 1, pointerEvents: "none" })
-        .to(
-          [mintRef.current, purpleRef.current],
-          {
-            yPercent: -120,
-            xPercent: 40,
-            rotation: -3,
-            duration: duration * 0.9,
-            ease: "power3.inOut",
-            stagger: -0.06,
-          },
-          0
-        )
-        .set(layerRef.current, { opacity: 0, pointerEvents: "none" });
-    }, layerRef);
-
-    // ✅ cleanup は「副作用の解除だけを行い、何も返さない」関数
-    return () => {
-      ctx.revert();
-    };
-  }, [pathname, duration, prefersReduced, mounted]);
-
-  // 退場（カーテン閉じ → ルーティング）
-  const push = (href: string) => {
-    if (prefersReduced) {
-      router.push(href);
+    // 参照チェック（デバッグ用：不要なら削除OK）
+    if (!mintRef.current || !purpleRef.current) {
+      console.warn("[NeonPageTransition] panel ref missing", {
+        mint: !!mintRef.current,
+        purple: !!purpleRef.current,
+      });
       return;
     }
-    if (!layerRef.current) {
+
+    // 画面外に退避（常に同じ初期値へ）
+    gsap.set([mintRef.current, purpleRef.current], {
+      yPercent: 120,
+      xPercent: -40,
+      rotation: 3,
+      transformOrigin: "50% 50%",
+      // z-index はここで固定
+    });
+  }, [mounted]);
+
+  const push = (href: string) => {
+    if (prefersReduced || !layerRef.current || !mintRef.current || !purpleRef.current) {
       router.push(href);
       return;
     }
@@ -104,50 +85,50 @@ export function PageTransitionProvider({
     const tl = gsap.timeline({
       onComplete: () => {
         router.push(href);
+        gsap.set(layerRef.current, { opacity: 0, pointerEvents: "none" });
         setPlaying(false);
       },
     });
 
+    // 念のため毎回初期位置にセット（他の処理に上書きされてても戻す）
     tl.set(layerRef.current, { opacity: 1, pointerEvents: "auto" })
-      .set([mintRef.current, purpleRef.current], {
+      .set(mintRef.current, {
         yPercent: 120,
         xPercent: -40,
         rotation: 3,
-        transformOrigin: "50% 50%",
-      })
-      .to(
-        mintRef.current,
-        {
-          yPercent: 0,
-          xPercent: 0,
-          rotation: 0.4,
-          duration: duration,
-          ease: "power3.inOut",
-        },
-        0
-      )
-      .to(
-        purpleRef.current,
-        {
-          yPercent: 0,
-          xPercent: 0,
-          rotation: 0,
-          duration: duration * 0.9,
-          ease: "power3.out",
-        },
-        0.06
-      );
+        zIndex: 2,          // ← ミントを上に
+      }, 0)
+      .set(purpleRef.current, {
+        yPercent: 120,
+        xPercent: -40,
+        rotation: 3,
+        zIndex: 1,
+      }, 0)
+      .to(mintRef.current, {
+        yPercent: 0,
+        xPercent: 0,
+        rotation: 0.4,
+        duration: duration,
+        ease: "power3.inOut",
+      }, 0)
+      .to(purpleRef.current, {
+        yPercent: 0,
+        xPercent: 0,
+        rotation: 0,
+        duration: duration * 0.9,
+        ease: "power3.out",
+      }, 0.06);
   };
+
 
   return (
     <PageTransitionCtx.Provider value={{ push, playing }}>
       {children}
 
-      {/* Overlay Layer */}
       {mounted && (
         <div
           ref={layerRef}
-          className="fixed inset-0 z-[9999] pointer-events-none opacity-0"
+          className="fixed inset-0 z-[99999] pointer-events-none opacity-0" // ← z をさらに強く
           aria-hidden="true"
         >
           <div className="absolute inset-0 overflow-hidden">
