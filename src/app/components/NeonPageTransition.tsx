@@ -189,7 +189,7 @@ export function PageTransitionProvider({
               ref={purpleRef}
               className="absolute -left-1/4 -top-1/4 h-[160vh] w-[160vw] rounded-[8px]"
               style={{
-                background: `linear-gradient(135deg, ${accentPurple}, ${accentPurple}cc)`,
+                background: `linear-gradient(135deg, ${accentPurple}, ${accentPurple})`,
                 clipPath: "polygon(8% 0%, 100% 12%, 92% 100%, 0% 88%)",
                 boxShadow: "0 0 0 rgba(0,0,0,0)",
                 mixBlendMode: "normal",
