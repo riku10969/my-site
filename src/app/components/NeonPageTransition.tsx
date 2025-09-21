@@ -177,7 +177,7 @@ export function PageTransitionProvider({
               ref={mintRef}
               className="absolute -left-1/3 -top-1/3 h-[160vh] w-[160vw] rounded-[8px]"
               style={{
-                background: `linear-gradient(135deg, ${accentMint}, ${accentMint}cc)`,
+                background: `linear-gradient(135deg, ${accentMint}, ${accentMint})`,
                 clipPath: "polygon(0% 10%, 86% 0%, 100% 90%, 12% 100%)",
                 boxShadow: "0 0 0 rgba(0,0,0,0)",
                 mixBlendMode: "normal",
