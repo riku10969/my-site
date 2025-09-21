@@ -8,9 +8,12 @@ import React, {
   useState,
   useEffect,
 } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import gsap from "gsap";
 
+/**
+ * Page Transition Context
+ */
 const PageTransitionCtx = createContext<{
   push: (href: string) => void;
   playing: boolean;
@@ -22,21 +25,31 @@ export function usePageTransition() {
   return ctx;
 }
 
+/**
+ * Provider
+ * - 初回ロードでは演出しない
+ * - TransitionLink/TransitionButton からのクリック時のみ OUT を再生
+ * - 覆われてから push（即 push ではない）
+ * - 遷移先で IN を一度だけ再生
+ */
 export function PageTransitionProvider({
   children,
   accentMint = "#11a98b",
   accentPurple = "#5a37a6",
   duration = 0.9,
+  pushAt = 0.4, // 0..1: OUT の進捗がこれを超えたら push
 }: {
   children: React.ReactNode;
   accentMint?: string;
   accentPurple?: string;
   duration?: number;
+  pushAt?: number;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [playing, setPlaying] = useState(false);
 
-  // クライアントマウント後のみオーバーレイを描画（SSR差異回避）
+  // CSR 判定（SSR差分回避）
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -49,66 +62,64 @@ export function PageTransitionProvider({
     return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   }, []);
 
-  // ✅ 初期状態セットのみ（入場アニメは無効）
+  // 初期状態セット（入場アニメはしない）
   useLayoutEffect(() => {
     if (!mounted || !layerRef.current) return;
 
     gsap.set(layerRef.current, { opacity: 0, pointerEvents: "none" });
 
-    // 参照チェック（デバッグ用：不要なら削除OK）
-    if (!mintRef.current || !purpleRef.current) {
-      console.warn("[NeonPageTransition] panel ref missing", {
-        mint: !!mintRef.current,
-        purple: !!purpleRef.current,
-      });
-      return;
-    }
+    if (!mintRef.current || !purpleRef.current) return;
 
-    // 画面外に退避（常に同じ初期値へ）
+    // 画面外に退避（固定の初期値）
     gsap.set([mintRef.current, purpleRef.current], {
       yPercent: 120,
       xPercent: -40,
       rotation: 3,
       transformOrigin: "50% 50%",
-      // z-index はここで固定
     });
   }, [mounted]);
 
-  const push = (href: string) => {
+  // クリック時：OUT を開始し、OUT 進捗が pushAt% を超えたら push
+  const push = async (href: string) => {
     if (prefersReduced || !layerRef.current || !mintRef.current || !purpleRef.current) {
+      // リデュースモーションでは即遷移（演出なし）
       router.push(href);
       return;
     }
 
+    // 遷移先で IN を予約
+    sessionStorage.setItem("pt:pending", "1");
     setPlaying(true);
 
+    // オーバーレイ前面＆初期配置
+    gsap.set(layerRef.current, { opacity: 1, pointerEvents: "auto", willChange: "transform, opacity" });
+    gsap.set(mintRef.current,  { yPercent: 120, xPercent: -40, rotation: 3, zIndex: 2, willChange: "transform" });
+    gsap.set(purpleRef.current,{ yPercent: 120, xPercent: -40, rotation: 3, zIndex: 1, willChange: "transform" });
+
+    // 一度描画（ダブル RAF）→ 覆いが見えてからアニメ開始
+    await new Promise<void>((resolve) => {
+  requestAnimationFrame(() => {
+    // （任意）強制レイアウトで描画を確実に
+    layerRef.current?.getBoundingClientRect();
+    requestAnimationFrame(() => resolve());
+  });
+});
+    let pushed = false;
     const tl = gsap.timeline({
-      onComplete: () => {
-        router.push(href);
-        gsap.set(layerRef.current, { opacity: 0, pointerEvents: "none" });
-        setPlaying(false);
+      onUpdate: () => {
+        if (!pushed && tl.progress() >= Math.min(Math.max(pushAt, 0), 1)) {
+          pushed = true;
+          sessionStorage.setItem("pt:pushed", "1");
+          router.push(href);
+        }
       },
     });
 
-    // 念のため毎回初期位置にセット（他の処理に上書きされてても戻す）
-    tl.set(layerRef.current, { opacity: 1, pointerEvents: "auto" })
-      .set(mintRef.current, {
-        yPercent: 120,
-        xPercent: -40,
-        rotation: 3,
-        zIndex: 2,          // ← ミントを上に
-      }, 0)
-      .set(purpleRef.current, {
-        yPercent: 120,
-        xPercent: -40,
-        rotation: 3,
-        zIndex: 1,
-      }, 0)
-      .to(mintRef.current, {
+    tl.to(mintRef.current, {
         yPercent: 0,
         xPercent: 0,
         rotation: 0.4,
-        duration: duration,
+        duration,
         ease: "power3.inOut",
       }, 0)
       .to(purpleRef.current, {
@@ -120,6 +131,35 @@ export function PageTransitionProvider({
       }, 0.06);
   };
 
+  // 遷移先：IN を一度だけ再生してオーバーレイ解除
+  useEffect(() => {
+    if (!mounted || !layerRef.current || !mintRef.current || !purpleRef.current) return;
+    if (sessionStorage.getItem("pt:pending") !== "1") return;
+
+    // 予約フラグ消去
+    sessionStorage.removeItem("pt:pending");
+    sessionStorage.removeItem("pt:pushed");
+
+    // 競合回避（OUT が残っていたら止める）
+    gsap.killTweensOf([mintRef.current, purpleRef.current, layerRef.current]);
+
+    // 現在：オーバーレイは前面、パネルは画面内にある想定
+    const tl = gsap.timeline({
+      onComplete: () => {
+        gsap.set(layerRef.current, { opacity: 0, pointerEvents: "none" });
+        setPlaying(false);
+      },
+    });
+
+    tl.to([mintRef.current, purpleRef.current], {
+        yPercent: -120,
+        xPercent: 40,
+        rotation: -2,
+        duration: duration * 0.9,
+        ease: "power3.inOut",
+      }, 0)
+      .to(layerRef.current, { opacity: 0, duration: 0.3, ease: "power1.out" }, "-=0.2");
+  }, [pathname, mounted, duration]);
 
   return (
     <PageTransitionCtx.Provider value={{ push, playing }}>
@@ -128,7 +168,7 @@ export function PageTransitionProvider({
       {mounted && (
         <div
           ref={layerRef}
-          className="fixed inset-0 z-[99999] pointer-events-none opacity-0" // ← z をさらに強く
+          className="fixed inset-0 z-[99999] pointer-events-none opacity-0"
           aria-hidden="true"
         >
           <div className="absolute inset-0 overflow-hidden">
@@ -163,23 +203,38 @@ export function PageTransitionProvider({
   );
 }
 
+/**
+ * TransitionLink
+ * - クリック時のみ演出を発火
+ * - 修飾キーや中クリックでは通常の挙動
+ */
 export function TransitionLink({
   href,
   children,
   className = "",
+  prefetch,
 }: {
   href: string;
   children: React.ReactNode;
   className?: string;
+  prefetch?: boolean;
 }) {
   const { push, playing } = usePageTransition();
+
+  const onClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return; // 通常遷移
+    e.preventDefault();
+    if (!playing) push(href);
+  };
+
+  useEffect(() => {
+    // 必要に応じて prefetch を行いたい場合は next/link を使う実装に置き換え推奨
+  }, [href, prefetch]);
+
   return (
     <a
       href={href}
-      onClick={(e) => {
-        e.preventDefault();
-        if (!playing) push(href);
-      }}
+      onClick={onClick}
       className={className}
       aria-disabled={playing ? true : undefined}
     >
@@ -188,6 +243,9 @@ export function TransitionLink({
   );
 }
 
+/**
+ * TransitionButton
+ */
 export function TransitionButton({
   href,
   children,
