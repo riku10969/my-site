@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "../styles/SkillBars.module.css";
 import GlitchText from "./GlitchText";
+import { TransitionLink } from "./NeonPageTransition";
 
 type Skill = { label: string; blocks: number }; // 0..5
 type Group = {
@@ -180,6 +181,7 @@ export default function SkillBarsAbout({
 
   return (
     <section className={styles.wrap} ref={ref}>
+      <div className={styles.cta1}></div>
       <h3 className={styles.h3}>
         <GlitchText 
         as="span" text={title} trigger="scroll"/>
@@ -207,6 +209,14 @@ export default function SkillBarsAbout({
       <div className={styles.panel} style={cssVars}>
         {rows}
       </div>
+      <div className={styles.cta2}>
+  <TransitionLink
+    href="/skills" // ← 全体のスキル詳細ページのパス
+    className={styles.skillBtn}
+  >
+    スキル詳細ページへ →
+  </TransitionLink>
+</div>
     </section>
   );
 }

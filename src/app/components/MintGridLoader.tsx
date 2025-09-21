@@ -38,7 +38,7 @@ export default function MintGridLoader({
   rows = 6,
   cols = 8,
   tileOpacity = 0.28,
-  bg = "#DFF0C1", // soft mint
+  bg = "#11a98b", // soft mint
   tileColor = "#000000",
   text = "LOADING",
   loop = true,

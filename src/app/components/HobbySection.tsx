@@ -65,7 +65,7 @@ function useTilt<T extends HTMLElement>({
 
 function computeSquareSide(vw: number, vh: number) {
   const SIDE_VW = 0.8;  // 横は 80vw まで
-  const SIDE_VH = 0.4;  // 縦は 80vh まで
+  const SIDE_VH = 0.65;  // 縦は 80vh まで
   const MAX = 1000;     // 上限 px（好みで調整）
   const MIN = 280;      // 下限 px（スマホで小さすぎ防止）
   const side = Math.min(vw * SIDE_VW, vh * SIDE_VH, MAX);

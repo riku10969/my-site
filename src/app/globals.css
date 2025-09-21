@@ -3,6 +3,10 @@
 @tailwind components;
 @tailwind utilities;
 
+.font-display {
+  font-family: var(--font-jaro), ui-sans-serif, system-ui;
+}
+
 /* ---- bulbs: soft glow ---- */
 @keyframes bulb-glow {
   0%   { box-shadow: 0 0 6px rgba(255,255,255,.9), 0 0 18px rgba(255,255,255,.65); }

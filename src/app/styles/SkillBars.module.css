@@ -64,3 +64,39 @@
 @media (max-width:560px){
   .row{ grid-template-columns:90px 1fr 44px; gap:8px; }
 }
+
+.cta1 {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255,255,255,.08);
+  display: grid;
+  place-items: start;
+}
+
+.cta2 {
+  margin-top: 20px;
+  padding-top: 16px;
+  display: grid;
+  place-items: start;
+}
+
+.skillBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: #5a37a6;
+  color: #e8f1ef;
+  text-decoration: none;
+  transition: background .25s ease, transform .08s ease;
+  backdrop-filter: blur(4px);
+}
+.skillBtn:hover {
+  background: rgba(255,255,255,.08);
+}
+.skillBtn:active {
+  transform: translateY(1px);
+}
