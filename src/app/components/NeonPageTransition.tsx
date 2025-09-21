@@ -6,7 +6,7 @@ import React, {
   useMemo,
   useRef,
   useState,
-  useEffect, // ← 追加
+  useEffect,
 } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import gsap from "gsap";
@@ -37,7 +37,7 @@ export function PageTransitionProvider({
   const pathname = usePathname();
   const [playing, setPlaying] = useState(false);
 
-  // ★ 追加: クライアントマウント後にだけオーバーレイを描画
+  // クライアントマウント後のみオーバーレイを描画
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -45,35 +45,47 @@ export function PageTransitionProvider({
   const mintRef = useRef<HTMLDivElement | null>(null);
   const purpleRef = useRef<HTMLDivElement | null>(null);
 
-  const prefersReduced = useMemo(
-    () =>
-      typeof window !== "undefined" &&
-      window.matchMedia &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
-    []
-  );
+  const prefersReduced = useMemo(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return false;
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }, []);
 
-  // 入場（カーテン剥がし）
+  // 入場（ページ切替後のカーテン剥がし）
   useLayoutEffect(() => {
-    if (!mounted) return;                 // ← マウント前は触らない
+    if (!mounted) return; // マウント前は触らない（SSR差異を避ける）
     if (!layerRef.current) return;
+
     if (prefersReduced) {
+      // 動きを抑制：オーバーレイを即座に非表示へ
       gsap.set([mintRef.current, purpleRef.current], { clearProps: "all" });
       gsap.set(layerRef.current, { opacity: 0, pointerEvents: "none" });
-      return;
+      return; // cleanup 不要
     }
-    const tl = gsap.timeline();
-    tl.set(layerRef.current, { opacity: 1, pointerEvents: "none" })
-      .to([mintRef.current, purpleRef.current], {
-        yPercent: -120,
-        xPercent: 40,
-        rotation: -3,
-        duration: duration * 0.9,
-        ease: "power3.inOut",
-        stagger: -0.06,
-      }, 0)
-      .set(layerRef.current, { opacity: 0 });
-    return () => tl.kill();
+
+    // gsap.context でこの effect で触った要素/アニメをまとめて管理
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline();
+
+      tl.set(layerRef.current, { opacity: 1, pointerEvents: "none" })
+        .to(
+          [mintRef.current, purpleRef.current],
+          {
+            yPercent: -120,
+            xPercent: 40,
+            rotation: -3,
+            duration: duration * 0.9,
+            ease: "power3.inOut",
+            stagger: -0.06,
+          },
+          0
+        )
+        .set(layerRef.current, { opacity: 0, pointerEvents: "none" });
+    }, layerRef);
+
+    // ✅ cleanup は「副作用の解除だけを行い、何も返さない」関数
+    return () => {
+      ctx.revert();
+    };
   }, [pathname, duration, prefersReduced, mounted]);
 
   // 退場（カーテン閉じ → ルーティング）
@@ -82,7 +94,11 @@ export function PageTransitionProvider({
       router.push(href);
       return;
     }
-    if (!layerRef.current) return;
+    if (!layerRef.current) {
+      router.push(href);
+      return;
+    }
+
     setPlaying(true);
 
     const tl = gsap.timeline({
@@ -99,20 +115,28 @@ export function PageTransitionProvider({
         rotation: 3,
         transformOrigin: "50% 50%",
       })
-      .to(mintRef.current, {
-        yPercent: 0,
-        xPercent: 0,
-        rotation: 0.4,
-        duration: duration,
-        ease: "power3.inOut",
-      }, 0)
-      .to(purpleRef.current, {
-        yPercent: 0,
-        xPercent: 0,
-        rotation: 0,
-        duration: duration * 0.9,
-        ease: "power3.out",
-      }, 0.06);
+      .to(
+        mintRef.current,
+        {
+          yPercent: 0,
+          xPercent: 0,
+          rotation: 0.4,
+          duration: duration,
+          ease: "power3.inOut",
+        },
+        0
+      )
+      .to(
+        purpleRef.current,
+        {
+          yPercent: 0,
+          xPercent: 0,
+          rotation: 0,
+          duration: duration * 0.9,
+          ease: "power3.out",
+        },
+        0.06
+      );
   };
 
   return (
@@ -120,11 +144,11 @@ export function PageTransitionProvider({
       {children}
 
       {/* Overlay Layer */}
-      {mounted && ( // ← マウント後だけ描画
+      {mounted && (
         <div
           ref={layerRef}
           className="fixed inset-0 z-[9999] pointer-events-none opacity-0"
-          aria-hidden="true" // ← 明示
+          aria-hidden="true"
         >
           <div className="absolute inset-0 overflow-hidden">
             {/* Mint panel */}
@@ -171,8 +195,12 @@ export function TransitionLink({
   return (
     <a
       href={href}
-      onClick={(e) => { e.preventDefault(); if (!playing) push(href); }}
+      onClick={(e) => {
+        e.preventDefault();
+        if (!playing) push(href);
+      }}
       className={className}
+      aria-disabled={playing ? true : undefined}
     >
       {children}
     </a>
@@ -190,7 +218,12 @@ export function TransitionButton({
 }) {
   const { push, playing } = usePageTransition();
   return (
-    <button onClick={() => !playing && push(href)} className={className}>
+    <button
+      onClick={() => !playing && push(href)}
+      className={className}
+      disabled={playing}
+      aria-busy={playing}
+    >
       {children}
     </button>
   );
