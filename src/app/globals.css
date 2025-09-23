@@ -36,6 +36,16 @@
   max-width: 100vh;
 }
 
+.glitch--mono,
+.glitch--mono::before,
+.glitch--mono::after {
+  color: inherit !important;        /* ← currentColor をそのまま使う */
+  text-shadow: none !important;     /* 影で色が変わらないように */
+  background: none !important;      /* 背景グラデ不要 */
+  -webkit-text-stroke: 0 !important;
+  mix-blend-mode: normal !important;
+}
+
 /* ===== ネオン管ヘッダー用 ===== */
 .contact-section .neon-tube-wrap {
   display: inline-block;

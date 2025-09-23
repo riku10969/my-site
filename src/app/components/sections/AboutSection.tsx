@@ -5,6 +5,8 @@ import MarqueeFrame from "../MarqueeFrame";
 import GlitchText from "../GlitchText";
 import SkillBarsAbout from "../SkillBarsAbout";
 import HobbySection from "../HobbySection";
+import AboutDetailsAccordion from "../AboutDetailsAccordion";
+import StrengthBlock from "../StrengthBlock";
 
 export default function AboutSection({ isLoaded }: { isLoaded: boolean }) {
   return (
@@ -66,6 +68,10 @@ export default function AboutSection({ isLoaded }: { isLoaded: boolean }) {
           両面から提案することが可能です。
           ユーザーにとって直感的で心地よい体験を生み出すことを目指しています。
         </p>
+
+        <AboutDetailsAccordion title="About 詳細をひらく">
+          <StrengthBlock />
+        </AboutDetailsAccordion>
 
         <div className="mt-16">
           <SkillBarsAbout />
