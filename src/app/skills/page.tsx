@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import React, { useEffect, useState } from "react";
+import Footer from "../components/Footer";
 
 /**
  * SkillSection
@@ -133,6 +134,7 @@ export default function SkillSection() {
             "radial-gradient(40% 30% at 20% 10%, rgba(44,205,185,.18), transparent 70%), radial-gradient(30% 25% at 80% 15%, rgba(109,50,194,.16), transparent 70%)",
         }}
       />
+      <Footer/>
     </section>
   );
 }

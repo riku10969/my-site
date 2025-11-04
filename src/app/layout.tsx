@@ -15,7 +15,7 @@ const jaro = Jaro({
 });
 
 export const metadata: Metadata = {
-  title: "My Site",
+  title: "Riku Ohashi Portfolio",
   description: "Next.js + TypeScript + Tailwind starter",
 };
 
