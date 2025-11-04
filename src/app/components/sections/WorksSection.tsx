@@ -108,6 +108,18 @@ export default function Works() {
           { src: "/works/graphic4-3.png", desc: "ポスター作成" },
           ],
         },
+        {
+          src: "/works/graphic5.png",
+          title: "The Sauna",
+          subtitle: "バナー制作",          // 作品全体のサブタイトル（任意）
+          description: "",
+          tools: ["Photoshop"],
+          period: "2025.10",
+          kind: "graphic",
+          images: [
+          { src: "/works/graphic5.png",   desc: "TheSaunaバナー制作",   subtitle: "課題" },
+          ],
+        },
       ],
     },
     {
@@ -144,7 +156,7 @@ export default function Works() {
           tools: ["Illustrator", "Figma", "React", "TypeScript"],
           period: "2025.06〜2025.07",
           kind: "web",
-          link: "https://nail-salon-gsnvip9rj-riku10969s-projects.vercel.app/",
+          link: "https://nail-salon-bb.vercel.app/",
           images: [
           { src: "/works/web2.png",   desc: "フェミニンをベースとしたネイルサロンBBのデザイン、サイト作成"},
           { src: "/works/web2-1.png", desc: "お店のコンセプト、ターゲットなどをヒアリングして企画書の作成" },
