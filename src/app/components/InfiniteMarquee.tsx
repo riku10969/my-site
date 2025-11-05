@@ -1,7 +1,7 @@
 "use client";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+
+import { useEffect, useLayoutEffect, useRef, useState, useMemo } from "react";
 import Image from "next/image";
-import { useMemo } from "react";
 
 type Props = {
   images: string[];
@@ -16,17 +16,16 @@ type Props = {
     index: number;
     src: string;
     width: number;
-    height: number;       // ← 追加
+    height: number;
     radius: number;
     onClick?: () => void;
   }) => React.ReactNode;
 };
 
-
 export default function InfiniteMarquee({
   images,
   direction = "left",
-  speed = 22,
+  speed = 40,
   itemWidth = 220,
   gap = 16,
   pauseOnHover = true,
@@ -36,23 +35,29 @@ export default function InfiniteMarquee({
 }: Props) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const [repeat, setRepeat] = useState(1);
-
   const [maxAspect, setMaxAspect] = useState(1); // height / width
+
+  // ─────────────────────────────
+  // 画像の縦横比を計算して最大値を取得
+  // ─────────────────────────────
   useEffect(() => {
     let alive = true;
+    const uniq = Array.from(new Set(images));
+
     Promise.all(
-      Array.from(new Set(images)).map(
+      uniq.map(
         (src) =>
           new Promise<number>((resolve) => {
             const img = new window.Image();
-            img.onload = () => resolve(img.naturalHeight / Math.max(1, img.naturalWidth));
+            img.onload = () =>
+              resolve(img.naturalHeight / Math.max(1, img.naturalWidth));
             img.onerror = () => resolve(1);
             img.src = src;
           })
       )
     ).then((ratios) => {
       if (!alive) return;
-      const m = Math.max(1, ...ratios); // たとえば縦長が混ざってたらここが最大
+      const m = Math.max(1, ...ratios);
       setMaxAspect(m);
     });
     return () => {
@@ -61,30 +66,45 @@ export default function InfiniteMarquee({
   }, [images]);
 
   const itemHeight = Math.round(itemWidth * maxAspect);
-
   const baseSet = Array.from({ length: repeat }).flatMap(() => images);
   const doubled = [...baseSet, ...baseSet];
-  
+
+  // ─────────────────────────────
+  // resize監視：repeatの更新を必要時だけ行う
+  // ─────────────────────────────
   useLayoutEffect(() => {
-  const el = hostRef.current;
-  if (!el) return;
+    const el = hostRef.current;
+    if (!el) return;
 
-  const ro = new ResizeObserver(() => {
-    const containerW = el.clientWidth;
+    let raf = 0;
+    const ro = new ResizeObserver(() => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const containerW = el.clientWidth;
+        const unit = itemWidth + gap;
+        const baseW = images.length * unit;
 
-    // 1カードの占有幅（カード幅 + ギャップ）
-    const unit = itemWidth + gap;
+        // 少し余裕を見て +unit しておく
+        const minRepeats = Math.max(2, Math.ceil((containerW + unit) / baseW));
 
-    // ベース配列1周の幅（最後の要素の右にも“ループ用”に gap を確保しておくと継ぎ目が滑らか）
-    const baseW = images.length * unit;
+        // 等値ガード：値が同じなら再setしない
+        setRepeat((prev) => (prev === minRepeats ? prev : minRepeats));
+      });
+    });
 
-    // 少し余裕を見て +unit しておくと「帯」が出にくい
-    const minRepeats = Math.max(2, Math.ceil((containerW + unit) / baseW));
-    setRepeat(minRepeats);
-  });
-  ro.observe(el);
-  return () => ro.disconnect();
-}, [images.length, itemWidth, gap]);
+    ro.observe(el);
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
+  }, [images.length, itemWidth, gap]);
+
+  // ─────────────────────────────
+  // ループ距離を px で固定
+  // ─────────────────────────────
+  const unit = itemWidth + gap;
+  const baseLen = baseSet.length;
+  const loopW = baseLen * unit;
 
   return (
     <div
@@ -93,32 +113,54 @@ export default function InfiniteMarquee({
       style={{ ["--gap" as any]: `${gap}px` }}
     >
       <div
-        className={`flex items-center will-change-transform whitespace-nowrap
-          ${direction === "left" ? "animate-marquee-left" : "animate-marquee-right"}`}
-        style={{ ["--duration" as any]: `${speed}s` } as React.CSSProperties}
+        className={`flex items-center will-change-transform whitespace-nowrap ${
+          direction === "left"
+            ? "animate-marquee-left"
+            : "animate-marquee-right"
+        } ${pauseOnHover ? "hover:[animation-play-state:paused]" : ""}`}
+        style={
+          {
+            ["--duration" as any]: `${speed}s`,
+            ["--loopW" as any]: `${loopW}px`,
+          } as React.CSSProperties
+        }
       >
         {doubled.map((src, i) => {
-        const origLen   = images.length;
-        const baseIndex = i % origLen;                 // ← 元配列で正規化
-        const onClick   = () => onItemClick?.(baseIndex, src);
+          const origLen = images.length;
+          const baseIndex = i % origLen;
+          const onClick = () => onItemClick?.(baseIndex, src);
 
           return (
             <div
-  key={`${src}-${i}`}
-  className="shrink-0"
-  style={{
-    width: itemWidth,
-    marginRight: i === doubled.length - 1 ? 0 : `${gap}px`,
-  }}
->
+              key={`${src}-${i}`}
+              className="shrink-0"
+              style={{
+                width: itemWidth,
+                marginRight: i === doubled.length - 1 ? 0 : `${gap}px`,
+              }}
+            >
               {renderItem ? (
-                renderItem({ index: baseIndex, src, width: itemWidth, height: itemHeight, radius, onClick })
+                renderItem({
+                  index: baseIndex,
+                  src,
+                  width: itemWidth,
+                  height: itemHeight,
+                  radius,
+                  onClick,
+                })
               ) : (
-                // デフォルト表示（枠だけ）
-                <button type="button" onClick={onClick} className="block w-full">
+                <button
+                  type="button"
+                  onClick={onClick}
+                  className="block w-full"
+                >
                   <div
                     className="relative bg-[#121212] rounded-2xl"
-                    style={{ width: itemWidth, height: itemHeight, borderRadius: radius }}
+                    style={{
+                      width: itemWidth,
+                      height: itemHeight,
+                      borderRadius: radius,
+                    }}
                   >
                     <Image
                       src={src}
@@ -140,15 +182,27 @@ export default function InfiniteMarquee({
 
       <style jsx global>{`
         @keyframes marquee-left {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(calc(var(--loopW) * -1));
+          }
         }
         @keyframes marquee-right {
-          0% { transform: translateX(-50%); }
-          100% { transform: translateX(0); }
+          0% {
+            transform: translateX(calc(var(--loopW) * -1));
+          }
+          100% {
+            transform: translateX(0);
+          }
         }
-        .animate-marquee-left  { animation: marquee-left  var(--duration, 22s) linear infinite; }
-        .animate-marquee-right { animation: marquee-right var(--duration, 22s) linear infinite; }
+        .animate-marquee-left {
+          animation: marquee-left var(--duration, 22s) linear infinite;
+        }
+        .animate-marquee-right {
+          animation: marquee-right var(--duration, 22s) linear infinite;
+        }
       `}</style>
     </div>
   );

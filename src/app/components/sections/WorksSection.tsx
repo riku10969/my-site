@@ -25,8 +25,8 @@ export default function Works() {
   // PC/スマホでカード幅・ギャップ・速度（小さいほど速い）を切替
   const cardW = isMobile ? 140 : 240;
   const gap   = isMobile ? 16  : 32;
-  const speedGraphic = isMobile ? 12 : 26; // s（duration）小さいほど速い
-  const speedWeb     = isMobile ? 12 : 24;
+  const speedGraphic = isMobile ? 12 : 50;
+  const speedWeb     = isMobile ? 12 : 50;
 
   const sections = useMemo((): Array<{
     key: SectionKey;
@@ -81,7 +81,7 @@ export default function Works() {
           ],
         },
         {
-          src: "/works/graphic3.png",
+          src: "/works/graphic3-2.png",
           title: "彩の森　Dog Run Party",
           subtitle: "ポスター　リデザイン",          // 作品全体のサブタイトル（任意）
           description: "全体の説明（フォールバック）",
