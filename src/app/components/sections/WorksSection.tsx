@@ -25,8 +25,8 @@ export default function Works() {
   // PC/スマホでカード幅・ギャップ・速度（小さいほど速い）を切替
   const cardW = isMobile ? 140 : 240;
   const gap   = isMobile ? 16  : 32;
-  const speedGraphic = isMobile ? 12 : 50;
-  const speedWeb     = isMobile ? 12 : 50;
+  const speedGraphic = isMobile ? 40 : 50;
+  const speedWeb     = isMobile ? 30 : 50;
 
   const sections = useMemo((): Array<{
     key: SectionKey;
