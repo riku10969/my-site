@@ -1,10 +1,10 @@
+// next.config.ts
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
-  eslint: { ignoreDuringBuilds: true },
+  // ⚠ 次の行は削除！！
+  // eslint: { ignoreDuringBuilds: true },
 };
-
-module.exports = nextConfig;
 
 export default nextConfig;
