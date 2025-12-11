@@ -13,10 +13,10 @@ function LogoStack() {
         UI UX
       </div>
       <div className="font-extrabold leading-none text-[28px] sm:text-[32px] md:text-[34px] -mt-1 rotate-3" style={{ color: "#35bcd0" }}>
-        Designer
+        Riku
       </div>
-      <div className="font-extrabold leading-none text-[24px] sm:text-[26px] md:text-[28px] -mt-1 -rotate-2" style={{ color: "#7b39b7" }}>
-        RIKU
+      <div className="font-extrabold leading-none text-[24px] sm:text-[26px] md:text-[28px] -mt-1 -rotate-2" style={{ color: "#f50404ff" }}>
+        FrontEnd
       </div>
     </div>
   );

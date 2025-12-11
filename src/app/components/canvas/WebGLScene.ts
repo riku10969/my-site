@@ -51,9 +51,9 @@ export function initWebGLScene(
     dprMax = mobile ? 1.2 : 1.6,
     showCenterImage = false,
     afterTyping = false,
-    imagePath = "/uiux-riku-transparent.png",
+    imagePath = "/RikuLogo3.png",
     noiseSpeed = mobile ? 40 : 60,
-    centerFracDesktop = 0.28,   // 画面幅の28%
+    centerFracDesktop = 0.77,   // 画面幅の28%
     centerFracMobile = 0.42,    // モバイルは少し小さめに 42% → 必要に応じて下げる/上げる
     pointerEventsThrough = true,
   } = opts ?? {};

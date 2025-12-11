@@ -58,7 +58,7 @@ export default function BackgroundStage() {
     const loadLogo = () => {
       if (logo) return;
       new THREE.TextureLoader().load(
-        "/uiux-riku-transparent.png",
+        "/RikuLogo3.png",
         (tex) => {
           logoMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0, depthWrite: false });
           logo = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 3.0), logoMat);

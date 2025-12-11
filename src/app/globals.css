@@ -325,6 +325,16 @@
 }
 
 
+/* スクロール連動アニメのベース */
+[data-scroll-animation] {
+  will-change: transform, opacity;
+}
+
+/* IntersectionObserverで .scroll-animated が付いたら発火 */
+.scroll-animated {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
 
 /* パララックス用のCSS変数（JSで更新） */
 .watermark{

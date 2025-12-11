@@ -57,10 +57,10 @@ export default function Header() {
         {/* Center-left: Logo */}
         <Link href="/" className="flex items-center">
           <Image
-            src="/uiux-riku-transparent.png"
+            src="/RikuLogo.png"
             alt="UI/UX RIKU"
-            width={140}
-            height={40}
+            width={160}
+            height={70}
             className="h-10 w-auto md:ml-14"
             priority
           />

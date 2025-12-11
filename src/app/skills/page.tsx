@@ -1,24 +1,17 @@
 "use client";
 
 import Image from "next/image";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Footer from "../components/Footer";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 
-/**
- * SkillSection
- * - 各ブロックの画像が2~3枚のスライドショーで切り替わるように改良。
- * - 数秒ごとに自動で次の画像へフェード。
- */
+gsap.registerPlugin(ScrollTrigger);
 
-// 各スキルのデータ
-const SKILLS: Array<{
-  id: string;
-  num: string;
-  title: string;
-  tagJa: string;
-  body: string;
-  imgs: string[]; // 複数画像
-}> = [
+/* ----------------------------------------------------
+   SKILL データ
+---------------------------------------------------- */
+const SKILLS = [
   {
     id: "branding",
     num: "01",
@@ -43,7 +36,7 @@ const SKILLS: Array<{
     title: "FrontEnd",
     tagJa: "フロントエンド開発",
     body:
-      "GSAPやThree.jsを用いたWebGLアニメーションの実装、ローダーやテキストへの動きを取り入れたUI／UX演出を設計。FigmaデザインをReactコンポーネントとして忠実に再現できます。実務でのReactフロントエンド開発経験を活かし、UI／UXを重視したサイトの設計・実装が可能です。",
+      "GSAPやThree.jsを用いたWebGLアニメーションの実装、ローダーやテキストへの動きを取り入れたUI／UX演出を設計。FigmaデザインをReactコンポーネントとして忠実に再現できます。",
     imgs: ["/skill/frontend1.jpg", "/skill/frontend2.jpg"],
   },
   {
@@ -57,68 +50,187 @@ const SKILLS: Array<{
   },
 ];
 
-// 単一ブロック内のスライドショー画像コンポーネント
+/* ----------------------------------------------------
+   SlideShow
+   - 画像切り替えはシンプルに CSS の opacity トランジション
+   - 画像はコンテナいっぱいに object-cover でフィット
+---------------------------------------------------- */
 function SlideShow({ imgs }: { imgs: string[] }) {
   const [index, setIndex] = useState(0);
+
   useEffect(() => {
+    if (imgs.length <= 1) return;
     const timer = setInterval(() => {
       setIndex((prev) => (prev + 1) % imgs.length);
-    }, 4000); // 4秒ごと切替
+    }, 4000);
     return () => clearInterval(timer);
   }, [imgs.length]);
 
   return (
-    <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl bg-white/5 ring-1 ring-white/10 shadow-2xl">
+    <div
+      className="
+        relative w-full
+        h-[220px] md:h-[280px] lg:h-[340px]
+        overflow-hidden rounded-3xl
+        bg-black/60
+        ring-1 ring-white/10 shadow-2xl
+        js-media
+      "
+    >
       {imgs.map((src, i) => (
         <Image
           key={src}
           src={src}
           alt="skill image"
           fill
-          sizes="(min-width: 1024px) 560px, 90vw"
-          className={`object-cover transition-opacity duration-1000 ${i === index ? "opacity-100" : "opacity-0"}`}
+          sizes="(min-width:1024px) 50vw, 100vw"
+          className={`
+            object-cover object-center
+            transition-opacity duration-700
+            ${i === index ? "opacity-100" : "opacity-0"}
+          `}
         />
       ))}
     </div>
   );
 }
 
+/* ----------------------------------------------------
+   SkillSection 本体
+   - GSAP はスクロール連動（カード＆テキスト）だけに使用
+---------------------------------------------------- */
 export default function SkillSection() {
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (!sectionRef.current) return;
+
+    const ctx = gsap.context(() => {
+      // ヘッダー出現
+      gsap.from(".js-skill-header", {
+        opacity: 0,
+        y: 60,
+        duration: 1,
+        ease: "power3.out",
+        scrollTrigger: {
+          trigger: ".js-skill-header",
+          start: "top 85%",
+        },
+      });
+
+      const cards = gsap.utils.toArray<HTMLElement>(".js-skill-card");
+
+      const patterns = [
+        {
+          mediaFrom: { opacity: 0, y: 120, scale: 1.05 },
+          mediaTo: { opacity: 1, y: 0, scale: 1, duration: 1, ease: "power3.out" },
+          cardFrom: { opacity: 0, y: 80 },
+          cardTo: { opacity: 1, y: 0, duration: 0.9, ease: "power3.out" },
+        },
+        {
+          mediaFrom: { opacity: 0, x: -140, scale: 1.03 },
+          mediaTo: { opacity: 1, x: 0, scale: 1, duration: 1, ease: "power3.out" },
+          cardFrom: { opacity: 0, x: -80 },
+          cardTo: { opacity: 1, x: 0, duration: 0.9, ease: "power3.out" },
+        },
+        {
+          mediaFrom: { opacity: 0, x: 140, scale: 1.03 },
+          mediaTo: { opacity: 1, x: 0, scale: 1, duration: 1, ease: "power3.out" },
+          cardFrom: { opacity: 0, x: 80 },
+          cardTo: { opacity: 1, x: 0, duration: 0.9, ease: "power3.out" },
+        },
+      ];
+
+      cards.forEach((card, index) => {
+        const media = card.querySelector(".js-media");
+        const texts = card.querySelectorAll(".js-skill-text");
+        const effect = patterns[index % patterns.length];
+
+        // カード全体の出現／フェードアウト（逆再生）
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: card,
+            start: "top 85%",
+            end: "top 30%",
+            toggleActions: "play reverse play reverse",
+          },
+        });
+
+        tl.fromTo(card, effect.cardFrom, effect.cardTo);
+
+        if (media) {
+          tl.fromTo(media, effect.mediaFrom, effect.mediaTo, "-=0.6");
+        }
+
+        // テキストは少し遅れてバラ出し
+        if (texts.length) {
+          gsap.from(texts, {
+            opacity: 0,
+            y: 40,
+            duration: 0.7,
+            ease: "power3.out",
+            stagger: 0.1,
+            scrollTrigger: {
+              trigger: card,
+              start: "top 80%",
+            },
+          });
+        }
+      });
+    }, sectionRef);
+
+    return () => ctx.revert();
+  }, []);
+
   return (
-    <section id="skill" className="relative w-full bg-[#121314] text-white">
+    <section
+      ref={sectionRef}
+      id="skill"
+      className="relative w-full bg-[#121314] text-white"
+    >
       <div className="mx-auto max-w-6xl px-5 py-20 md:px-8 lg:px-10 lg:py-24">
-        <header className="mb-14 md:mb-20">
-          <p className="mb-2 text-sm tracking-[0.18em] text-gray-300">スキル詳細</p>
+        {/* ヘッダー */}
+        <header className="mb-14 md:mb-20 js-skill-header">
           <h2 className="text-5xl font-extrabold tracking-tight md:text-6xl">
-            <span className="[text-shadow:_0_0_16px_rgba(109,50,194,.25)]">Skill</span>
+            <span className="[text-shadow:_0_0_16px_rgba(109,50,194,.25)]">
+              Skill
+            </span>
           </h2>
+          <p className="mb-2 text-sm tracking-[0.18em] text-gray-300">
+            スキル詳細
+          </p>
         </header>
 
         <div className="space-y-20 md:space-y-28">
-          {SKILLS.map((item, i) => {
-            const isEven = i % 2 === 1;
+          {SKILLS.map((item, index) => {
+            const isEven = index % 2 === 1;
+
             return (
               <article
                 key={item.id}
-                className="grid items-center gap-8 md:grid-cols-2 md:gap-10 lg:gap-14"
+                className="js-skill-card grid items-center gap-10 md:grid-cols-2"
               >
                 <div className={isEven ? "md:order-2" : ""}>
                   <SlideShow imgs={item.imgs} />
                 </div>
 
                 <div className={isEven ? "md:order-1" : ""}>
-                  <div className="mb-4 flex items-baseline gap-4 md:mb-5">
+                  <div className="mb-5 flex items-center gap-4 js-skill-text">
                     <span className="font-[100] tracking-widest text-gray-300/90">
-                      <span className="neon-cyan text-3xl md:text-4xl">{item.num}</span>
+                      <span className="neon-cyan text-4xl md:text-5xl">
+                        {item.num}
+                      </span>
                     </span>
-                    <h3 className="text-3xl font-bold md:text-4xl">
+                    <h3 className="text-3xl font-bold md:text-4xl lg:text-5xl">
                       {item.title}
                     </h3>
                   </div>
-                  <p className="mb-3 text-xs font-semibold tracking-wider text-[#6D32C2] md:text-sm">
+                  <p className="mb-4 text-sm font-semibold tracking-wider text-[#6D32C2] md:text-base js-skill-text">
                     {item.tagJa}
                   </p>
-                  <p className="max-w-[54ch] leading-8 text-gray-200/95">{item.body}</p>
+                  <p className="max-w-[60ch] text-sm leading-8 text-gray-200/95 md:text-base md:leading-9 lg:text-lg js-skill-text">
+                    {item.body}
+                  </p>
                 </div>
               </article>
             );
@@ -126,15 +238,7 @@ export default function SkillSection() {
         </div>
       </div>
 
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 opacity-40 [mask-image:radial-gradient(60%_60%_at_50%_20%,black,transparent)]"
-        style={{
-          background:
-            "radial-gradient(40% 30% at 20% 10%, rgba(44,205,185,.18), transparent 70%), radial-gradient(30% 25% at 80% 15%, rgba(109,50,194,.16), transparent 70%)",
-        }}
-      />
-      <Footer/>
+      <Footer />
     </section>
   );
 }
