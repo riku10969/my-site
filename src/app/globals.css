@@ -348,6 +348,102 @@
   .watermark{ transform:none!important }
 }
 
+@keyframes g-fade {
+  0%, 80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.glitch.on::before{
+  color:#ff4;
+  animation:
+    g-slice .55s steps(10) both,
+    g-shift .55s steps(10) both,
+    g-fade  .55s linear both;
+}
+
+.glitch.on::after{
+  color:#3df;
+  animation:
+    g-slice .55s steps(10) reverse both,
+    g-shift .55s steps(10) reverse both,
+    g-fade  .55s linear both;
+}
+
+/* ===== Warp (one-shot on scroll) ===== */
+.warp-image{
+  position: relative;
+  background-image: var(--img);
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  filter: saturate(1.05) contrast(1.06);
+}
+
+.warp-image::before,
+.warp-image::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background-image: var(--img);
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  opacity:0;
+  pointer-events:none;
+}
+
+@keyframes warp-a{
+  0%   { opacity:0; transform:none; filter:none; clip-path: inset(0 0 0 0); }
+  10%  { opacity:.95; transform: translate(2px,-1px) skewX(-10deg) scaleX(1.02);
+         filter: blur(.6px) contrast(1.2); clip-path: inset(8% 0 62% 0); }
+  26%  { opacity:.9;  transform: translate(-3px,1px) skewX(14deg) scaleY(1.01);
+         filter: blur(.9px) saturate(1.2); clip-path: inset(34% 0 40% 0); }
+
+  /* ✅ ここで“歪みをキープ” */
+  60%  { opacity:.8;  transform: translate(1px,0) skewY(-6deg) scaleX(.99);
+         filter: blur(.6px) saturate(1.1); clip-path: inset(62% 0 12% 0); }
+
+  /* ✅ ゆっくりフェードアウト */
+  85%  { opacity:.25; transform: translate(.5px,0) skewY(-2deg) scaleX(1.0);
+         filter: blur(.2px); clip-path: inset(0 0 0 0); }
+
+  100% { opacity:0; transform:none; filter:none; clip-path: inset(0 0 0 0); }
+}
+
+@keyframes warp-b{
+  0%   { opacity:0; transform:none; filter:none; clip-path: inset(0 0 0 0); }
+  12%  { opacity:.9; transform: translate(-2px,1px) skewX(12deg) scale(1.01);
+         filter: blur(.7px) contrast(1.15); clip-path: inset(0 0 78% 0); }
+  30%  { opacity:.85; transform: translate(3px,-2px) skewY(9deg) scaleX(1.03);
+         filter: blur(1px) saturate(1.15); clip-path: inset(46% 0 28% 0); }
+
+  /* ✅ ここで“歪みをキープ” */
+  62%  { opacity:.75; transform: translate(-1px,2px) skewX(-8deg) scaleY(.99);
+         filter: blur(.7px) saturate(1.08); clip-path: inset(76% 0 0 0); }
+
+  88%  { opacity:.2; transform: translate(-.5px,1px) skewX(-2deg) scaleY(1);
+         filter: blur(.2px); clip-path: inset(0 0 0 0); }
+
+  100% { opacity:0; transform:none; filter:none; clip-path: inset(0 0 0 0); }
+}
+
+/* ✅ 長めに */
+.warp-on::before{
+  mix-blend-mode: screen;
+  animation: warp-a 2.2s steps(12) both;
+}
+.warp-on::after{
+  mix-blend-mode: screen;
+  animation: warp-b 2.2s steps(12) both;
+}
+
+
+/* アクセシビリティ */
+@media (prefers-reduced-motion: reduce){
+  .warp-on::before,
+  .warp-on::after{ animation: none !important; opacity:0 !important; }
+}
+
 
 @theme inline {
   --color-background: var(--background);

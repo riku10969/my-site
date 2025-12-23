@@ -1,7 +1,6 @@
 "use client";
 
-import MarqueeFrame from "../MarqueeFrame";
-// import FadeInText from "../FedeInText";
+import React, { useEffect, useRef, useState } from "react";
 import GlitchText from "../GlitchText";
 import SkillBarsAbout from "../SkillBarsAbout";
 import HobbySection from "../HobbySection";
@@ -9,47 +8,66 @@ import AboutDetailsAccordion from "../AboutDetailsAccordion";
 import StrengthBlock from "../StrengthBlock";
 
 export default function AboutSection({ isLoaded }: { isLoaded: boolean }) {
-  return (
+  const imgRef = useRef<HTMLDivElement | null>(null);
+  const [imgWarpOn, setImgWarpOn] = useState(false);
+
+  useEffect(() => {
+    const el = imgRef.current;
+    if (!el) return;
+
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) {
+          // ✅ 1回だけ
+          setImgWarpOn(true);
+          io.disconnect();
+        }
+      },
+      { threshold: 0.35 }
+    );
+
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+   return (
     <section className="w-full bg-[#121316] text-white">
-      <div className="max-w-[1100px] mx-auto px-6 pt-25 pb-14">
-        {/* 上段 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-          <div className="leading-[1.02] space-y-1">
-            <GlitchText
-              key={`riku-${isLoaded ? "on" : "off"}`}
-              as="div"
-              text="Riku"
-              delaySec={0.5}
-              className="text-[48px] md:text-[72px] font-serif"
-              trigger="scroll"
-              armed={isLoaded}    
+      <div className="w-full max-w-[1600px] mx-auto px-6 md:px-10 lg:px-14 pt-24 pb-14">
+                 
+
+          {/* ✅ デカい画像 + “ゆがみ”グリッチ（スクロールで1回のみ） + 下に名前 */}
+          <div className="flex flex-col items-center">
+            <div
+              ref={imgRef}
+              className={[
+                "warp-image",
+                "w-[80%] mx-auto", // ✅ 横幅80%（右カラム内）+ 中央寄せ
+                "max-w-[1600px] rounded-xl overflow-hidden bg-[#e9ebee]",
+                "h-[260px] sm:h-[320px] md:h-[520px] lg:h-[620px]",
+                imgWarpOn ? "warp-on" : "",
+              ].join(" ")}
+              style={
+                {
+                  ["--img" as any]: "url(/projects/project1.jpg)",
+                } as React.CSSProperties
+              }
+              aria-label="About visual"
+              role="img"
             />
-            <br />
+
+            {/* ✅ 画像の下に GlitchText（グリッチ消さない） */}
             <GlitchText
-              key={`ohashi-${isLoaded ? "on" : "off"}`}
+              key={`imgname-${isLoaded ? "on" : "off"}`}
               as="div"
-              text="Ohashi"
-              delaySec={0.5}
-              className="text-[48px] md:text-[72px] font-serif"
+              text="Riku Ohashi"
+              delaySec={0.55}
+              className="font-serif mt-4 text-[50x] md:text-[50px] tracking-[0.12em] text-white/90"
               trigger="scroll"
-              armed={isLoaded}    
+              armed={isLoaded}
             />
           </div>
-
-          <div
-            className="w-full aspect-[16/9] rounded-md bg-[#e9ebee]"
-            style={{
-              backgroundPosition: "center",
-              backgroundSize: "cover",
-              backgroundRepeat: "no-repeat",
-              backgroundImage: "url(/projects/project1.jpg)",
-            }}
-            aria-label="About visual"
-            role="img"
-          />
-        </div>
-
-        {/* 下段：プロフィール */}
+      
+        {/* 以下そのまま */}
         <h2 className="mt-12 text-[20px] md:text-[22px] font-semibold">
           <GlitchText
             key={`profile-${isLoaded ? "on" : "off"}`}
@@ -57,16 +75,15 @@ export default function AboutSection({ isLoaded }: { isLoaded: boolean }) {
             text="大橋 陸　1999年生まれ、埼玉県出身"
             delaySec={1}
             trigger="scroll"
-            armed={isLoaded}    
+            armed={isLoaded}
           />
         </h2>
 
-        <p className="mt-4 text-[14px] md:text-[15px] leading-7 text-[#d6d8de]">
+        <p className="mt-4 text-[20px] md:text-[20px] leading-7 text-[#d6d8de]">
           高校卒業後、職人として現場で働いた経験から、丁寧さと粘り強さを大切にする姿勢を培いました。
           その後、フロントエンドエンジニアとして実務を経験し、Reactを中心にWebサイトの開発を担当。
           デジリグに入校してデザインを体系的に学び、現在は<strong>「デザイン × 実装」</strong>
-          両面から提案することが可能です。
-          ユーザーにとって直感的で心地よい体験を生み出すことを目指しています。
+          両面から提案することが可能です。ユーザーにとって直感的で心地よい体験を生み出すことを目指しています。
         </p>
 
         <AboutDetailsAccordion title="About 詳細をひらく">
