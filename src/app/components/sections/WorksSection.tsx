@@ -1,5 +1,6 @@
 "use client";
 import { useMemo, useState, useCallback, useEffect } from "react";
+import { createPortal } from "react-dom";
 import InfiniteMarquee from "../InfiniteMarquee";
 import CurtainModal, { WorkItem } from "../CurtainModal";
 import FadeInText from "../FadeInText";
@@ -95,14 +96,14 @@ export default function Works() {
         },
         {
           src: "/works/graphic4.png",
-          title: "Spece Kelvin",
+          title: "Space Kelvin",
           subtitle: "広告物作成",          // 作品全体のサブタイトル（任意）
           description: "",
           tools: ["Illustrator","Photoshop"],
           period: "2025.02",
           kind: "graphic",
           images: [
-          { src: "/works/graphic4.png",   desc: "宇宙をテーマとしたアイス屋さんの広告物作成",   subtitle: "架空店" },
+          { src: "/works/graphic4.png",   desc: "宇宙をテーマとしたアイス屋さんの広告物作成" },
           { src: "/works/graphic4-1.png", desc: "企画書作成" },
           { src: "/works/graphic4-2.png", desc: "ロゴの制作" },
           { src: "/works/graphic4-3.png", desc: "ポスター作成" },
@@ -112,7 +113,7 @@ export default function Works() {
           src: "/works/graphic5.png",
           title: "The Sauna",
           subtitle: "バナー制作",          // 作品全体のサブタイトル（任意）
-          description: "",
+          description: "デジリグ課題の一環として、長野県にあるプライベートサウナThe Saunaのバナー制作",
           tools: ["Photoshop"],
           period: "2025.10",
           kind: "graphic",
@@ -136,9 +137,9 @@ export default function Works() {
       items: [
         {
           src: "/works/web1.png",
-          title: "デジリグHP （課題）",
+          title: "デジリグHP デザイン制作",
           subtitle: "広告物作成",          // 作品全体のサブタイトル（任意）
-          description: "",
+          description: "デジリグ課題の一環として、デジリグHPのデザインをFigmaで制作",
           tools: ["Figma"],
           period: "2025.04",
           kind: "web",
@@ -152,7 +153,7 @@ export default function Works() {
           src: "/works/web2.png",
           title: "ネイルサロン　BB",
           subtitle: "Web作成",          // 作品全体のサブタイトル（任意）
-          description: "",
+          description: "ネイルサロンBBのデザイン、サイト作成",
           tools: ["Illustrator", "Figma", "React", "TypeScript"],
           period: "2025.06〜2025.07",
           kind: "web",
@@ -243,15 +244,15 @@ export default function Works() {
   }, [open, currentKey, getSection, clampIndex]);
 
   return (
-    <section className="bg-[#1f1f1f] text-white py-16">
+    <section className="bg-[#1f1f1f] text-white py-12 md:py-16 px-4 md:px-6">
       <span className="font-display">
-      <h2 className="text-center mb-10">
+      <h2 className="text-center mb-8 md:mb-10">
         <FadeInText
           text="Works"
           from="right"
           stagger={0.08}
           baseDelay={0.3}
-          className="text-4xl md:text-5xl font-display"
+          className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-display"
         />
       </h2>
       </span>
@@ -259,14 +260,14 @@ export default function Works() {
       {sections.map((sec) => {
         const images = sec.items.map(i => i.src);
         return (
-          <div key={sec.key} className="mb-12">
-            <h3 className={`${sec.accentClass} text-5xl font-serif ml-6 mb-5`}>
+          <div key={sec.key} className="mb-10 md:mb-12">
+            <h3 className={`${sec.accentClass} text-3xl sm:text-4xl md:text-5xl font-serif ml-6 md:ml-14 mb-4 md:mb-5`}>
               <FadeInText
                 text={sec.label}
                 from="left"
                 stagger={0.08}
                 baseDelay={0.3}
-                className="text-4xl md:text-5xl font-display"
+                className="text-3xl sm:text-4xl md:text-5xl font-display"
               />
             </h3>
 
@@ -323,12 +324,16 @@ export default function Works() {
         );
       })}
 
-      <CurtainModal
-        open={open}
-        item={resolveCurrentItem()}
-        onRequestClose={() => setOpen(false)}
-        duration={800}
-      />
+      {typeof document !== "undefined" &&
+        createPortal(
+          <CurtainModal
+            open={open}
+            item={resolveCurrentItem()}
+            onRequestClose={() => setOpen(false)}
+            duration={800}
+          />,
+          document.body
+        )}
     </section>
   );
 }

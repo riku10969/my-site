@@ -60,17 +60,15 @@ function useTilt<T extends HTMLElement>({
 }
 
 /* ==================
-   ZoomImageModal（正方形版に置換）
+   ZoomImageModal（タイルと同じサイズ・スムーズな開閉）
    ================== */
 
-function computeSquareSide(vw: number, vh: number) {
-  const SIDE_VW = 0.8;  // 横は 80vw まで
-  const SIDE_VH = 0.65;  // 縦は 80vh まで
-  const MAX = 1000;     // 上限 px（好みで調整）
-  const MIN = 280;      // 下限 px（スマホで小さすぎ防止）
-  const side = Math.min(vw * SIDE_VW, vh * SIDE_VH, MAX);
-  return Math.max(MIN, Math.round(side));
-}
+const EASE_SMOOTH = "cubic-bezier(0.33, 1, 0.68, 1)";
+const DURATION_OPEN_MS = 420;
+const DURATION_CLOSE_MS = 380;
+const DURATION_BACKDROP_MS = 280;
+const MODAL_MAX_SIZE = 520;
+const MODAL_VIEWPORT_RATIO = 0.82;
 
 function ZoomImageModal({
   open,
@@ -79,63 +77,48 @@ function ZoomImageModal({
   onRequestClose,
 }: {
   open: boolean;
-  item: { src: string; alt: string; label?: string; description?: string } | null;
+  item: { src: string; alt: string; label?: string; description?: string; category?: string; meta?: string[] } | null;
   originEl: HTMLElement | null;
   onRequestClose: () => void;
 }) {
   const [mounted, setMounted] = useState(false);
   const [animating, setAnimating] = useState(false);
-  const [visible, setVisible] = useState(false); // フレーム＆UIの可視
-  const [box, setBox] = useState<number | null>(null); // 正方形の一辺
+  const [visible, setVisible] = useState(false);
+  const [originSize, setOriginSize] = useState<{ w: number; h: number } | null>(null);
+  const [modalSize, setModalSize] = useState<{ w: number; h: number } | null>(null);
   const cloneRef = useRef<HTMLImageElement | null>(null);
   const backdropRef = useRef<HTMLDivElement | null>(null);
 
   const prefersNoMotion =
     typeof window !== "undefined" &&
-    window.matchMedia &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
   useEffect(() => setMounted(true), []);
 
-  // 一辺を算出（オープン時＆リサイズ時）
-  useEffect(() => {
-    if (!open) return;
-    const recalc = () => {
-      const { innerWidth: vw, innerHeight: vh } = window;
-      setBox(computeSquareSide(vw, vh));
-    };
-    recalc();
-    window.addEventListener("resize", recalc);
-    return () => window.removeEventListener("resize", recalc);
-  }, [open]);
-
-  // Escで閉じる＋スクロール固定
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
     document.addEventListener("keydown", onKey);
-    const { style } = document.documentElement;
-    const prev = style.overflow;
-    style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKey);
-      style.overflow = prev;
+      document.documentElement.style.overflow = "";
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  const playOpen = useCallback(async () => {
-    if (!item || !originEl || box == null) return;
+  const playOpen = useCallback(() => {
+    if (!item || !originEl) return;
     const rect = originEl.getBoundingClientRect();
     const { innerWidth: vw, innerHeight: vh } = window;
+    const size = Math.min(MODAL_MAX_SIZE, vw * MODAL_VIEWPORT_RATIO, vh * MODAL_VIEWPORT_RATIO);
+    const modalW = Math.round(size);
+    const modalH = Math.round(size);
+    const targetX = Math.round((vw - modalW) / 2);
+    const targetY = Math.round((vh - modalH) / 2);
 
-    // 目標位置（中央の正方形）
-    const targetW = box;
-    const targetH = box;
-    const targetX = Math.round((vw - targetW) / 2);
-    const targetY = Math.round((vh - targetH) / 2);
+    setOriginSize({ w: rect.width, h: rect.height });
+    setModalSize({ w: modalW, h: modalH });
 
-    // クローン（遷移中だけ使用）
     const clone = document.createElement("img");
     clone.src = item.src;
     clone.alt = item.alt;
@@ -153,14 +136,13 @@ function ZoomImageModal({
     } as CSSStyleDeclaration);
     cloneRef.current = clone;
 
-    // バックドロップ
     const backdrop = document.createElement("div");
     Object.assign(backdrop.style, {
       position: "fixed",
       inset: "0",
       background: "rgba(0,0,0,0)",
       backdropFilter: "blur(0px)",
-      transition: prefersNoMotion ? "none" : "background 240ms ease, backdrop-filter 240ms ease",
+      transition: prefersNoMotion ? "none" : `background ${DURATION_BACKDROP_MS}ms ${EASE_SMOOTH}, backdrop-filter ${DURATION_BACKDROP_MS}ms ${EASE_SMOOTH}`,
       zIndex: "900",
     } as CSSStyleDeclaration);
     backdropRef.current = backdrop;
@@ -171,12 +153,11 @@ function ZoomImageModal({
     setAnimating(true);
     requestAnimationFrame(() => {
       if (!prefersNoMotion) {
-        backdrop.style.background = "rgba(0,0,0,.70)";
-        backdrop.style.backdropFilter = "blur(2px)";
+        backdrop.style.background = "rgba(0,0,0,.72)";
+        backdrop.style.backdropFilter = "blur(4px)";
       } else {
-        backdrop.style.background = "rgba(0,0,0,.70)";
+        backdrop.style.background = "rgba(0,0,0,.72)";
       }
-
       clone
         .animate(
           [
@@ -185,36 +166,35 @@ function ZoomImageModal({
               top: rect.top + "px",
               width: rect.width + "px",
               height: rect.height + "px",
-              borderRadius: clone.style.borderRadius,
+              borderRadius: getComputedStyle(originEl).borderRadius || "16px",
             },
             {
               left: targetX + "px",
               top: targetY + "px",
-              width: targetW + "px",
-              height: targetH + "px",
-              borderRadius: "16px",
+              width: modalW + "px",
+              height: modalH + "px",
+              borderRadius: "20px",
             },
           ],
-          prefersNoMotion
-            ? 0
-            : { duration: 360, easing: "cubic-bezier(.2,.8,.2,1)", fill: "forwards" }
+          prefersNoMotion ? 0 : { duration: DURATION_OPEN_MS, easing: EASE_SMOOTH, fill: "forwards" }
         )
         .finished.then(() => {
           setAnimating(false);
-          setVisible(true); // 正方形フレームUIを表示
-        // ← 追加：クローンを除去して二重表示を防ぐ
-        if (cloneRef.current) {
-          cloneRef.current.remove();
-          cloneRef.current = null;
-        }
+          setVisible(true);
+          if (cloneRef.current) {
+            cloneRef.current.remove();
+            cloneRef.current = null;
+          }
         });
     });
-  }, [item, originEl, box, prefersNoMotion]);
+  }, [item, originEl, prefersNoMotion]);
 
   const playClose = useCallback(async () => {
-    if (!item || !originEl || box == null) return;
+    if (!item || !originEl || !originSize || !modalSize) return;
     const rect = originEl.getBoundingClientRect();
     const { innerWidth: vw, innerHeight: vh } = window;
+    const startX = Math.round((vw - modalSize.w) / 2);
+    const startY = Math.round((vh - modalSize.h) / 2);
 
     let clone = cloneRef.current;
     if (!clone) {
@@ -226,51 +206,35 @@ function ZoomImageModal({
       cloneRef.current = clone;
     }
 
-    // UI を隠してクローンで戻す
     setVisible(false);
 
-    const targetW = box;
-    const targetH = box;
-    const targetX = Math.round((vw - targetW) / 2);
-    const targetY = Math.round((vh - targetH) / 2);
-
     Object.assign(clone.style, {
-      left: targetX + "px",
-      top: targetY + "px",
-      width: targetW + "px",
-      height: targetH + "px",
-      objectFit: "contain",
-      borderRadius: "16px",
+      left: startX + "px",
+      top: startY + "px",
+      width: modalSize.w + "px",
+      height: modalSize.h + "px",
+      objectFit: "cover",
+      borderRadius: "20px",
       boxShadow: "0 20px 60px rgba(0,0,0,.45)",
     } as CSSStyleDeclaration);
 
     const backdrop = backdropRef.current;
-
     setAnimating(true);
+
     await Promise.all([
-      clone
-        .animate(
-          [
-            {
-              left: targetX + "px",
-              top: targetY + "px",
-              width: targetW + "px",
-              height: targetH + "px",
-              borderRadius: "16px",
-            },
-            {
-              left: rect.left + "px",
-              top: rect.top + "px",
-              width: rect.width + "px",
-              height: rect.height + "px",
-              borderRadius: getComputedStyle(originEl).borderRadius || "16px",
-            },
-          ],
-          prefersNoMotion
-            ? 0
-            : { duration: 320, easing: "cubic-bezier(.2,.8,.2,1)", fill: "forwards" }
-        )
-        .finished,
+      clone.animate(
+        [
+          { left: startX + "px", top: startY + "px", width: modalSize.w + "px", height: modalSize.h + "px", borderRadius: "20px" },
+          {
+            left: rect.left + "px",
+            top: rect.top + "px",
+            width: rect.width + "px",
+            height: rect.height + "px",
+            borderRadius: getComputedStyle(originEl).borderRadius || "16px",
+          },
+        ],
+        prefersNoMotion ? 0 : { duration: DURATION_CLOSE_MS, easing: EASE_SMOOTH, fill: "forwards" }
+      ).finished,
       new Promise<void>((resolve) => {
         if (!backdrop) return resolve();
         if (prefersNoMotion) {
@@ -278,15 +242,13 @@ function ZoomImageModal({
           backdrop.style.backdropFilter = "blur(0px)";
           resolve();
         } else {
-          backdrop
-            .animate(
-              [
-                { background: "rgba(0,0,0,.70)", backdropFilter: "blur(2px)" },
-                { background: "rgba(0,0,0,0)", backdropFilter: "blur(0px)" },
-              ],
-              { duration: 240, easing: "linear", fill: "forwards" }
-            )
-            .finished.then(() => resolve());
+          backdrop.animate(
+            [
+              { background: "rgba(0,0,0,.72)", backdropFilter: "blur(4px)" },
+              { background: "rgba(0,0,0,0)", backdropFilter: "blur(0px)" },
+            ],
+            { duration: DURATION_BACKDROP_MS, easing: EASE_SMOOTH, fill: "forwards" }
+          ).finished.then(() => resolve());
         }
       }),
     ]);
@@ -298,60 +260,68 @@ function ZoomImageModal({
       backdropRef.current = null;
     }
     setAnimating(false);
+    setOriginSize(null);
+    setModalSize(null);
     onRequestClose();
-  }, [item, originEl, box, onRequestClose, prefersNoMotion]);
+  }, [item, originEl, originSize, modalSize, onRequestClose, prefersNoMotion]);
 
   const close = useCallback(() => {
     if (animating) return;
     playClose();
   }, [animating, playClose]);
 
-  // オープン時にアニメ開始
   useEffect(() => {
-    if (open && item && originEl && box != null && mounted) {
-      playOpen();
-    }
-  }, [open, item, originEl, box, mounted, playOpen]);
+    if (open && item && originEl && mounted) playOpen();
+  }, [open, item, originEl, mounted, playOpen]);
 
-  if (!mounted || !open || !item || box == null) return null;
+  if (!mounted || !open || !item) return null;
 
-  // 表示UI（正方形フレーム内に object-contain）
+  const category = item.category ?? item.alt.toUpperCase().replace(/\s+/g, " ");
+  const hasMeta = item.meta && item.meta.length > 0;
+
   return createPortal(
     <>
       <div className="fixed inset-0 z-[950]" aria-modal="true" role="dialog" onClick={close} />
-      {visible && (
+      {visible && modalSize && (
         <div className="fixed inset-0 z-[980] flex items-center justify-center pointer-events-none" aria-hidden>
           <div
-            className="relative rounded-2xl overflow-hidden ring-1 ring-white/15 shadow-2xl bg-black/60 backdrop-blur-[2px] pointer-events-auto"
-            style={{ width: `${box}px` }}
+            className="relative rounded-2xl overflow-hidden ring-1 ring-white/15 shadow-2xl bg-black/70 backdrop-blur-[2px] pointer-events-auto flex flex-col max-w-[90vw]"
+            style={{ width: modalSize.w }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* 画像エリア（正方形） */}
-            <div className="relative" style={{ width: `${box}px`, height: `${box}px` }}>
+            <div className="relative shrink-0" style={{ width: modalSize.w, height: modalSize.h }}>
               <NextImage
                 src={item.src}
                 alt={item.alt}
                 fill
-                className="object-contain"
-                sizes={`${box}px`}
+                className="object-cover"
+                sizes={`${modalSize.w}px`}
                 priority
               />
             </div>
 
-            {/* キャプション（画像サイズに影響させない：必要なら削除可） */}
-            {(item.label || item.description) && (
-              <div className="px-6 py-4 text-center bg-black/70 text-white space-y-2">
-                {item.label && <h4 className="text-lg font-semibold">{item.label}</h4>}
-                {item.description && (
-                  <p className="text-sm leading-relaxed text-white/85">{item.description}</p>
-                )}
+            <div className="px-6 py-5 text-center space-y-3 min-w-0">
+              <div className="text-xl md:text-2xl uppercase tracking-[0.15em] text-white/50 font-medium">
+                {category}
               </div>
-            )}
+              {item.description && (
+                <p className="text-lg md:text-xl leading-relaxed text-white/85">
+                  {item.description}
+                </p>
+              )}
+              {hasMeta && (
+                <div className="text-base text-white/40 font-mono space-y-0.5 pt-0.5">
+                  {item.meta!.map((line, i) => (
+                    <div key={i}>{line}</div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             <button
               aria-label="Close"
               onClick={close}
-              className="absolute top-3 right-3 rounded-full bg-white/90 text-black px-3 py-1 text-sm hover:bg-white"
+              className="absolute top-4 right-4 rounded-full bg-white/90 text-black px-4 py-2 text-base hover:bg-white transition-colors"
             >
               ✕
             </button>
@@ -371,6 +341,8 @@ type Hobby = {
   alt: string;
   label?: string;
   description?: string;
+  category?: string;
+  meta?: string[];
 };
 
 /* 子コンポーネント：useTilt + originEl を親に渡す */
@@ -421,11 +393,6 @@ function HobbyTile({
           priority={index < 3}
         />
 
-        {/* ラベル・縁・光沢 */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/60 to-transparent" />
-        <div className="absolute bottom-3 left-3 text-white/95 text-sm font-medium">
-          {item.label ?? item.alt}
-        </div>
         <div className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-[#2ccdb9]/20 group-hover:ring-[#2ccdb9]/60" />
         <div className="pointer-events-none absolute -inset-40 rotate-12 bg-gradient-to-r from-transparent via-white/12 to-transparent blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
       </div>
@@ -467,11 +434,11 @@ export default function HobbySection({
     <section className="w-full">
       {/* 見出し */}
       <div className="max-w-[1100px] mx-auto px-6">
-        <div className="h-px w-full bg-white/15" />
+        <div className="h-px w-full bg-white/12" />
         <h3
           className="mt-10 text-center font-serif tracking-wide
                      text-[36px] md:text-[44px]
-                     text-[#b6fff6] drop-shadow-[0_2px_10px_rgba(182,255,246,0.25)]"
+                     text-white drop-shadow-[0_2px_10px_rgba(255,255,255,0.15)]"
         >
           <GlitchText as="span" text={title} trigger="scroll"/>
         </h3>

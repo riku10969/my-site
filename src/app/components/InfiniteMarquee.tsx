@@ -1,7 +1,19 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useCallback } from "react";
 import Image from "next/image";
+
+function useIsMobile() {
+  const [mobile, setMobile] = useState(false);
+  useEffect(() => {
+    const mql = window.matchMedia("(max-width: 767px)");
+    const fn = () => setMobile(mql.matches);
+    fn();
+    mql.addEventListener("change", fn);
+    return () => mql.removeEventListener("change", fn);
+  }, []);
+  return mobile;
+}
 
 type Props = {
   images: string[];
@@ -34,8 +46,75 @@ export default function InfiniteMarquee({
   renderItem,
 }: Props) {
   const hostRef = useRef<HTMLDivElement | null>(null);
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const isMobile = useIsMobile();
   const [repeat, setRepeat] = useState(1);
   const [maxAspect, setMaxAspect] = useState(1); // height / width
+
+  // モバイル：タッチでアニメーション停止＋ドラッグで左右スクロール
+  const posRef = useRef(0);
+  const touchStartXRef = useRef(0);
+  const touchStartPosRef = useRef(0);
+  const isTouchingRef = useRef(false);
+
+  const baseSetForLoop = Array.from({ length: repeat }).flatMap(() => images);
+  const unitLocal = itemWidth + gap;
+  const baseLenLocal = baseSetForLoop.length;
+  const loopWLocal = baseLenLocal * unitLocal;
+  const pxPerSec = loopWLocal / speed;
+
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      if (!isMobile) return;
+      isTouchingRef.current = true;
+      touchStartXRef.current = e.touches[0].clientX;
+      touchStartPosRef.current = posRef.current;
+    },
+    [isMobile]
+  );
+
+
+  const handleTouchEnd = useCallback(() => {
+    if (!isMobile) return;
+    isTouchingRef.current = false;
+  }, [isMobile]);
+
+  // モバイル：touchmove を passive: false で登録（preventDefault を有効にする）
+  useEffect(() => {
+    if (!isMobile || !trackRef.current) return;
+    const track = trackRef.current;
+    const onMove = (e: TouchEvent) => {
+      if (!isTouchingRef.current) return;
+      e.preventDefault();
+      const dx = touchStartXRef.current - e.touches[0].clientX;
+      const raw = touchStartPosRef.current + dx;
+      const wrapped = ((raw % loopWLocal) + loopWLocal) % loopWLocal;
+      posRef.current = direction === "left" ? -wrapped : wrapped - loopWLocal;
+      track.style.transform = `translateX(${posRef.current}px)`;
+    };
+    track.addEventListener("touchmove", onMove, { passive: false });
+    return () => track.removeEventListener("touchmove", onMove);
+  }, [isMobile, loopWLocal, direction]);
+
+  // モバイル：JSでアニメーション＋タッチ中は一時停止
+  useEffect(() => {
+    if (!isMobile) return;
+    const track = trackRef.current;
+    if (!track) return;
+    let raf = 0;
+    const loop = () => {
+      raf = requestAnimationFrame(loop);
+      if (isTouchingRef.current) return;
+      posRef.current -= (direction === "left" ? 1 : -1) * (pxPerSec / 60);
+      if (direction === "left" && posRef.current < -loopWLocal) posRef.current += loopWLocal;
+      if (direction === "left" && posRef.current > 0) posRef.current -= loopWLocal;
+      if (direction === "right" && posRef.current > 0) posRef.current -= loopWLocal;
+      if (direction === "right" && posRef.current < -loopWLocal) posRef.current += loopWLocal;
+      track.style.transform = `translateX(${posRef.current}px)`;
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [isMobile, loopWLocal, direction, pxPerSec]);
 
   // ─────────────────────────────
   // 画像の縦横比を計算して最大値を取得
@@ -66,8 +145,7 @@ export default function InfiniteMarquee({
   }, [images]);
 
   const itemHeight = Math.round(itemWidth * maxAspect);
-  const baseSet = Array.from({ length: repeat }).flatMap(() => images);
-  const doubled = [...baseSet, ...baseSet];
+  const doubled = [...baseSetForLoop, ...baseSetForLoop];
 
   // ─────────────────────────────
   // resize監視：repeatの更新を必要時だけ行う
@@ -102,10 +180,6 @@ export default function InfiniteMarquee({
   // ─────────────────────────────
   // ループ距離を px で固定
   // ─────────────────────────────
-  const unit = itemWidth + gap;
-  const baseLen = baseSet.length;
-  const loopW = baseLen * unit;
-
   return (
     <div
       ref={hostRef}
@@ -113,17 +187,23 @@ export default function InfiniteMarquee({
       style={{ ["--gap" as any]: `${gap}px` }}
     >
       <div
+        ref={trackRef}
         className={`flex items-center will-change-transform whitespace-nowrap ${
-          direction === "left"
-            ? "animate-marquee-left"
-            : "animate-marquee-right"
-        } ${pauseOnHover ? "hover:[animation-play-state:paused]" : ""}`}
+          isMobile
+            ? "touch-pan-y cursor-grab active:cursor-grabbing"
+            : `${direction === "left" ? "animate-marquee-left" : "animate-marquee-right"} ${pauseOnHover ? "hover:[animation-play-state:paused]" : ""}`
+        }`}
         style={
-          {
-            ["--duration" as any]: `${speed}s`,
-            ["--loopW" as any]: `${loopW}px`,
-          } as React.CSSProperties
+          isMobile
+            ? undefined
+            : ({
+                ["--duration" as any]: `${speed}s`,
+                ["--loopW" as any]: `${loopWLocal}px`,
+              } as React.CSSProperties)
         }
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
       >
         {doubled.map((src, i) => {
           const origLen = images.length;

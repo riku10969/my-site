@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { TransitionLink } from "./PageTransition";
 
 type NavItem = { label: string; path: string };
 
@@ -55,16 +55,16 @@ export default function Header() {
         </button>
 
         {/* Center-left: Logo */}
-        <Link href="/" className="flex items-center">
+        <TransitionLink href="/" className="flex items-center">
           <Image
-            src="/RikuLogo.png"
+            src="/RikuLogo3.png"
             alt="UI/UX RIKU"
             width={160}
             height={70}
             className="h-10 w-auto md:ml-14"
             priority
           />
-        </Link>
+        </TransitionLink>
 
         {/* Center: Desktop Nav */}
         <nav
@@ -76,7 +76,7 @@ export default function Header() {
               const active = pathname === item.path;
               return (
                 <li key={item.path}>
-                  <Link
+                  <TransitionLink
                     href={item.path}
                     className={`
                       relative font-semibold text-[1.1rem] transition-colors
@@ -95,7 +95,7 @@ export default function Header() {
                         aria-hidden
                       />
                     </span>
-                  </Link>
+                  </TransitionLink>
                 </li>
               );
             })}
@@ -123,7 +123,7 @@ export default function Header() {
               const active = pathname === item.path;
               return (
                 <li key={item.path}>
-                  <Link
+                  <TransitionLink
                     href={item.path}
                     className={`
                       font-semibold text-lg
@@ -132,7 +132,7 @@ export default function Header() {
                     onClick={() => setMenuOpen(false)}
                   >
                     {item.label}
-                  </Link>
+                  </TransitionLink>
                 </li>
               );
             })}

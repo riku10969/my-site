@@ -22,9 +22,10 @@ export default function FadeInText({
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const el = ref.current!;
+    const el = ref.current;
+    if (!el) return;
     const io = new IntersectionObserver(
-      ([e]) => e.isIntersecting && setVisible(true),
+      ([e]) => setVisible(e.isIntersecting),
       { threshold: 0.2 }
     );
     io.observe(el);

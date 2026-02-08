@@ -47,7 +47,6 @@ export default function CurtainModal({
   const [visible, setVisible] = useState(open);
   const [phase, setPhase] = useState<"idle" | "enter" | "exit">("idle");
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const [imgIndex, setImgIndex] = useState(0);
 
   // 画像配列を正規化（string -> {src}）
   const gallery = useMemo(() => {
@@ -58,22 +57,10 @@ export default function CurtainModal({
     );
   }, [item]);
 
-  // 表示中画像に応じた説明とサブタイトルを算出
-  const currentDesc = useMemo(() => {
-    if (!item || !gallery.length) return "";
-    return gallery[imgIndex]?.desc ?? item.description ?? "";
-  }, [item, gallery, imgIndex]);
-
-  const currentSubtitle = useMemo(() => {
-    if (!item || !gallery.length) return item?.subtitle ?? "";
-    return gallery[imgIndex]?.subtitle ?? item.subtitle ?? "";
-  }, [item, gallery, imgIndex]);
-
   // open の変化
   useEffect(() => {
     if (open) {
       setVisible(true);
-      setImgIndex(0);
       requestAnimationFrame(() => setPhase("enter"));
       document.documentElement.classList.add("modal-open");
     } else if (visible) {
@@ -104,7 +91,7 @@ export default function CurtainModal({
       ref={rootRef}
       aria-modal="true"
       role="dialog"
-      className="fixed inset-0 z-[999] overflow-hidden"
+      className="fixed inset-0 z-[99999] overflow-hidden"
     >
       {/* 背景クリックで閉じる */}
       <button
@@ -115,31 +102,31 @@ export default function CurtainModal({
         onClick={onRequestClose}
       />
 
-      {/* 左からスライドするカーテン */}
+      {/* 左からスライドするカーテン（高さ全表示・幅デスクトップ70%/モバイル85%） */}
       <div
         className={`
-          absolute inset-y-0 left-0 will-change-transform
-          bg-[#0e0e0e] shadow-2xl
+          absolute inset-y-0 left-0 w-[85vw] md:w-[70vw] will-change-transform flex flex-col
+          bg-[#0e0e0e] shadow-2xl rounded-r-2xl overflow-hidden
           ${phase === "enter" ? "curtain-in" : ""}
           ${phase === "exit" ? "curtain-out" : ""}
         `}
-        style={{ width: "min(860px,92vw)", ["--t" as any]: `${duration}ms` } as React.CSSProperties}
+        style={{ ["--t" as any]: `${duration}ms` } as React.CSSProperties}
       >
         {/* ヘッダー */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-          <div className="text-white/80 text-sm tracking-wide">Detail</div>
+        <div className="flex items-center justify-between px-5 py-3 border-b border-white/10 shrink-0">
+          <div className="text-white/70 text-xs font-medium tracking-[0.2em] uppercase">Detail</div>
           <button
             onClick={onRequestClose}
-            className="rounded-full px-3 py-1 text-sm bg-white/10 text-white/90 hover:bg-white/20 transition"
+            className="rounded-full px-4 py-2 text-sm font-medium bg-white/10 text-white/90 hover:bg-white/20 hover:border-[#2ccdb9]/40 border border-transparent transition-all"
           >
             Close
           </button>
         </div>
 
-        {/* 本文（タブ廃止 → 単一レイアウト） */}
+        {/* 本文（スクロールで全画像を表示） */}
         <div
           className={`
-            h-[calc(100vh-56px)] overflow-y-auto
+            flex-1 min-h-0 overflow-y-auto
             opacity-0 translate-y-2
             ${phase === "enter" ? "content-in" : ""}
             ${phase === "exit" ? "content-out" : ""}
@@ -147,15 +134,12 @@ export default function CurtainModal({
           style={{ ["--t" as any]: `${Math.max(240, duration * 0.45)}ms` } as React.CSSProperties}
         >
           <section className="p-4 md:p-6 text-white">
-            {/* タイトル + サブタイトル + 外部リンク */}
-            <div className="flex flex-wrap items-center gap-3 mb-4">
+            {/* タイトル + 外部リンク */}
+            <div className="flex flex-wrap items-center gap-3 mb-6">
               <div>
-                <h3 className="text-2xl font-semibold leading-tight">
+                <h3 className="font-serif text-2xl font-semibold leading-tight md:text-4xl lg:text-5xl">
                   {item?.title ?? "Untitled"}
                 </h3>
-                {!!currentSubtitle && (
-                  <p className="text-white/70 text-sm mt-1">{currentSubtitle}</p>
-                )}
               </div>
 
               {item?.kind === "web" && item?.link && (
@@ -163,66 +147,62 @@ export default function CurtainModal({
                   href={item.link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="ml-auto inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-teal-500/90 hover:bg-teal-500 text-black font-medium transition"
+                  className="ml-auto inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#2ccdb9]/20 border border-[#2ccdb9]/40 text-[#2ccdb9] hover:bg-[#2ccdb9]/30 font-medium transition"
                 >
                   {item.linkLabel ?? "サイトへ移動"}
                 </a>
               )}
             </div>
 
-            {/* 画像とサムネ */}
+            {/* 画像を縦にスクロール配置（クリック切り替え廃止） */}
             {!!gallery.length && (
-              <div className="mb-4">
-                <img
-                  src={gallery[imgIndex].src}
-                  alt={item?.title ?? ""}
-                  className="w-full max-h-[420px] object-contain rounded-xl border border-white/10 mb-3"
-                />
-                {gallery.length > 1 && (
-                  <ul className="flex flex-wrap gap-2">
-                    {gallery.map((g, i) => (
-                      <li key={typeof g === "string" ? g : g.src}>
-                        <button
-                          onClick={() => setImgIndex(i)}
-                          className={`border rounded-md overflow-hidden block transition
-                            ${i === imgIndex ? "border-teal-400" : "border-white/15 hover:border-white/35"}`}
-                        >
-                          <img
-                            src={(typeof g === "string" ? g : g.src) as string}
-                            alt={`thumb-${i + 1}`}
-                            className="w-20 h-14 object-cover"
-                          />
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+              <div className="space-y-0 mb-6">
+                {gallery.map((g, i) => (
+                  <div
+                    key={i}
+                    className={`space-y-4 py-6 ${
+                      i > 0
+                        ? "border-t border-white/15"
+                        : ""
+                    }`}
+                  >
+                    <img
+                      src={g.src}
+                      alt={item?.title ?? `Image ${i + 1}`}
+                      className={`object-contain rounded-xl border border-white/10 ${
+                        i === 0
+                          ? "w-full max-h-[520px]"
+                          : "w-1/2 max-w-[50%] min-w-[200px]"
+                      }`}
+                    />
+                    {((g.subtitle ?? g.desc) || (i === 0 && item?.description)) && (
+                      <p className={`text-white/85 leading-relaxed whitespace-pre-wrap ${
+                        i === 0 ? "text-base md:text-2xl" : "text-sm md:text-xl"
+                      }`}>
+                        {g.subtitle ?? g.desc ?? item?.description ?? ""}
+                      </p>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
 
-            {/* 説明（画像ごとに切り替え。なければ全体説明） */}
-            {!!(currentDesc || item?.description) && (
-              <p className="text-white/85 leading-relaxed whitespace-pre-wrap mb-6">
-                {currentDesc}
-              </p>
-            )}
-
-            {/* メタ情報（タブ廃止に伴いフラットに表示） */}
-            <div className="grid gap-4 md:grid-cols-3">
+            {/* メタ情報（作成期間・使用ツールは各40%、文字大きく） */}
+            <div className="flex flex-wrap gap-4">
               {!!item?.period && (
-                <div className="rounded-lg border border-white/10 bg-white/5 p-3">
-                  <h4 className="text-sm text-white/60 mb-1">作成期間</h4>
-                  <div className="text-white/85 text-sm">{item.period}</div>
+                <div className="w-[40%] min-w-[180px] rounded-xl border border-white/10 bg-white/[0.04] p-5">
+                  <h4 className="text-xs md:text-sm font-medium tracking-wider text-white/50 mb-3 uppercase">Period</h4>
+                  <div className="font-serif text-white/90 text-sm md:text-lg">{item.period}</div>
                 </div>
               )}
               {!!item?.tools?.length && (
-                <div className="rounded-lg border border-white/10 bg-white/5 p-3">
-                  <h4 className="text-sm text-white/60 mb-2">使用ツール</h4>
+                <div className="w-[40%] min-w-[180px] rounded-xl border border-white/10 bg-white/[0.04] p-5">
+                  <h4 className="text-xs md:text-sm font-medium tracking-wider text-white/50 mb-3 uppercase">Tools</h4>
                   <ul className="flex flex-wrap gap-2">
                     {item.tools!.map((t) => (
                       <li
                         key={t}
-                        className="px-2 py-1 rounded bg-white/10 border border-white/10 text-white/80 text-xs"
+                        className="px-3 py-1.5 rounded-lg bg-[#2ccdb9]/10 border border-[#2ccdb9]/20 text-white/90 text-xs md:text-sm"
                       >
                         {t}
                       </li>
@@ -231,13 +211,13 @@ export default function CurtainModal({
                 </div>
               )}
               {!!item?.languages?.length && (
-                <div className="rounded-lg border border-white/10 bg-white/5 p-3">
-                  <h4 className="text-sm text-white/60 mb-2">使用言語</h4>
+                <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5 flex-1 min-w-[140px]">
+                  <h4 className="text-xs md:text-sm font-medium tracking-wider text-white/50 mb-3 uppercase">Languages</h4>
                   <ul className="flex flex-wrap gap-2">
                     {item.languages!.map((l) => (
                       <li
                         key={l}
-                        className="px-2 py-1 rounded bg-white/10 border border-white/10 text-white/80 text-xs"
+                        className="px-3 py-1.5 rounded-lg bg-[#A855F7]/10 border border-[#A855F7]/20 text-white/90 text-xs md:text-sm"
                       >
                         {l}
                       </li>
@@ -255,8 +235,8 @@ export default function CurtainModal({
         .modal-open, .modal-open body { overflow: hidden; }
         .curtain-in  { animation: curtainIn var(--t) cubic-bezier(.22,.61,.36,1) forwards; }
         .curtain-out { animation: curtainOut var(--t) cubic-bezier(.22,.61,.36,1) forwards; }
-        @keyframes curtainIn  { 0% { transform: translateX(-100%);} 100% { transform: translateX(0%);} }
-        @keyframes curtainOut { 0% { transform: translateX(0%);} 100% { transform: translateX(-100%);} }
+        @keyframes curtainIn  { 0% { transform: translateX(-100%);} 100% { transform: translateX(0);} }
+        @keyframes curtainOut { 0% { transform: translateX(0);} 100% { transform: translateX(-100%);} }
         .content-in  { animation: contentIn  var(--t) ease forwards; animation-delay: 60ms; }
         .content-out { animation: contentOut var(--t) ease forwards; }
         @keyframes contentIn  { 0% { opacity: 0; transform: translateY(8px);} 100% { opacity: 1; transform: translateY(0);} }

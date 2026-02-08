@@ -4,7 +4,7 @@ import Header from "./components/header";
 import BackgroundStage from "./components/canvas/BackgroundStage";
 import RouteLogoController from "./components/RouteLogoController";
 import IntroGate from "./components/IntoroGate";
-import { PageTransitionProvider } from "./components/NeonPageTransition";
+import { PageTransitionProvider } from "./components/PageTransition";
 import { Jaro } from "next/font/google"; // ← これ
 
 const jaro = Jaro({

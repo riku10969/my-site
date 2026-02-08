@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { FaInstagram } from "react-icons/fa";
 import { SiGmail } from "react-icons/si";
+import NeonParticleStars from "../canvas/NeonParticleStars";
 
 export default function ContactSection() {
   const ref = useRef<HTMLDivElement | null>(null);
@@ -31,10 +32,11 @@ export default function ContactSection() {
   return (
     <section
       ref={ref}
-      className="min-h-[60vh] flex items-center justify-center px-6 py-24 bg-black"
+      className="relative min-h-[60vh] flex items-center justify-center px-6 py-24 bg-[#060612] overflow-hidden"
       aria-labelledby="contact-heading"
     >
-      <div className="w-full max-w-4xl text-center space-y-10">
+      <NeonParticleStars />
+      <div className="relative z-10 w-full max-w-4xl text-center space-y-10">
         <h2 id="contact-heading" className="sr-only">
           Contact
         </h2>

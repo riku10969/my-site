@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { usePageTransition } from "./PageTransition";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
 import "swiper/css";
@@ -16,10 +17,9 @@ export default function ProjectCarousel({
   items: Project[];
 }) {
   const [active, setActive] = useState(0);
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { push } = usePageTransition();
 
-  // 可能なら事前プリフェッチ
   useEffect(() => {
     items.forEach((p) => {
       try {
@@ -28,62 +28,12 @@ export default function ProjectCarousel({
     });
   }, [items, router]);
 
-  const go = useCallback((slug: string) => {
-    // 押した瞬間にローダーを出す
-    setLoading(true);
-    // ローダー描画 → 次フレームで遷移（描画を確実にするため2回RAF）
-    requestAnimationFrame(() =>
-      requestAnimationFrame(() => {
-        router.push(`/project/${slug}`);
-      })
-    );
-  }, [router]);
+  const go = (slug: string) => {
+    push(`/project/${slug}`);
+  };
 
   return (
     <div style={{ minHeight: "100vh", padding: "80px 24px", background: "#0b0b0c", position: "relative" }}>
-      {/* 全画面ローダー（MintGridLoaderに差し替え可） */}
-      {loading && (
-        <div
-          aria-live="polite"
-          className="fixed inset-0 z-[9999] flex items-center justify-center"
-          style={{
-            background: "rgba(11,11,12,0.85)",
-            backdropFilter: "blur(2px)",
-          }}
-        >
-          <div
-            style={{
-              width: 72, height: 72, borderRadius: 14,
-              border: "3px solid rgba(255,255,255,0.2)",
-              position: "relative",
-              overflow: "hidden",
-            }}
-            aria-label="Loading"
-            role="status"
-          >
-            <div
-              style={{
-                position: "absolute", inset: 0,
-                background:
-                  "conic-gradient(from 0deg, transparent 0% 60%, rgba(44,205,185,0.9) 60% 100%)",
-                animation: "spin 800ms linear infinite",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute", inset: 6, borderRadius: 10,
-                background: "#0b0b0c",
-              }}
-            />
-          </div>
-          <style jsx global>{`
-            @keyframes spin { to { transform: rotate(360deg); } }
-            /* 押下後の誤クリック防止 */
-            body { cursor: ${loading ? "progress" : "auto"}; }
-          `}</style>
-        </div>
-      )}
-
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         <h1 style={{ color: "white", fontSize: 28, fontWeight: 800, marginBottom: 16 }}>
           {items[0]?.title}

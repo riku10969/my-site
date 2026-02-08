@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "../styles/SkillBars.module.css";
 import GlitchText from "./GlitchText";
-import { TransitionLink } from "./NeonPageTransition";
+import { TransitionLink } from "./PageTransition";
 
 type Skill = { label: string; blocks: number }; // 0..5
 type Group = {
@@ -18,7 +18,7 @@ type Group = {
 
 const GROUPS: Group[] = [
   {
-    name: "Front",
+    name: "Frontend",
     panelColor: "#5a37a6",
     edgeColor: "#2ccdb9",
     barColor: "#11a98b",
@@ -28,8 +28,8 @@ const GROUPS: Group[] = [
       { label: "HTML", blocks: 5 },
       { label: "CSS", blocks: 4 },
       { label: "JS", blocks: 4 },
-      { label: "TS", blocks: 3 },
-      { label: "Next.js", blocks: 3 },
+      { label: "TS", blocks: 4 },
+      { label: "Next.js", blocks: 4 },
     ],
   },
   {
@@ -40,6 +40,8 @@ const GROUPS: Group[] = [
     textColor: "#e8f1ef",
     valueColor: "#e8f1ef",
     skills: [
+      { label: "Python", blocks: 3 },
+      { label: "SQL", blocks: 3 },
       { label: "PHP", blocks: 2 },
       { label: "Laravel", blocks: 2 },
       { label: "AWS", blocks: 2 },
@@ -55,7 +57,7 @@ const GROUPS: Group[] = [
     skills: [
       { label: "Figma", blocks: 4 },
       { label: "Illustrator", blocks: 5},
-      { label: "Photoshop", blocks: 3},
+      { label: "Photoshop", blocks: 4},
       { label: "XD", blocks: 3}
     ],
   },
@@ -181,42 +183,50 @@ export default function SkillBarsAbout({
 
   return (
     <section className={styles.wrap} ref={ref}>
-      <div className={styles.cta1}></div>
-      <h3 className={styles.h3}>
-        <GlitchText 
-        as="span" text={title} trigger="scroll"/>
-      </h3>
+      <div className={styles.inner}>
+        <div className={styles.cta1} />
+        <h3 className={styles.h3}>
+          <GlitchText
+            as="span"
+            text={title}
+            trigger="scroll"
+          />
+        </h3>
 
-      <div className={styles.tabs} role="tablist" aria-label="Skill groups">
-  {GROUPS.map((g, i) => (
-    <button
-      key={g.name}
-      type="button"
-      role="tab"
-      aria-selected={i === active}
-      className={`${styles.tab} ${i === active ? styles.active : ""}`}
-      onClick={() => setActive(i)}
-    >
-      {i === active ? (
-        <GlitchText as="span" text={g.name} />
-      ) : (
-        <span>{g.name}</span>
-      )}
-    </button>
-  ))}
-</div>
+        <div className={styles.tabs} role="tablist" aria-label="Skill groups">
+          {GROUPS.map((g, i) => (
+            <button
+              key={g.name}
+              type="button"
+              role="tab"
+              aria-selected={i === active}
+              className={`${styles.tab} ${i === active ? styles.active : ""}`}
+              onClick={() => setActive(i)}
+            >
+              {i === active ? (
+                <GlitchText as="span" text={g.name} />
+              ) : (
+                <span>{g.name}</span>
+              )}
+            </button>
+          ))}
+        </div>
 
-      <div className={styles.panel} style={cssVars}>
-        {rows}
+        <div className={styles.panel} style={cssVars}>
+          {rows}
+        </div>
+
+        <div className={styles.cta2}>
+          <TransitionLink
+            href="/skills"
+            className={styles.skillBtn}
+            aria-label="View full skill details"
+          >
+            <GlitchText as="span" text="View Skill Details" trigger="manual" replayOnHover={true} className={styles.skillBtnText} />
+            <span className={styles.skillBtnArrow}>→</span>
+          </TransitionLink>
+        </div>
       </div>
-      <div className={styles.cta2}>
-  <TransitionLink
-    href="/skills" // ← 全体のスキル詳細ページのパス
-    className={styles.skillBtn}
-  >
-    スキル詳細ページへ →
-  </TransitionLink>
-</div>
     </section>
   );
 }

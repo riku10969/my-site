@@ -8,6 +8,7 @@ import { Autoplay, Navigation } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 import { useRouter } from "next/navigation";
+import { usePageTransition } from "./PageTransition";
 import Loader from "./Loader";
 import DistortOverlay from "./canvas/DistortOverlay";
 
@@ -24,6 +25,7 @@ export default function ProjectsIntro() {
   const [showSwiper, setShowSwiper] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const router = useRouter();
+  const { push } = usePageTransition();
 
   // プレースホルダのルート&カード参照
   const placeholderRef = useRef<HTMLDivElement | null>(null);
@@ -137,7 +139,7 @@ export default function ProjectsIntro() {
             <SwiperSlide key={i} className={styles["gsap-init"]}>
               <div
                 className={styles.cardInitial}
-                onClick={() => router.push(p.path)}
+                onClick={() => push(p.path)}
                 style={{ cursor: "pointer" }}
               >
                 {/* Swiper側の画像にも適用 */}

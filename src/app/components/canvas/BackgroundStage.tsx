@@ -47,22 +47,47 @@ export default function BackgroundStage() {
     });
     const bg = new THREE.Mesh(createFullScreenPlane(-5), bgMat);
     bg.position.z = -5;
+    bg.renderOrder = -1; // ノイズを最背面に
     scene.add(bg);
 
     // --- center logo (最初は非表示。イベントで出す) ---
     let logo: THREE.Mesh | null = null;
     let logoMat: THREE.MeshBasicMaterial | null = null;
+    let logoBackdrop: THREE.Mesh | null = null;
     let logoActive = false;      // 表示開始フラグ
     let swayStrength = 0.02;     // ゆらぎ量（ロード後は少し弱めに）
 
     const loadLogo = () => {
       if (logo) return;
+      const isMobile = typeof window !== "undefined" && window.innerWidth <= 767;
+      const logoW = isMobile ? 2.2 : 3.6;
+      const logoH = isMobile ? 2.0 : 3.0;
       new THREE.TextureLoader().load(
         "/RikuLogo3.png",
         (tex) => {
-          logoMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0, depthWrite: false });
-          logo = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 3.0), logoMat);
+          tex.premultiplyAlpha = false;
+          logoMat = new THREE.MeshBasicMaterial({
+            map: tex,
+            transparent: true,
+            opacity: 0,
+            depthWrite: false,
+            depthTest: false,
+            alphaTest: 0.1,
+            blending: THREE.NormalBlending,
+          });
+          logo = new THREE.Mesh(new THREE.PlaneGeometry(logoW, logoH), logoMat);
           logo.position.set(0, 0, -2); // 奥から
+          logo.renderOrder = 2; // ノイズの上に描画
+          // ノイズを隠す黒い面（ノイズの上に描画）
+          const backdropMat = new THREE.MeshBasicMaterial({
+            color: 0x000000,
+            depthTest: false,
+            depthWrite: false,
+          });
+          logoBackdrop = new THREE.Mesh(new THREE.PlaneGeometry(logoW, logoH), backdropMat);
+          logoBackdrop.position.z = -0.05; // ロゴより少し奥
+          logoBackdrop.renderOrder = 1; // ノイズの上、ロゴの下
+          logo.add(logoBackdrop);
           scene.add(logo);
           logoActive = true;           // フェードイン開始
         },
@@ -124,8 +149,8 @@ export default function BackgroundStage() {
     // === 追加：ロゴ即消しイベント ===
      const onLogoHideImmediate = () => {
     if (logo && logoMat) {
-     logoMat.opacity = 0;   // すぐ透明に
-     logo.visible = false;  // 描画も止める（ループ側でも visible を見てスキップ）
+     logoMat.opacity = 0;
+     logo.visible = false;  // 子の backdrop も一緒に非表示
      logoActive = false;    // フェードインの途中でも止める
    }
  };
@@ -141,6 +166,10 @@ export default function BackgroundStage() {
       if (logo) {
         (logo.geometry as THREE.BufferGeometry).dispose();
         logoMat?.dispose();
+        if (logoBackdrop) {
+          (logoBackdrop.geometry as THREE.BufferGeometry).dispose();
+          (logoBackdrop.material as THREE.Material).dispose();
+        }
       }
       renderer.dispose();
     };

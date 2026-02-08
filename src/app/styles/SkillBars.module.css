@@ -1,5 +1,6 @@
 /* 共通（既存そのまま） */
 .wrap{ color:#e8f1ef; padding:48px 16px; }
+.inner{ max-width:1100px; margin:0 auto; }
 .h3{ text-align:center; font-family: serif; font-size:clamp(28px,3.5vw,40px); margin:0 0 16px; }
 .tabs{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; max-width:920px; margin:0 auto 12px; }
 .tab{ background:transparent; border:none; color:inherit; padding:8px 4px; cursor:pointer; opacity:.85; border-bottom:2px solid transparent; }
@@ -66,37 +67,52 @@
 }
 
 .cta1 {
-  margin-top: 20px;
+  margin-top: 0;
   padding-top: 16px;
-  border-top: 1px solid rgba(255,255,255,.08);
-  display: grid;
-  place-items: start;
+  margin-bottom: 4px;
+  border-top: 1px solid rgba(255,255,255,.12);
+  display: block;
 }
 
 .cta2 {
-  margin-top: 20px;
-  padding-top: 16px;
-  display: grid;
-  place-items: start;
+  margin-top: 24px;
+  padding-top: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .skillBtn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  margin-left: auto;
-  padding: 10px 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,.10);
-  background: #5a37a6;
+  gap: 10px;
+  padding: 12px 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(44,205,185,.35);
+  background: rgba(90,55,166,.6);
   color: #e8f1ef;
   text-decoration: none;
-  transition: background .25s ease, transform .08s ease;
-  backdrop-filter: blur(4px);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: background .25s ease, border-color .25s ease, transform .08s ease, box-shadow .25s ease;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 12px rgba(0,0,0,.2);
 }
 .skillBtn:hover {
-  background: rgba(255,255,255,.08);
+  background: rgba(44,205,185,.12);
+  border-color: rgba(44,205,185,.5);
+  box-shadow: 0 0 20px rgba(44,205,185,.15);
 }
 .skillBtn:active {
   transform: translateY(1px);
+}
+.skillBtnText {
+  display: inline-block;
+}
+.skillBtnArrow {
+  opacity: .9;
+  transition: transform .2s ease;
+}
+.skillBtn:hover .skillBtnArrow {
+  transform: translateX(4px);
 }

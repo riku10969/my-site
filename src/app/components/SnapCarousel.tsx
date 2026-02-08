@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePageTransition } from "./PageTransition";
 
 /*********************************
  * SnapCarousel.tsx (Swiper代替)
@@ -258,10 +258,10 @@ function SlideCard({
   active: boolean;
   aspectPaddingTop: string;
 }) {
-  const router = useRouter();
+  const { push } = usePageTransition();
   const onClick = useCallback(() => {
-    if (item.path) router.push(item.path);
-  }, [item.path, router]);
+    if (item.path) push(item.path);
+  }, [item.path, push]);
 
   return (
     <div

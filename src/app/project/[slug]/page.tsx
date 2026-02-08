@@ -7,8 +7,6 @@ import AboutSection from "../../components/sections/AboutSection";
 import WorksSection from "../../components/sections/WorksSection";
 import ContactSection from "../../components/sections/ContactSection";
 import styles from "../../styles/DetailPage.module.css";
-import PageLoaderGate from "../../components/PageLoaderGate";
-
 type SectionSlug = "about" | "works" | "contact";
 const ALL_SECTIONS: SectionSlug[] = ["about", "works", "contact"];
 const orderBySlugFirst = (first: SectionSlug): SectionSlug[] => [
@@ -54,18 +52,21 @@ const SectionMap: Record<SectionSlug, ComponentType<any>> = {
   };
 
   return (
-    <PageLoaderGate>
-      <main className={styles.container}>
+    <main className={styles.container}>
         {ordered.map((s) => {
           const Section = SectionMap[s];
           return (
-            <section key={s} id={s} className={styles.section}>
-            <Section />      
+            <section
+              key={s}
+              id={s}
+              className={styles.section}
+              style={s !== "about" ? { position: "relative" as const, zIndex: 10 } : undefined}
+            >
+              <Section />
             </section>
           );
         })}
         <Footer/>
       </main>
-    </PageLoaderGate>
   );
 }

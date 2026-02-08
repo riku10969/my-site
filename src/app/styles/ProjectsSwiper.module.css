@@ -91,7 +91,7 @@
 
 /* レスポンシブ */
 @media (max-width: 768px){
-  .card, .cardInitial{ width:92vw; height:52vh; border-radius:14px; }
+  .card, .cardInitial{ width:78vw; height:42vh; border-radius:12px; }
 }
 @media (min-width: 1200px){
   .card, .cardInitial{ max-width:720px; height:56vh; }

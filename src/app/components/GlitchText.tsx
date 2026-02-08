@@ -94,14 +94,24 @@ export default function GlitchText({
     }
   }, [armed]); // armed の立ち上がりで発火
 
+  // ホバー時に毎回 Glitch を再生（off → on を短い間隔で行いアニメをリスタート）
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleReplayHover = () => {
+    if (!replayOnHover) return;
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    setOn(false);
+    hoverTimerRef.current = setTimeout(() => {
+      setOn(true);
+      hoverTimerRef.current = null;
+    }, 50);
+  };
+
   return (
     <Tag
       ref={ref as any}
       data-text={text}
       className={`glitch ${extra} ${on ? "on" : ""} ${className}`}
-      onMouseEnter={
-        replayOnHover ? () => { setOn(false); requestAnimationFrame(() => setOn(true)); } : undefined
-      }
+      onMouseEnter={replayOnHover ? handleReplayHover : undefined}
     >
       {text}
     </Tag>

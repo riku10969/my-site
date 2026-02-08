@@ -26,23 +26,36 @@ export default function Footer() {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const [neonStage, setNeonStage] = useState<"off"|"once"|"idle">("off");
 
-  // ① ビューポート到達で一度だけ点灯 → その後ゆらぎ
+  // ① ビューポート到達のたびに点灯 → その後ゆらぎ（スクロールで表示されるたび実行）
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     const el = hostRef.current;
     if (!el) return;
     const io = new IntersectionObserver(
       ([e]) => {
-        if (e.isIntersecting && neonStage === "off") {
+        if (e.isIntersecting) {
+          if (timeoutRef.current) clearTimeout(timeoutRef.current);
           setNeonStage("once");
-          const t = setTimeout(() => setNeonStage("idle"), 1000);
-          return () => clearTimeout(t);
+          timeoutRef.current = setTimeout(() => {
+            setNeonStage("idle");
+            timeoutRef.current = null;
+          }, 1000);
+        } else {
+          if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
+          }
+          setNeonStage("off");
         }
       },
       { threshold: 0.5 }
     );
     io.observe(el);
-    return () => io.disconnect();
-  }, [neonStage]);
+    return () => {
+      io.disconnect();
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
 
   // ② ほんのりパララックス（ウォーターマーク）
   useEffect(() => {
@@ -144,7 +157,7 @@ export default function Footer() {
       </Link>
     </li>
 
-    {/* About：スクロールでグリッチ、ホバーで白い下線 */}
+    {/* About：スクロールで表示されるたびグリッチ実行 */}
     <li className="w-full sm:w-auto">
       <Link
         href="/project/about"
@@ -158,9 +171,8 @@ export default function Footer() {
       >
         <GlitchText
           text="About"
-          trigger="scroll-once"
+          trigger="scroll"
           variant="mono"
-          // hover時に ::before/::after を走らせたいなら以下を追加（任意）
           className="glitch-hover"
         />
       </Link>
