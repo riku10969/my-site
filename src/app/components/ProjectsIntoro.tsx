@@ -45,32 +45,35 @@ export default function ProjectsIntro() {
 
       const W = window.innerWidth || 1;
 
-      // 中央揃えを GSAP で管理（CSS の translate(-50%,-50%) と競合しないよう xPercent/yPercent を使用）
+      // 中央揃えを GSAP で管理（アニメ中も常に縦中央になるよう y: 0 を固定）
       // 初期状態：右外 + 透明
       gsap.set(cards, {
+        transformOrigin: "50% 50%",
         xPercent: -50,
         yPercent: -50,
         x: W,
+        y: 0,
         opacity: 0,
         willChange: "transform,opacity",
       });
 
-      // 3枚目 → 2枚目 → 1枚目（残す）
+      // 3枚目 → 2枚目 → 1枚目（残す）- 流れはすべて中央で
       gsap
         .timeline({ defaults: { ease: "power1.inOut" } })
         // 3枚目
-        .to(cards[2], { x: 0, opacity: 1, duration: 0.25 })
-        .to(cards[2], { x: -W, opacity: 0, duration: 0.25 })
+        .to(cards[2], { x: 0, y: 0, opacity: 1, duration: 0.25 })
+        .to(cards[2], { x: -W, y: 0, opacity: 0, duration: 0.25 })
         // 2枚目
-        .to(cards[1], { x: 0, opacity: 1, duration: 0.40 })
-        .to(cards[1], { x: -W, opacity: 0, duration: 0.40 })
+        .to(cards[1], { x: 0, y: 0, opacity: 1, duration: 0.40 })
+        .to(cards[1], { x: -W, y: 0, opacity: 0, duration: 0.40 })
         // 1枚目（中央に残す）※ opacity は clear しない（CSS の opacity:0 に戻ると一瞬白くなるため）
         .to(cards[0], {
           x: 0,
+          y: 0,
           opacity: 1,
           duration: 0.45,
           ease: "power2.out",
-          clearProps: "x,xPercent,yPercent,willChange",
+          clearProps: "x,y,xPercent,yPercent,willChange",
         })
         .add(() => setShowSwiper(true), "-=0.1");
     }, placeholderRef);

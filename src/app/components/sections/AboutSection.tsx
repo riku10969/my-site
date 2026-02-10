@@ -706,10 +706,12 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
   // パララックスオフセット計算（ヒーローエリア用）
   const heroOffsetY = parallaxProgress * -60; // スクロールに合わせて上に移動
 
+  const profileTags = ["React", "UI/UX", "Design × Dev"];
+
   return (
     <section
       ref={sectionRef}
-      className="relative w-full bg-[#121316] text-white"
+      className="relative w-full bg-[#121316] text-white max-md:overflow-x-hidden"
     >
       <div className="w-full max-w-[1600px] mx-auto px-6 md:px-10 lg:px-14 pt-24 pb-14">
         {/* ===============================
@@ -722,57 +724,79 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
             willChange: "transform",
           }}
         >
-          <div
-            ref={imgRef}
-            className={[
-              "warp-image",
-              "w-[80%] mx-auto",
-              "max-w-[1600px] rounded-xl overflow-hidden bg-[#e9ebee]",
-              "h-[260px] sm:h-[320px] md:h-[520px] lg:h-[620px]",
-              imgWarpOn ? "warp-on" : "",
-            ].join(" ")}
-            style={
-              {
-                ["--img" as any]: "url(/projects/project1.jpg)",
-              } as React.CSSProperties
-            }
-            aria-label="About visual"
-            role="img"
-          />
+          {/* モバイル: 画面幅いっぱい・縦長 4/5 */}
+          <div className="w-[80%] mx-auto max-md:w-screen max-md:relative max-md:left-1/2 max-md:-translate-x-1/2 max-md:max-w-[100vw]">
+            <div
+              ref={imgRef}
+              className={[
+                "warp-image",
+                "w-full max-w-[1600px] rounded-xl overflow-hidden bg-[#e9ebee]",
+                "h-[260px] sm:h-[320px] md:h-[520px] lg:h-[620px]",
+                "max-md:h-auto max-md:aspect-[4/5] max-md:min-h-0",
+                imgWarpOn ? "warp-on" : "",
+              ].join(" ")}
+              style={
+                {
+                  ["--img" as any]: "url(/projects/project1.jpg)",
+                } as React.CSSProperties
+              }
+              aria-label="About visual"
+              role="img"
+            />
+          </div>
 
           <GlitchText
             key={`imgname-${isLoaded ? "on" : "off"}`}
             as="div"
             text="Riku Ohashi"
             delaySec={0.55}
-            className="font-serif mt-4 text-[44px] md:text-[50px] tracking-[0.12em] text-white/90"
+            className="font-serif mt-4 text-[44px] md:text-[50px] tracking-[0.12em] max-md:text-[clamp(26px,7.5vw,36px)] max-md:tracking-[0.04em] text-white/90"
             trigger="scroll"
             armed={isLoaded}
           />
+
+          {/* 肩書き・スキルタグ（名前直下） */}
+          <div className="flex flex-wrap justify-center items-center gap-x-2 gap-y-1.5 mt-2 max-md:mt-1.5 max-md:px-2">
+            <span className="text-sm text-white/80 max-md:text-[13px]">
+              Frontend Engineer / UI Designer
+            </span>
+          </div>
+          <div className="flex flex-wrap justify-center gap-1.5 mt-1.5 max-md:gap-1 max-md:px-2">
+            {profileTags.map((tag) => (
+              <span
+                key={tag}
+                className="rounded-md bg-white/10 px-2 py-0.5 text-xs text-white/90 max-md:text-[11px] max-md:px-1.5"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
         </div>
 
         {/* ===============================
             プロフィール
            =============================== */}
-        <h2 className="mt-12 text-[20px] md:text-[22px] font-semibold">
-          <GlitchText
-            key={`profile-${isLoaded ? "on" : "off"}`}
-            as="span"
-            text="大橋 陸　1999年生まれ、埼玉県出身"
-            delaySec={1}
-            trigger="scroll"
-            armed={isLoaded}
-          />
-        </h2>
+        <div className="max-md:px-1">
+          <h2 className="mt-12 text-[20px] md:text-[22px] font-semibold">
+            <GlitchText
+              key={`profile-${isLoaded ? "on" : "off"}`}
+              as="span"
+              text="大橋 陸　1999年生まれ、埼玉県出身"
+              delaySec={1}
+              trigger="scroll"
+              armed={isLoaded}
+            />
+          </h2>
 
-        <p className="mt-4 px-2 sm:px-0 text-[15px] sm:text-[17px] md:text-[20px] leading-7 sm:leading-8 md:leading-8 text-[#d6d8de] max-w-[1100px]">
-          高校卒業後、職人として現場で働いた経験から、丁寧さと粘り強さを大切にする姿勢を培いました。
-          その後、フロントエンドエンジニアとして実務を経験し、Reactを中心にWebサイトの開発を担当。
-          デジリグに入校してデザインを体系的に学び、現在は
-          <strong className="text-white">「デザイン × 実装」</strong>
-          の両面から提案することが可能です。
-          ユーザーにとって直感的で心地よい体験を生み出すことを目指しています。
-        </p>
+          <p className="mt-4 px-2 sm:px-0 text-[15px] sm:text-[17px] md:text-[20px] leading-7 sm:leading-8 md:leading-8 text-[#d6d8de] max-w-[1100px] max-md:text-[15px] max-md:leading-[1.8] max-md:px-5">
+            高校卒業後、職人として現場で働いた経験から、丁寧さと粘り強さを大切にする姿勢を培いました。
+            その後、フロントエンドエンジニアとして実務を経験し、Reactを中心にWebサイトの開発を担当。
+            デジリグに入校してデザインを体系的に学び、現在は
+            <strong className="text-white">「デザイン × 実装」</strong>
+            の両面から提案することが可能です。
+            ユーザーにとって直感的で心地よい体験を生み出すことを目指しています。
+          </p>
+        </div>
       </div>
 
       {/* ===============================

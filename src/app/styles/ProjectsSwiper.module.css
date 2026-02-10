@@ -43,6 +43,7 @@
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%); /* これを残す */
+  transform-origin: 50% 50%; /* アニメ中も中央基準 */
   width: min(80%, 640px);
   height: 50vh;
   border-radius: 16px;
