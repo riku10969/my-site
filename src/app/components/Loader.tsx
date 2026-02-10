@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type LoaderProps = {
   onFinish: () => void;
@@ -16,6 +16,8 @@ export default function Loader({
   minShowMs = 800,
 }: LoaderProps) {
   const [displayed, setDisplayed] = useState("");
+  const onFinishRef = useRef(onFinish);
+  onFinishRef.current = onFinish;
 
   useEffect(() => {
     let i = 0;
@@ -29,12 +31,12 @@ export default function Loader({
         window.dispatchEvent(new CustomEvent("bg:showLogo"));
 
         // 少し余韻を置いてUIを閉じる（背景は常駐）
-        const t = setTimeout(onFinish, minShowMs);
+        const t = setTimeout(() => onFinishRef.current(), minShowMs);
         return () => clearTimeout(t);
       }
     }, charDelayMs);
     return () => clearInterval(id);
-  }, [text, charDelayMs, minShowMs, onFinish]);
+  }, [text, charDelayMs, minShowMs]);
 
   return (
     <div

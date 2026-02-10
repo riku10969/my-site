@@ -17,6 +17,7 @@ const navItems: NavItem[] = [
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
+  const isHome = pathname === "/";
 
   // ルートが変わったらモバイルメニューを閉じる
   useEffect(() => {
@@ -55,16 +56,30 @@ export default function Header() {
         </button>
 
         {/* Center-left: Logo */}
-        <TransitionLink href="/" className="flex items-center">
-          <Image
-            src="/RikuLogo3.png"
-            alt="UI/UX RIKU"
-            width={160}
-            height={70}
-            className="h-10 w-auto md:ml-14"
-            priority
-          />
-        </TransitionLink>
+        {isHome ? (
+          // 最初の画面（ホーム）ではロゴ押下で遷移させない
+          <div className="flex items-center select-none cursor-default">
+            <Image
+              src="/RikuLogo3.png"
+              alt="UI/UX RIKU"
+              width={160}
+              height={70}
+              className="h-10 w-auto md:ml-14"
+              priority
+            />
+          </div>
+        ) : (
+          <TransitionLink href="/" className="flex items-center">
+            <Image
+              src="/RikuLogo3.png"
+              alt="UI/UX RIKU"
+              width={160}
+              height={70}
+              className="h-10 w-auto md:ml-14"
+              priority
+            />
+          </TransitionLink>
+        )}
 
         {/* Center: Desktop Nav */}
         <nav

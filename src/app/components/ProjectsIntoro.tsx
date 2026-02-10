@@ -23,12 +23,14 @@ const projects: Project[] = [
 export default function ProjectsIntro() {
   const [loaded, setLoaded] = useState(false);
   const [showSwiper, setShowSwiper] = useState(false);
+  const [hidePlaceholder, setHidePlaceholder] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const router = useRouter();
   const { push } = usePageTransition();
 
   // プレースホルダのルート&カード参照
   const placeholderRef = useRef<HTMLDivElement | null>(null);
+  const swiperWrapperRef = useRef<HTMLDivElement | null>(null);
   const cardRefs = useRef<HTMLDivElement[]>([]);
 
   // --- 初回アニメ（3→2→1 右→左、1だけ残す） ---
@@ -43,12 +45,15 @@ export default function ProjectsIntro() {
 
       const W = window.innerWidth || 1;
 
+      // 中央揃えを GSAP で管理（CSS の translate(-50%,-50%) と競合しないよう xPercent/yPercent を使用）
       // 初期状態：右外 + 透明
       gsap.set(cards, {
-         x: W,
-         opacity: 0,
-         willChange: "transform,opacity",
-       });
+        xPercent: -50,
+        yPercent: -50,
+        x: W,
+        opacity: 0,
+        willChange: "transform,opacity",
+      });
 
       // 3枚目 → 2枚目 → 1枚目（残す）
       gsap
@@ -65,13 +70,28 @@ export default function ProjectsIntro() {
           opacity: 1,
           duration: 0.45,
           ease: "power2.out",
-          clearProps: "x,opacity,willChange",
+          clearProps: "x,xPercent,yPercent,opacity,willChange",
         })
         .add(() => setShowSwiper(true), "-=0.1");
     }, placeholderRef);
 
     return () => ctx.revert();
   }, [loaded]);
+
+  // --- 1枚残り → Swiper へのクロスフェード（一瞬消えないように） ---
+  useLayoutEffect(() => {
+    if (!showSwiper || hidePlaceholder || !swiperWrapperRef.current || !placeholderRef.current) return;
+
+    const placeholderEl = placeholderRef.current;
+    const swiperEl = swiperWrapperRef.current;
+    gsap.set(swiperEl, { opacity: 0 });
+    const tl = gsap.timeline({
+      onComplete: () => setHidePlaceholder(true),
+    });
+    // 先に Swiper を表示してからプレースホルダを消す（一瞬の空白を防ぐ）
+    tl.to(swiperEl, { opacity: 1, duration: 0.4, ease: "power2.out" }, 0);
+    tl.to(placeholderEl, { opacity: 0, duration: 0.4, ease: "power2.in" }, 0.15);
+  }, [showSwiper, hidePlaceholder]);
 
   // --- Loader ---
   if (!loaded) {
@@ -82,12 +102,22 @@ export default function ProjectsIntro() {
     );
   }
 
-  // --- プレースホルダ（初回アニメ用） ---
-  if (!showSwiper) {
-    return (
-      <>
-        <div className={styles.projectsWrapper}>
-          <div ref={placeholderRef} className={styles.swiperPlaceholder}>
+  // --- プレースホルダ（初回アニメ）＋ クロスフェード時は上に重ねてからフェードアウト ---
+  const isCrossfade = showSwiper && !hidePlaceholder;
+
+  return (
+    <>
+      <div className={styles.projectsWrapper}>
+        {(!showSwiper || !hidePlaceholder) && (
+          <div
+            ref={placeholderRef}
+            className={styles.swiperPlaceholder}
+            style={
+              isCrossfade
+                ? { position: "absolute", inset: 0, zIndex: 1 }
+                : undefined
+            }
+          >
             {projects.map((p, i) => (
               <div
                 key={i}
@@ -103,52 +133,40 @@ export default function ProjectsIntro() {
               </div>
             ))}
           </div>
-        </div>
+        )}
 
-        {/* イントロ中は“少し強め”設定 */}
-        <DistortOverlay
-          key="intro"
-          selector='img[data-distort]'
-          strength={3} //ここで強さ変化
-          speed={2}
-          maxAmpPx={14}
-          deadZonePx={0.9}
-          damping={0.88}
-        />
-      </>
-    );
-  }
-
-  // --- Swiper（切替後） ---
-  return (
-    <>
-      <div className={styles.projectsWrapper}>
-        <Swiper
-          modules={[Autoplay, Navigation]}
-          autoplay={{ delay: 3000, disableOnInteraction: false }}
-          navigation
-          loop
-          centeredSlides
-          slidesPerView={1}
-          spaceBetween={30}
-          speed={700}
-          initialSlide={0}
-          onSlideChange={(s) => setActiveIndex(s.realIndex)}
-        >
-          {projects.map((p, i) => (
-            <SwiperSlide key={i} className={styles["gsap-init"]}>
-              <div
-                className={styles.cardInitial}
-                onClick={() => push(p.path)}
-                style={{ cursor: "pointer" }}
-              >
-                {/* Swiper側の画像にも適用 */}
-                <img src={p.image} alt={p.title} data-distort />
-                <div className={styles.overlay}><span>{p.title}</span></div>
-              </div>
-            </SwiperSlide>
-          ))}
-        </Swiper>
+        {showSwiper && (
+          <div
+            ref={swiperWrapperRef}
+            className={styles.swiperWrapper}
+            style={isCrossfade ? { position: "relative", zIndex: 0 } : undefined}
+          >
+            <Swiper
+              modules={[Autoplay, Navigation]}
+              autoplay={{ delay: 3000, disableOnInteraction: false }}
+              navigation
+              loop
+              centeredSlides
+              slidesPerView={1}
+              spaceBetween={30}
+              speed={700}
+              initialSlide={0}
+              onSlideChange={(s) => setActiveIndex(s.realIndex)}
+            >
+              {projects.map((p, i) => (
+                <SwiperSlide key={i} className={styles["gsap-init"]}>
+                  <div
+                    className={styles.cardInitial}
+                    onClick={() => push(p.path)}
+                    style={{ cursor: "pointer" }}
+                  >
+                    {/* Swiper側の画像にも適用 */}
+                    <img src={p.image} alt={p.title} data-distort />
+                    <div className={styles.overlay}><span>{p.title}</span></div>
+                  </div>
+                </SwiperSlide>
+              ))}
+            </Swiper>
        
        <div
   className={`${styles.titleArea} ${
@@ -161,18 +179,39 @@ export default function ProjectsIntro() {
 >
   {projects[activeIndex]?.title}
 </div>
+          </div>
+        )}
       </div>
 
-      {/* 通常運転は“控えめ”設定 */}
-      <DistortOverlay
-        key="swiper"
-        selector='img[data-distort]'
-        strength={0.40}
-        speed={0.65}
-        maxAmpPx={10}
-        deadZonePx={1.2}
-        damping={0.92}
-      />
+      {/* クロスフェード中はオーバーレイを切り替えない（一瞬消えるのを防ぐ） */}
+      {(!showSwiper || !hidePlaceholder) && (
+        <>
+          {/* イントロ中は"少し強め"設定 */}
+          <DistortOverlay
+            key="intro"
+            selector='img[data-distort]'
+            strength={3} //ここで強さ変化
+            speed={2}
+            maxAmpPx={14}
+            deadZonePx={0.9}
+            damping={0.88}
+          />
+        </>
+      )}
+      {showSwiper && hidePlaceholder && (
+        <>
+          {/* 通常運転は"控えめ"設定 */}
+          <DistortOverlay
+            key="swiper"
+            selector='img[data-distort]'
+            strength={0.40}
+            speed={0.65}
+            maxAmpPx={10}
+            deadZonePx={1.2}
+            damping={0.92}
+          />
+        </>
+      )}
     </>
   );
 }

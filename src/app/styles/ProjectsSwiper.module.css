@@ -19,6 +19,15 @@
   z-index: 80; /* 必要ならさらに上げる */
   perspective: 1200px;
   width: 100%;
+  overflow: hidden;
+}
+
+/* Swiper を画面内に収める */
+.swiperWrapper {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0; /* grid 子がはみ出さないように */
+  overflow: hidden;
 }
 
 .card img,
