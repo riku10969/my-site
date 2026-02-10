@@ -85,7 +85,7 @@ function ZoomImageModal({
   const [animating, setAnimating] = useState(false);
   const [visible, setVisible] = useState(false);
   const [originSize, setOriginSize] = useState<{ w: number; h: number } | null>(null);
-  const [modalSize, setModalSize] = useState<{ w: number; h: number } | null>(null);
+  const [modalSize, setModalSize] = useState<{ w: number; h: number; x: number; y: number } | null>(null);
   const cloneRef = useRef<HTMLImageElement | null>(null);
   const backdropRef = useRef<HTMLDivElement | null>(null);
 
@@ -117,7 +117,7 @@ function ZoomImageModal({
     const targetY = Math.round((vh - modalH) / 2);
 
     setOriginSize({ w: rect.width, h: rect.height });
-    setModalSize({ w: modalW, h: modalH });
+    setModalSize({ w: modalW, h: modalH, x: targetX, y: targetY });
 
     const clone = document.createElement("img");
     clone.src = item.src;
@@ -181,10 +181,7 @@ function ZoomImageModal({
         .finished.then(() => {
           setAnimating(false);
           setVisible(true);
-          if (cloneRef.current) {
-            cloneRef.current.remove();
-            cloneRef.current = null;
-          }
+          // クローンは削除せず、useEffect でモーダル内に移して継続表示（チラつき防止）
         });
     });
   }, [item, originEl, prefersNoMotion]);
@@ -200,15 +197,11 @@ function ZoomImageModal({
     if (!clone) {
       clone = document.createElement("img");
       clone.src = item.src;
-      clone.style.position = "fixed";
-      clone.style.zIndex = "1000";
-      document.body.appendChild(clone);
       cloneRef.current = clone;
+      document.body.appendChild(clone);
     }
-
-    setVisible(false);
-
     Object.assign(clone.style, {
+      position: "fixed",
       left: startX + "px",
       top: startY + "px",
       width: modalSize.w + "px",
@@ -216,7 +209,11 @@ function ZoomImageModal({
       objectFit: "cover",
       borderRadius: "20px",
       boxShadow: "0 20px 60px rgba(0,0,0,.45)",
+      zIndex: "1000",
     } as CSSStyleDeclaration);
+    if (clone.parentElement !== document.body) document.body.appendChild(clone);
+
+    setVisible(false);
 
     const backdrop = backdropRef.current;
     setAnimating(true);
@@ -283,24 +280,24 @@ function ZoomImageModal({
     <>
       <div className="fixed inset-0 z-[950]" aria-modal="true" role="dialog" onClick={close} />
       {visible && modalSize && (
-        <div className="fixed inset-0 z-[980] flex items-center justify-center pointer-events-none" aria-hidden>
+        <div className="fixed inset-0 z-[1001] pointer-events-none" aria-hidden>
           <div
-            className="relative rounded-2xl overflow-hidden ring-1 ring-white/15 shadow-2xl bg-black/70 backdrop-blur-[2px] pointer-events-auto flex flex-col max-w-[90vw]"
-            style={{ width: modalSize.w }}
+            className="absolute rounded-2xl overflow-hidden ring-1 ring-white/15 shadow-2xl pointer-events-auto flex flex-col max-w-[90vw]"
+            style={{
+              width: modalSize.w,
+              left: modalSize.x,
+              top: modalSize.y,
+            }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="relative shrink-0" style={{ width: modalSize.w, height: modalSize.h }}>
-              <NextImage
-                src={item.src}
-                alt={item.alt}
-                fill
-                className="object-cover"
-                sizes={`${modalSize.w}px`}
-                priority
-              />
-            </div>
+            {/* 画像エリア: 背景なしでクローンがそのまま明るく見える */}
+            <div
+              className="relative shrink-0 rounded-t-2xl pointer-events-none"
+              style={{ width: modalSize.w, height: modalSize.h }}
+            />
 
-            <div className="px-6 py-5 text-center space-y-3 min-w-0">
+            {/* 文言エリア: 写真と重ならない独立パネル（暗めの背景で可読性確保） */}
+            <div className="shrink-0 px-6 py-5 text-center space-y-3 min-w-0 bg-[#0d0d0d]">
               <div className="text-xl md:text-2xl uppercase tracking-[0.15em] text-white/50 font-medium">
                 {category}
               </div>
@@ -321,7 +318,7 @@ function ZoomImageModal({
             <button
               aria-label="Close"
               onClick={close}
-              className="absolute top-4 right-4 rounded-full bg-white/90 text-black px-4 py-2 text-base hover:bg-white transition-colors"
+              className="absolute top-2 right-2 rounded-full bg-white/90 text-black w-10 h-10 flex items-center justify-center text-lg hover:bg-white transition-colors shadow-lg"
             >
               ✕
             </button>

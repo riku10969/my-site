@@ -3,12 +3,7 @@
 import React, { useEffect, useRef } from "react";
 import * as THREE from "three";
 
-const SKILL_IMAGES = [
-  "/skill/branding1.jpg",
-  "/skill/design1.jpg",
-  "/skill/frontend1.jpg",
-  "/RikuLogo3.png"
-];
+const SKILL_IMAGES = ["/RikuLogo3.png"];
 
 /** スクロール進行 0..1 をイージング（easeOutCubic） */
 function easeOutCubic(t: number): number {
@@ -59,7 +54,10 @@ export default function SkillScene3D({ scrollProgress }: Props) {
     const meshesRef = { current: [] as THREE.Mesh[] };
     const loader = new THREE.TextureLoader();
 
-    SKILL_IMAGES.forEach((src, i) => {
+    // 単一ロゴを従来の4枚目と同じ位置に配置（奥行・見え方を維持）
+    const logoZ = startZ - 3 * zSpacing;
+    const logoX = (3 - 1.5) * 0.8;
+    SKILL_IMAGES.forEach((src) => {
       loader.load(
         src,
         (tex) => {
@@ -72,8 +70,8 @@ export default function SkillScene3D({ scrollProgress }: Props) {
           });
           const geo = new THREE.PlaneGeometry(planeWidth, planeHeight);
           const mesh = new THREE.Mesh(geo, mat);
-          mesh.position.z = startZ - i * zSpacing;
-          mesh.position.x = (i - 1.5) * 0.8;
+          mesh.position.z = logoZ;
+          mesh.position.x = logoX;
           scene.add(mesh);
           meshesRef.current.push(mesh);
         },

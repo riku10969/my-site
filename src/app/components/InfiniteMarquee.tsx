@@ -89,7 +89,8 @@ export default function InfiniteMarquee({
       const dx = touchStartXRef.current - e.touches[0].clientX;
       const raw = touchStartPosRef.current + dx;
       const wrapped = ((raw % loopWLocal) + loopWLocal) % loopWLocal;
-      posRef.current = direction === "left" ? -wrapped : wrapped - loopWLocal;
+      // タッチ時はどちらの方向でも指の動きに追従するよう統一
+      posRef.current = -wrapped;
       track.style.transform = `translateX(${posRef.current}px)`;
     };
     track.addEventListener("touchmove", onMove, { passive: false });

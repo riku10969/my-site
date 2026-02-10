@@ -35,6 +35,9 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
   const [strengthAccordionOpen, setStrengthAccordionOpen] = useState(false);
   const strengthAccordionOpenRef = useRef(false); // applyStrengthParallax から参照（パネル未表示時はパララックス無効）
   const strengthPanelRef = useRef<HTMLDivElement | null>(null);
+  // モバイルでパララックス終了時にアコーディオンを即閉じしてワープ防止（transition 0ms + 閉じた直後に1回だけスクロール）
+  const [accordionCloseInstantForMobile, setAccordionCloseInstantForMobile] = useState(false);
+  const mobileUnpinScrollRef = useRef(false);
 
   const strengths: Strength[] = useMemo(
     () => [
@@ -63,7 +66,7 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
       "/RikuLogo3.png",
       "/parallax/spacekelvin.png",
       "/parallax/coding.png",
-      "/hobby/snow.jpg",
+      "/parallax/beach.jpg",
       "/hobby/car.jpg",
       "/parallax/shark.png",
       "/hobby/figaro.jpg",
@@ -78,6 +81,8 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
     () => ["RikuLogo3.png", "cowcowburger.png", "shark.png", "spacekelvin.png"],
     []
   );
+  // 縦長アスペクト（画像に合わせて縦長表示）にする写真
+  const portraitSlugs = useMemo(() => ["beach.jpg"], []);
   const MOBILE_BREAKPOINT = 768;
 
   // 9枚分の位置（デスクトップ）
@@ -135,6 +140,28 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
     strengthAccordionOpenRef.current = strengthAccordionOpen;
   }, [strengthAccordionOpen]);
 
+  // モバイルでパララックス終了時にアコーディオンを即閉じしたあと、レイアウト確定後に1回だけ Skill/Hobby へスクロール（ワープ防止）
+  useEffect(() => {
+    if (strengthAccordionOpen) return;
+    if (!mobileUnpinScrollRef.current || typeof window === "undefined" || window.innerWidth >= MOBILE_BREAKPOINT) {
+      setAccordionCloseInstantForMobile(false);
+      return;
+    }
+    mobileUnpinScrollRef.current = false;
+    const id = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const el = skillHobbyWrapperRef.current;
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          const targetScroll = window.scrollY + rect.top - 24;
+          window.scrollTo(0, Math.max(0, targetScroll));
+        }
+        setAccordionCloseInstantForMobile(false);
+      });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [strengthAccordionOpen]);
+
   // Strengthパララックス効果を適用する関数
   const applyStrengthParallax = useCallback(() => {
     if (!strengthSectionRef.current || !strengthWrapperRef.current) return;
@@ -165,6 +192,7 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
     const section = strengthSectionRef.current;
     const wrapper = strengthWrapperRef.current;
     const viewportHeight = window.innerHeight;
+    const isMobileView = typeof window !== "undefined" && window.innerWidth < MOBILE_BREAKPOINT;
 
     // アンカー要素の位置を取得
     const anchor = document.querySelector("#strength-start-anchor");
@@ -341,9 +369,14 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
         strengthTitleRef.current.style.visibility = "hidden";
         strengthTitleRef.current.style.pointerEvents = "none";
       }
-      // アコーディオン閉じで高さが減るので、閉じたあとの見え方に合わせてスクロール（下ワープを防ぐ）
-      const targetScroll = Math.max(0, (startY ?? 0) - 60);
-      window.scrollTo(0, targetScroll);
+      // デスクトップ: 閉じたあとの見え方に合わせてスクロール。モバイル: 即閉じ(0ms)＋閉じた直後に1回だけスクロールでワープ防止
+      if (isMobileView) {
+        mobileUnpinScrollRef.current = true;
+        setAccordionCloseInstantForMobile(true);
+      } else {
+        const targetScroll = Math.max(0, (startY ?? 0) - 60);
+        window.scrollTo(0, targetScroll);
+      }
       photoRefs.current.forEach((el) => {
         if (el) {
           el.style.opacity = "0";
@@ -379,9 +412,14 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
           strengthTitleRef.current.style.visibility = "hidden";
           strengthTitleRef.current.style.pointerEvents = "none";
         }
-        // アコーディオン閉じで高さが減るので、閉じたあとの見え方に合わせてスクロール（下ワープを防ぐ）
-        const targetScroll = Math.max(0, (startY ?? 0) - 60);
-        window.scrollTo(0, targetScroll);
+        // デスクトップ: 閉じたあとの見え方に合わせてスクロール。モバイル: 即閉じ(0ms)＋閉じた直後に1回だけスクロールでワープ防止
+        if (isMobileView) {
+          mobileUnpinScrollRef.current = true;
+          setAccordionCloseInstantForMobile(true);
+        } else {
+          const targetScroll = Math.max(0, (startY ?? 0) - 60);
+          window.scrollTo(0, targetScroll);
+        }
 
       photoRefs.current.forEach((el) => {
         if (el) {
@@ -777,7 +815,7 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
           style={{
             maxHeight: strengthAccordionOpen ? "6000px" : "0",
             transitionProperty: "max-height",
-            transitionDuration: strengthAccordionOpen ? "550ms" : "400ms",
+            transitionDuration: accordionCloseInstantForMobile && !strengthAccordionOpen ? "0ms" : strengthAccordionOpen ? "550ms" : "400ms",
             transitionTimingFunction: strengthAccordionOpen ? "cubic-bezier(0.32, 0.72, 0, 1)" : "cubic-bezier(0.4, 0, 0.2, 1)",
             transitionDelay: strengthAccordionOpen ? "0ms" : "220ms",
           }}
@@ -788,7 +826,7 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
             }`}
             style={{
               transitionProperty: "opacity",
-              transitionDuration: strengthAccordionOpen ? "380ms" : "220ms",
+              transitionDuration: accordionCloseInstantForMobile && !strengthAccordionOpen ? "0ms" : strengthAccordionOpen ? "380ms" : "220ms",
               transitionTimingFunction: "ease-out",
               transitionDelay: strengthAccordionOpen ? "120ms" : "0ms",
             }}
@@ -820,6 +858,8 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
           {photos.map((src, i) => {
             const slug = src.split("/").pop() ?? "";
             const noBorderContain = noBorderContainSlugs.some((s) => slug === s);
+            const isPortrait = portraitSlugs.some((s) => slug === s);
+            const aspectClass = isPortrait ? "aspect-[3/4]" : "aspect-video";
             return (
               <div
                 key={i}
@@ -842,7 +882,7 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
               >
                 <div
                   className={`w-full flex items-center justify-center ${
-                    noBorderContain ? "aspect-video" : "h-full"
+                    noBorderContain ? (isPortrait ? aspectClass : "aspect-video") : "h-full"
                   }`}
                 >
                   {noBorderContain ? (
@@ -854,7 +894,7 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
                     />
                   ) : (
                     <div
-                      className="w-full aspect-video bg-cover bg-center"
+                      className={`w-full ${aspectClass} bg-cover bg-center`}
                       style={{
                         backgroundImage: `url(${src})`,
                         willChange: "transform",
@@ -922,7 +962,7 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
                 alt: "Figaro",
                 label: "フィガロ",
                 description: "チワワとペキニーズのミックス犬。毎日の癒しです。",
-                category: "DOG",
+                category: "Figaro",
               },
               {
                 src: "/hobby/camera.jpg",
@@ -950,14 +990,14 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
                 src: "/hobby/car.jpg",
                 alt: "Car",
                 label: "CIVIC",
-                description: "夜のドライブ。",
+                description: "車の運転が得意です。",
                 category: "CAR",
               },
               {
                 src: "/hobby/NewYork.jpg",
                 alt: "NewYork",
                 label: "ニューヨーク",
-                description: "いろんな国に旅行に行くのが夢です。",
+                description: "海外のデザインを見て勉強しています。",
                 category: "TRAVEL",
                 meta: ["New York, USA", "2023"],
               },

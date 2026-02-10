@@ -17,7 +17,7 @@ type Project = { title: string; image: string; path: string };
 const projects: Project[] = [
   { title: "About",   image: "/projects/project1.jpg", path: "/project/about" },
   { title: "Works",   image: "/projects/project2.jpg", path: "/project/works" },
-  { title: "Contact", image: "/projects/project3.jpg", path: "/project/contact" },
+  { title: "Contact", image: "/projects/project3.png", path: "/project/contact" },
 ];
 
 export default function ProjectsIntro() {
@@ -64,13 +64,13 @@ export default function ProjectsIntro() {
         // 2枚目
         .to(cards[1], { x: 0, opacity: 1, duration: 0.40 })
         .to(cards[1], { x: -W, opacity: 0, duration: 0.40 })
-        // 1枚目（中央に残す）
+        // 1枚目（中央に残す）※ opacity は clear しない（CSS の opacity:0 に戻ると一瞬白くなるため）
         .to(cards[0], {
           x: 0,
           opacity: 1,
           duration: 0.45,
           ease: "power2.out",
-          clearProps: "x,xPercent,yPercent,opacity,willChange",
+          clearProps: "x,xPercent,yPercent,willChange",
         })
         .add(() => setShowSwiper(true), "-=0.1");
     }, placeholderRef);

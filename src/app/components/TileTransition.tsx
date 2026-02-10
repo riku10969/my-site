@@ -15,8 +15,8 @@ import React, {
 import { createPortal } from "react-dom";
 import gsap from "gsap";
 
-const COLS = 12;
-const ROWS = 18;
+const COLS = 8;
+const ROWS = 14;
 const TILE_IN_DURATION = 0.6;
 const TILE_OUT_DURATION = 0.5;
 const STAGGER_IN = 0.018;
@@ -29,9 +29,9 @@ export function useTileTransition({
   setPlaying,
   cols = COLS,
   rows = ROWS,
-  tileColor = "#0f1214",
+  tileColor = "#5a37a6",
   tileGap = 0,
-  accentColor = "#11a98b",
+  accentColor = "#5a37a6",
 }: {
   router: ReturnType<typeof import("next/navigation").useRouter>;
   mounted: boolean;

@@ -126,14 +126,14 @@ export default function Works() {
     {
       key: "web",
       label: "Web",
-      accentClass: "text-purple-300",
+      accentClass: "text-[#9d7cdb]",
       direction: "left",
       speed: speedWeb,
       itemWidth: cardW,
       gap,
       borderClasses:
-      "border-2 border-purple-400/40 group-hover:border-purple-300/80 " +
-      "ring-0 group-hover:ring-4 group-hover:ring-purple-300/20",
+      "border-2 border-[#9d7cdb]/50 group-hover:border-[#9d7cdb]/90 " +
+      "ring-0 group-hover:ring-4 group-hover:ring-[#9d7cdb]/25",
       items: [
         {
           src: "/works/web1.png",
@@ -244,7 +244,7 @@ export default function Works() {
   }, [open, currentKey, getSection, clampIndex]);
 
   return (
-    <section className="bg-[#1f1f1f] text-white py-12 md:py-16 px-4 md:px-6">
+    <section className="bg-[#1f1f1f] text-white py-12 md:py-16 px-0">
       <span className="font-display">
       <h2 className="text-center mb-8 md:mb-10">
         <FadeInText

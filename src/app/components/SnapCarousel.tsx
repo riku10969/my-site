@@ -305,7 +305,7 @@ export function ProjectsIntroReplacement() {
   const items: SlideItem[] = [
     { title: "About", image: "/projects/project1.jpg", path: "/project/about" },
     { title: "Works", image: "/projects/project2.jpg", path: "/project/works" },
-    { title: "Contact", image: "/projects/project3.jpg", path: "/project/contact" },
+    { title: "Contact", image: "/projects/project3.png", path: "/project/contact" },
   ];
 
   return (
