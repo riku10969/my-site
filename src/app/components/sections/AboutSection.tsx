@@ -60,59 +60,71 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
     []
   );
 
-  // 写真を9枚に拡張（HobbySectionの写真を使いまわし）
+  // 写真13枚：0-3はパララックス中ずっと表示（RikuLogo3, spacekelvin, shark, cowcowburger）。4-12はStrengthごとに下から流れ込み・上に流れ出る
   const photos = useMemo(
     () => [
       "/RikuLogo3.png",
       "/parallax/spacekelvin.png",
-      "/parallax/coding.png",
-      "/parallax/beach.jpg",
-      "/hobby/car.jpg",
       "/parallax/shark.png",
-      "/hobby/figaro.jpg",
-      "/hobby/camera.jpg",
       "/parallax/cowcowburger.png",
+      "/parallax/beach.jpg",
+      "/parallax/noise.jpg",
+      "/hobby/camera.jpg",
+      "/hobby/snow.jpg",
+      "/hobby/NewYork.jpg",
+      "/hobby/movie1.jpg",
+      "/hobby/figaro.jpg",
+      "/parallax/usj.jpg",
+      "/parallax/coding.png",
     ],
     []
   );
 
   // 罫線なし・画像全体表示（contain）にする写真
   const noBorderContainSlugs = useMemo(
-    () => ["RikuLogo3.png", "cowcowburger.png", "shark.png", "spacekelvin.png"],
+    () => ["RikuLogo3.png", "spacekelvin.png", "cowcowburger.png", "shark.png"],
     []
   );
   // 縦長アスペクト（画像に合わせて縦長表示）にする写真
-  const portraitSlugs = useMemo(() => ["beach.jpg"], []);
+  const portraitSlugs = useMemo(() => [], []);
   const MOBILE_BREAKPOINT = 768;
 
-  // 9枚分の位置（デスクトップ）
+  // 13枚分の位置（デスクトップ）：0-3=常時表示、4-6=Strength1（散らす）、7-9=Strength2、10-12=Strength3（左中右バランス）
   const desktopPos: Pos[] = useMemo(
     () => [
-      { top: "5%", left: "2%", w: "340px" },
-      { top: "3%", left: "62%", w: "460px" },
-      { top: "18%", left: "25%", w: "320px" },
+      { top: "8%", left: "5%", w: "280px" },
+      { top: "5%", left: "68%", w: "320px" },
+      { top: "50%", left: "2%", w: "260px" },
+      { top: "55%", left: "72%", w: "300px" },
+      { top: "5%", left: "18%", w: "320px" },
+      { top: "22%", left: "44%", w: "380px" },
+      { top: "10%", left: "68%", w: "300px" },
       { top: "32%", left: "5%", w: "300px" },
       { top: "45%", left: "70%", w: "400px" },
       { top: "55%", left: "12%", w: "420px" },
-      { top: "8%", left: "85%", w: "260px" },
-      { top: "38%", left: "50%", w: "340px" },
-      { top: "66%", left: "72%", w: "440px" },
+      { top: "12%", left: "22%", w: "280px" },
+      { top: "40%", left: "38%", w: "360px" },
+      { top: "66%", left: "58%", w: "380px" },
     ],
     []
   );
 
-  // モバイル用：写真を小さく・配置を詰める
+  // モバイル用：13枚（1の時は散らす、3の時はバランスよく）
   const mobilePos: Pos[] = useMemo(
     () => [
-      { top: "4%", left: "2%", w: "100px" },
-      { top: "2%", left: "58%", w: "120px" },
-      { top: "14%", left: "22%", w: "95px" },
-      { top: "28%", left: "4%", w: "90px" },
-      { top: "42%", left: "62%", w: "110px" },
-      { top: "52%", left: "8%", w: "115px" },
-      { top: "6%", left: "78%", w: "85px" },
-      { top: "34%", left: "48%", w: "100px" },
-      { top: "62%", left: "68%", w: "118px" },
+      { top: "4%", left: "2%", w: "90px" },
+      { top: "2%", left: "70%", w: "100px" },
+      { top: "42%", left: "0%", w: "85px" },
+      { top: "48%", left: "68%", w: "95px" },
+      { top: "4%", left: "12%", w: "95px" },
+      { top: "20%", left: "40%", w: "110px" },
+      { top: "8%", left: "62%", w: "100px" },
+      { top: "12%", left: "8%", w: "90px" },
+      { top: "38%", left: "58%", w: "110px" },
+      { top: "35%", left: "18%", w: "115px" },
+      { top: "10%", left: "18%", w: "90px" },
+      { top: "42%", left: "38%", w: "105px" },
+      { top: "72%", left: "54%", w: "100px" },
     ],
     []
   );
@@ -329,13 +341,15 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
             el.style.pointerEvents = i === 0 ? "auto" : "none";
           }
         });
-        photoRefs.current.forEach((el) => {
-          if (el) {
-            el.style.opacity = "0.4";
-            el.style.transform = "translate3d(0, 0, 0)";
-            el.style.filter = "";
-            el.style.pointerEvents = "auto";
-          }
+        photoRefs.current.forEach((el, idx) => {
+          if (!el) return;
+          const isFixed = idx < 4;
+          const isStrength0Flow = idx >= 4 && idx < 7;
+          const visible = isFixed || isStrength0Flow;
+          el.style.opacity = visible ? (isFixed ? "0.4" : "0.4") : "0";
+          el.style.transform = "translate3d(0, 0, 0)";
+          el.style.filter = "";
+          el.style.pointerEvents = visible ? "auto" : "none";
         });
       }
       return;
@@ -479,70 +493,94 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
       }
     }
 
-    // 写真のパララックス効果（表示用は補間済みdisplayProgressで滑らかに）
-    const totalPhotos = photos.length;
+    // 写真：0-3はパララックス中ずっと表示（RikuLogo3, spacekelvin, shark, cowcowburger）。4-12は下から流れ込み・上に流れ出る
     const isReverse = enteredFromBottomRef.current;
-
-    // 4枚（rikuLogo3, spacekelvin, shark, cowcowburger）は少し早めに移動
-    const earlyMoveIndices = [0, 1, 5, 8];
-    const speedMultiplier = (i: number) =>
-      earlyMoveIndices.includes(i) ? 1.4 : 1;
-
     const isMobile = typeof window !== "undefined" && window.innerWidth < MOBILE_BREAKPOINT;
     const depthBase = isMobile ? 80 : 150;
     const depthStep = isMobile ? 28 : 60;
     const swayPx = isMobile ? 14 : 28;
+    const T = Math.PI * 2;
+    const SEGMENT = 1 / strengths.length;
+    const FADE_DUR = 0.06;
+    const FLOW_PX = 56;
 
     photoRefs.current.forEach((el, i) => {
       if (!el) return;
 
-      const depth = depthBase + i * depthStep;
-      let yOffset = 0;
-      let opacity = 1;
-      const parallaxSpeed =
-        (0.6 + (i % 3) * 0.2) * speedMultiplier(i);
-
-      if (isReverse) {
-        yOffset = depth * (displayProgress * parallaxSpeed);
-      } else {
-        yOffset = depth * (1 - displayProgress * parallaxSpeed);
-      }
-
-      if (displayProgress < 0.1) {
-        opacity = Math.max(0.35, Math.min(1, displayProgress / 0.08));
-      } else if (displayProgress > 0.9) {
-        opacity = Math.max(0, (1 - displayProgress) / 0.1);
-      } else {
-        opacity = 1;
-      }
-
       const progress = displayProgress;
-      const T = Math.PI * 2;
-      let transform = `translate3d(0, ${yOffset}px, 0)`;
 
-      if (i === 0) {
-        // rikuLogo3: スクロールに合わせて大きくなったり小さくなったり
-        const scale = 0.88 + 0.24 * (1 + Math.sin(progress * T * 3)) / 2;
-        transform += ` scale(${scale})`;
-      } else if (i === 1) {
-        // spacekelvin: スクロールに合わせて回転
-        transform += ` rotate(${progress * 360}deg)`;
-      } else if (i === 5) {
-        // shark: スクロールに合わせて左右に揺れる
-        transform += ` translateX(${swayPx * Math.sin(progress * T * 3)}px)`;
-      } else if (i === 8) {
-        // cowcowburger: スクロールに合わせて光ったり消えたり
-        const glow = 0.42 + 0.58 * (1 + Math.sin(progress * T * 3)) / 2;
-        opacity *= glow;
+      if (i < 4) {
+        // 常時表示4枚：パララックスを通してずっと表示（スクロールで動く）
+        const depth = depthBase + i * depthStep;
+        const parallaxSpeed = (0.6 + (i % 3) * 0.2) * 1.4;
+        let yOffset = 0;
+        if (isReverse) {
+          yOffset = depth * (progress * parallaxSpeed);
+        } else {
+          yOffset = depth * (1 - progress * parallaxSpeed);
+        }
+        let opacity = 1;
+        if (progress < 0.1) {
+          opacity = Math.max(0.35, Math.min(1, progress / 0.08));
+        } else if (progress > 0.9) {
+          opacity = Math.max(0, (1 - progress) / 0.1);
+        }
+        let transform = `translate3d(0, ${yOffset}px, 0)`;
+        if (i === 0) {
+          const scale = 0.88 + 0.24 * (1 + Math.sin(progress * T * 3)) / 2;
+          transform += ` scale(${scale})`;
+        } else if (i === 1) {
+          transform += ` rotate(${progress * 360}deg)`;
+        } else if (i === 2) {
+          transform += ` translateX(${swayPx * Math.sin(progress * T * 3)}px)`;
+        } else if (i === 3) {
+          const glow = 0.42 + 0.58 * (1 + Math.sin(progress * T * 3)) / 2;
+          opacity *= glow;
+        }
+        el.style.transform = transform;
+        el.style.opacity = opacity.toString();
+        if (i === 3) {
+          el.style.filter = `brightness(${0.7 + 0.6 * (1 + Math.sin(progress * T * 3)) / 2})`;
+        } else {
+          el.style.filter = "";
+        }
+        el.style.willChange = "transform, opacity";
+        el.style.pointerEvents = opacity > 0.1 ? "auto" : "none";
+        return;
       }
 
-      el.style.transform = transform;
-      el.style.opacity = opacity.toString();
-      if (i === 8) {
-        el.style.filter = `brightness(${0.7 + 0.6 * (1 + Math.sin(progress * T * 3)) / 2})`;
+      // 4-12: スクロールでは動かさず。表示時は下から上へ流れながらフェードイン、消えるときは上へ流れながら透明になって消える
+      const flowIndex = i - 4;
+      const group = Math.floor(flowIndex / 3);
+      const segmentStart = group * SEGMENT;
+      const segmentEnd = (group + 1) * SEGMENT;
+      const fadeInEnd = segmentStart + FADE_DUR;
+      const fadeOutStart = segmentEnd - FADE_DUR;
+
+      let opacity = 0;
+      let flowY = 0;
+      if (progress < segmentStart) {
+        opacity = 0;
+        flowY = FLOW_PX;
+      } else if (progress >= segmentStart && progress < fadeInEnd) {
+        const t = (progress - segmentStart) / FADE_DUR;
+        opacity = t;
+        flowY = FLOW_PX * (1 - t);
+      } else if (progress >= fadeInEnd && progress < fadeOutStart) {
+        opacity = 1;
+        flowY = 0;
+      } else if (progress >= fadeOutStart && progress < segmentEnd) {
+        const t = (progress - fadeOutStart) / (segmentEnd - fadeOutStart);
+        opacity = 1 - t;
+        flowY = -FLOW_PX * t;
       } else {
-        el.style.filter = "";
+        opacity = 0;
+        flowY = -FLOW_PX;
       }
+
+      el.style.transform = `translate3d(0, ${flowY}px, 0)`;
+      el.style.opacity = opacity.toString();
+      el.style.filter = "";
       el.style.willChange = "transform, opacity";
       el.style.pointerEvents = opacity > 0.1 ? "auto" : "none";
     });
