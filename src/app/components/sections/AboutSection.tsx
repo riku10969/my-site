@@ -152,7 +152,7 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
     strengthAccordionOpenRef.current = strengthAccordionOpen;
   }, [strengthAccordionOpen]);
 
-  // モバイルでパララックス終了時にアコーディオンを即閉じしたあと、レイアウト確定後に1回だけ Skill/Hobby へスクロール（ワープ防止）
+  // モバイルでパララックス終了時にアコーディオンを即閉じしたあと、レイアウト確定後に1回だけスクロール（Skill が表示される位置に。デスクトップは unpin 時に別処理）
   useEffect(() => {
     if (strengthAccordionOpen) return;
     if (!mobileUnpinScrollRef.current || typeof window === "undefined" || window.innerWidth >= MOBILE_BREAKPOINT) {
@@ -160,18 +160,19 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
       return;
     }
     mobileUnpinScrollRef.current = false;
-    // iOSではレイアウト確定が遅れるため、少し待ってから計測・スクロールし、かつ最大スクロールを超えないようクランプする（最下部に飛ぶのを防ぐ）
     const timeoutId = window.setTimeout(() => {
       const el = skillHobbyWrapperRef.current;
       if (el) {
         const rect = el.getBoundingClientRect();
-        const targetScroll = window.scrollY + rect.top - 24;
         const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+        // モバイル: Skill が表示されるよう、ラッパー上端を viewport 上から 80px 下に（スクロールしすぎて hobby に飛ばない）
+        const topOffsetPx = 80;
+        const targetScroll = window.scrollY + rect.top - topOffsetPx;
         const clampedScroll = Math.max(0, Math.min(targetScroll, maxScroll));
         window.scrollTo(0, clampedScroll);
       }
       setAccordionCloseInstantForMobile(false);
-    }, 120);
+    }, 150);
     return () => window.clearTimeout(timeoutId);
   }, [strengthAccordionOpen]);
 
