@@ -148,18 +148,19 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
       return;
     }
     mobileUnpinScrollRef.current = false;
-    const id = requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        const el = skillHobbyWrapperRef.current;
-        if (el) {
-          const rect = el.getBoundingClientRect();
-          const targetScroll = window.scrollY + rect.top - 24;
-          window.scrollTo(0, Math.max(0, targetScroll));
-        }
-        setAccordionCloseInstantForMobile(false);
-      });
-    });
-    return () => cancelAnimationFrame(id);
+    // iOSではレイアウト確定が遅れるため、少し待ってから計測・スクロールし、かつ最大スクロールを超えないようクランプする（最下部に飛ぶのを防ぐ）
+    const timeoutId = window.setTimeout(() => {
+      const el = skillHobbyWrapperRef.current;
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        const targetScroll = window.scrollY + rect.top - 24;
+        const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+        const clampedScroll = Math.max(0, Math.min(targetScroll, maxScroll));
+        window.scrollTo(0, clampedScroll);
+      }
+      setAccordionCloseInstantForMobile(false);
+    }, 120);
+    return () => window.clearTimeout(timeoutId);
   }, [strengthAccordionOpen]);
 
   // Strengthパララックス効果を適用する関数

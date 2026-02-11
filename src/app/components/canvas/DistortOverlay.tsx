@@ -48,6 +48,10 @@ export default function DistortOverlay({
 
   // img→plane の対応
   const planesMapRef = useRef<Map<HTMLImageElement, ImagePlaneHandle>>(new Map());
+
+  // パラメータを ref で保持（effect 再実行なしで intro→swiper 切り替え可能＝白フラッシュ防止）
+  const paramsRef = useRef({ strength, speed, maxAmpPx, deadZonePx, damping });
+  paramsRef.current = { strength, speed, maxAmpPx, deadZonePx, damping };
   
   useEffect(() => {
     // --- renderer / camera / scene ---
@@ -127,6 +131,7 @@ export default function DistortOverlay({
         if (!this.img.isConnected) return false;
         if (!this.ready) return true; // ★ 読み込み前は更新だけ（黒塗り回避）
 
+        const p = paramsRef.current;
         const rect = this.setFromDOM();
 
         // 横移動量（前フレームとの差分）
@@ -134,13 +139,13 @@ export default function DistortOverlay({
         this.prevLeft = rect.left;
 
         // デッドゾーン＋穏やかな非線形（0.8乗）→強すぎを抑制
-        const raw    = Math.max(0, Math.abs(dx) - deadZonePx);
+        const raw    = Math.max(0, Math.abs(dx) - p.deadZonePx);
         const eased  = Math.pow(raw, 0.8) * 0.5;
-        const target = Math.min(eased * strength, maxAmpPx);
+        const target = Math.min(eased * p.strength, p.maxAmpPx);
 
         // 減衰追従
-        this.uniforms.uAmpPx.value = this.uniforms.uAmpPx.value * damping + target * (1 - damping);
-        this.uniforms.uTime.value += 0.015 * speed;
+        this.uniforms.uAmpPx.value = this.uniforms.uAmpPx.value * p.damping + target * (1 - p.damping);
+        this.uniforms.uTime.value += 0.015 * p.speed;
 
         return true;
       }
@@ -231,7 +236,7 @@ export default function DistortOverlay({
       cameraRef.current = null;
       sceneRef.current = null;
     };
-  }, [selector, strength, speed, maxAmpPx, deadZonePx, damping, rescanIntervalFrames]);
+  }, [selector, rescanIntervalFrames]);
 
   return (
     <canvas

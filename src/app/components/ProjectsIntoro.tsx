@@ -186,35 +186,15 @@ export default function ProjectsIntro() {
         )}
       </div>
 
-      {/* クロスフェード中はオーバーレイを切り替えない（一瞬消えるのを防ぐ） */}
-      {(!showSwiper || !hidePlaceholder) && (
-        <>
-          {/* イントロ中は"少し強め"設定 */}
-          <DistortOverlay
-            key="intro"
-            selector='img[data-distort]'
-            strength={3} //ここで強さ変化
-            speed={2}
-            maxAmpPx={14}
-            deadZonePx={0.9}
-            damping={0.88}
-          />
-        </>
-      )}
-      {showSwiper && hidePlaceholder && (
-        <>
-          {/* 通常運転は"控えめ"設定 */}
-          <DistortOverlay
-            key="swiper"
-            selector='img[data-distort]'
-            strength={0.40}
-            speed={0.65}
-            maxAmpPx={10}
-            deadZonePx={1.2}
-            damping={0.92}
-          />
-        </>
-      )}
+      {/* 1つの DistortOverlay でパラメータだけ切り替え（key でアンマウントしない＝白フラッシュ防止） */}
+      <DistortOverlay
+        selector='img[data-distort]'
+        strength={showSwiper && hidePlaceholder ? 0.40 : 3}
+        speed={showSwiper && hidePlaceholder ? 0.65 : 2}
+        maxAmpPx={showSwiper && hidePlaceholder ? 10 : 14}
+        deadZonePx={showSwiper && hidePlaceholder ? 1.2 : 0.9}
+        damping={showSwiper && hidePlaceholder ? 0.92 : 0.88}
+      />
     </>
   );
 }
