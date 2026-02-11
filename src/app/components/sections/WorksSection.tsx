@@ -62,7 +62,7 @@ export default function Works() {
           period: "2024.11",
           kind: "graphic",
           images: [
-          { src: "/works/graphic1.png",  desc: "Illustratorによる名刺制作。"},
+          { src: "/works/graphic1.png",  desc: "デジリグ課題の一環として、Illustratorによる名刺制作。"},
           ],
         },
         {
@@ -74,7 +74,7 @@ export default function Works() {
           period: "2024.12",
           kind: "graphic",
           images: [
-          { src: "/works/graphic2.png",   desc: "ハンバーガー屋さんのロゴ制作。",   subtitle: "クライアントワーク" },
+          { src: "/works/graphic2.png",   desc: "デジリグ課題＋クライアントワークとして、ハンバーガー屋さんのロゴ制作。",   subtitle: "クライアントワーク" },
           { src: "/works/graphic2-1.png", desc: "企画書の作成" },
           { src: "/works/graphic2-2.png", desc: "バリエーション" },
           { src: "/works/graphic2-3.png", desc: "使用例１"},
@@ -90,7 +90,7 @@ export default function Works() {
           period: "2025.01",
           kind: "graphic",
           images: [
-          { src: "/works/graphic3.png",   desc: "彩の森公園イベントポスターのリデザイン" },
+          { src: "/works/graphic3.png",   desc: "デジリグ課題の一環として、イベントポスターのリデザイン" },
           { src: "/works/graphic3-1.png", desc: "元の写真" }
           ],
         },
@@ -103,10 +103,10 @@ export default function Works() {
           period: "2025.02",
           kind: "graphic",
           images: [
-          { src: "/works/graphic4.png",   desc: "宇宙をテーマとしたアイス屋さんの広告物作成" },
+          { src: "/works/graphic4.png",   desc: "デジリグ課題の一環として、宇宙をテーマとしたアイス屋さんの広告物作成" },
           { src: "/works/graphic4-1.png", desc: "企画書作成" },
           { src: "/works/graphic4-2.png", desc: "ロゴの制作" },
-          { src: "/works/graphic4-3.png", desc: "ポスター作成" },
+          { src: "/works/graphic4-3.png", desc: "キービジュアル作成" },
           ],
         },
         {
@@ -118,7 +118,7 @@ export default function Works() {
           period: "2025.10",
           kind: "graphic",
           images: [
-          { src: "/works/graphic5.png",   desc: "TheSaunaバナー制作",   subtitle: "課題" },
+          { src: "/works/graphic5.png",   desc: "デジリグ課題の一環として、TheSaunaのバナー制作",   subtitle: "課題" },
           ],
         },
       ],
@@ -159,7 +159,7 @@ export default function Works() {
           kind: "web",
           link: "https://nail-salon-bb.vercel.app/",
           images: [
-          { src: "/works/web2.png",   desc: "フェミニンをベースとしたネイルサロンBBのデザイン、サイト作成"},
+          { src: "/works/web2.png",   desc: "クライアントワークとして、フェミニンをベースとしたネイルサロンBBのデザイン、サイト作成"},
           { src: "/works/web2-1.png", desc: "お店のコンセプト、ターゲットなどをヒアリングして企画書の作成" },
           { src: "/works/web2-2.png", desc: "Illustratorでロゴの作成" },
           { src: "/works/web2-3.png", desc: "FigmaによるHPのデザイン作成" },

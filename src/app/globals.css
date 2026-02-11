@@ -353,6 +353,15 @@
   100% { opacity: 0; }
 }
 
+/* モバイル：アコーディオン閉じたときのオーバーレイ（約1秒でフェードアウト） */
+@keyframes mobile-accordion-overlay {
+  0%, 60% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.animate-mobile-accordion-overlay {
+  animation: mobile-accordion-overlay 1s ease-out forwards;
+}
+
 .glitch.on::before{
   color:#ff4;
   animation:

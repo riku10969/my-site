@@ -38,10 +38,10 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
   // モバイルでパララックス終了時にアコーディオンを即閉じしてワープ防止（transition 0ms + 閉じた直後に1回だけスクロール）
   const [accordionCloseInstantForMobile, setAccordionCloseInstantForMobile] = useState(false);
   const mobileUnpinScrollRef = useRef(false);
-  // モバイルのみ：モーダル閉じ時に表示中の Strength を中央で上に消すアニメーション
-  const [mobileUnpinAnimating, setMobileUnpinAnimating] = useState(false);
-  const [mobileUnpinAnimatingIndex, setMobileUnpinAnimatingIndex] = useState(0);
-  const mobileUnpinOverlayRef = useRef<HTMLDivElement | null>(null);
+  /** モバイルでアコーディオンが閉じたとき、Contact が一瞬見えるワープを隠すオーバーレイ */
+  const [mobileCloseOverlayVisible, setMobileCloseOverlayVisible] = useState(false);
+  /** オーバーレイを出したあと、描画を待ってから unpin するための遅延実行用（モバイル・デスクトップ共通） */
+  const pendingUnpinRef = useRef<{ startY: number; isMobile: boolean } | null>(null);
 
   const strengths: Strength[] = useMemo(
     () => [
@@ -53,12 +53,12 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
       {
         num: "02",
         title: "メンタル",
-        text: "厳しい現場経験から、困難な状況でも冷静に対応できる強いメンタルがあります。",
+        text: "職人時代の経験から、困難な状況でも冷静に対応できるメンタルがあります。",
       },
       {
         num: "03",
-        title: "技術力",
-        text: "FigmaからReact/Next.jsまで一貫して設計・実装できるフロントエンド力。",
+        title: "探求心",
+        text: "新しい技術や手法に興味を持ち、学び続ける姿勢を持っています。",
       },
     ],
     []
@@ -73,20 +73,33 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
       "/parallax/cowcowburger.png",
       "/parallax/beach.jpg",
       "/parallax/noise.jpg",
-      "/parallax/syokunin.jpg",
-      "/parallax/syokunin.jpeg",
       "/parallax/emo.jpg",
       "/parallax/syokunin.jpeg",
-      "/parallax/figaro.jpg",
+      "/parallax/syokunin2.png",
+      "/parallax/syokunin3.jpeg",
+      "/parallax/site.png",
       "/parallax/07.jpg",
       "/parallax/coding.png",
     ],
     []
   );
 
-  // 罫線なし・画像全体表示（contain）にする写真
+  // この4枚だけ罫線をつけない（RikuLogo3, spacekelvin, shark, cowcowburger）
+  const noBorderSlugs = useMemo(
+    () => ["RikuLogo3.png", "spacekelvin.png", "shark.png", "cowcowburger.png"],
+    []
+  );
+  // 罫線なし・画像全体表示（写真幅に合わせて contain）にする写真
   const noBorderContainSlugs = useMemo(
-    () => ["RikuLogo3.png", "spacekelvin.png", "cowcowburger.png", "shark.png"],
+    () => [
+      "RikuLogo3.png",
+      "spacekelvin.png",
+      "cowcowburger.png",
+      "shark.png",
+      "syokunin.jpeg",
+      "beach.jpg",
+      "syokunin3.jpeg",
+    ],
     []
   );
   // 縦長アスペクト（画像に合わせて縦長表示）にする写真
@@ -100,14 +113,14 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
       { top: "5%", left: "68%", w: "320px" },
       { top: "50%", left: "2%", w: "260px" },
       { top: "55%", left: "72%", w: "300px" },
-      { top: "5%", left: "18%", w: "320px" },
+      { top: "40%", left: "18%", w: "320px" },
       { top: "22%", left: "44%", w: "380px" },
-      { top: "10%", left: "68%", w: "300px" },
+      { top: "35%", left: "68%", w: "380px" },
       { top: "32%", left: "5%", w: "300px" },
       { top: "45%", left: "70%", w: "400px" },
       { top: "55%", left: "12%", w: "420px" },
-      { top: "12%", left: "22%", w: "280px" },
-      { top: "40%", left: "38%", w: "360px" },
+      { top: "12%", left: "22%", w: "400px" },
+      { top: "40%", left: "42%", w: "360px" },
       { top: "66%", left: "58%", w: "380px" },
     ],
     []
@@ -156,72 +169,14 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
     strengthAccordionOpenRef.current = strengthAccordionOpen;
   }, [strengthAccordionOpen]);
 
-  // モバイルのみ：Strength オーバーレイを上に消すアニメーション開始と、完了後のスクロール発火。アニメ開始時にスクロールロック
+  // アコーディオンを開いたときに再pin可能にする（2回目以降もパララックスが動くように）
   useEffect(() => {
-    if (!mobileUnpinAnimating || typeof window === "undefined" || window.innerWidth >= MOBILE_BREAKPOINT) return;
-    mobileScrollLockRef.current = true;
-    mobileScrollLockScrollYRef.current = window.scrollY;
-    const prevOverflow = document.body.style.overflow;
-    const prevTouchAction = document.body.style.touchAction;
-    document.body.style.overflow = "hidden";
-    document.body.style.touchAction = "none";
-    document.body.style.position = "fixed";
-    document.body.style.top = `-${window.scrollY}px`;
-    document.body.style.left = "0";
-    document.body.style.right = "0";
+    if (strengthAccordionOpen) {
+      hasUnpinnedAfterCompleteRef.current = false;
+    }
+  }, [strengthAccordionOpen]);
 
-    const el = mobileUnpinOverlayRef.current;
-    if (!el) return;
-    const onEnd = () => {
-      setMobileUnpinAnimating(false);
-      mobileUnpinScrollRef.current = true;
-      setAccordionCloseInstantForMobile(true);
-    };
-    const raf = requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        el.style.transition = "transform 0.55s cubic-bezier(0.32, 0.72, 0, 1)";
-        el.style.transform = "translateY(-100vh)";
-      });
-    });
-    const t = window.setTimeout(onEnd, 580);
-    return () => {
-      cancelAnimationFrame(raf);
-      window.clearTimeout(t);
-      document.body.style.overflow = prevOverflow;
-      document.body.style.touchAction = prevTouchAction;
-      document.body.style.position = "";
-      document.body.style.top = "";
-      document.body.style.left = "";
-      document.body.style.right = "";
-    };
-  }, [mobileUnpinAnimating]);
-
-  const mobileScrollLockRef = useRef(false);
-  const mobileScrollLockScrollYRef = useRef(0);
-  const desktopScrollLockTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const lockDesktopScroll1s = useCallback(() => {
-    if (desktopScrollLockTimeoutRef.current) clearTimeout(desktopScrollLockTimeoutRef.current);
-    document.body.style.overflow = "hidden";
-    document.body.style.touchAction = "none";
-    desktopScrollLockTimeoutRef.current = setTimeout(() => {
-      document.body.style.overflow = "";
-      document.body.style.touchAction = "";
-      desktopScrollLockTimeoutRef.current = null;
-    }, 1000);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (desktopScrollLockTimeoutRef.current) {
-        clearTimeout(desktopScrollLockTimeoutRef.current);
-        document.body.style.overflow = "";
-        document.body.style.touchAction = "";
-      }
-    };
-  }, []);
-
-  // モバイルでパララックス終了時：モーダルが閉じたあと高さを計測し、Skill が表示される位置に1回だけスクロール（デスクトップは unpin 時に別処理）
+  // モバイルでパララックス終了時：モーダルが閉じたあと高さを計測し、Skill が表示される位置にスクロール。Skill が表示されたらオーバーレイを外す
   useEffect(() => {
     if (strengthAccordionOpen) return;
     if (!mobileUnpinScrollRef.current || typeof window === "undefined" || window.innerWidth >= MOBILE_BREAKPOINT) {
@@ -229,20 +184,9 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
       return;
     }
     mobileUnpinScrollRef.current = false;
-    // モーダル閉じ完了後に計測。アニメ中にスクロールロックしていた場合は先に解除してから Skill へスクロール
+    let hideOverlayId: number | null = null;
     const delayMs = 400;
     const timeoutId = window.setTimeout(() => {
-      if (mobileScrollLockRef.current) {
-        mobileScrollLockRef.current = false;
-        const savedScrollY = mobileScrollLockScrollYRef.current;
-        document.body.style.overflow = "";
-        document.body.style.touchAction = "";
-        document.body.style.position = "";
-        document.body.style.top = "";
-        document.body.style.left = "";
-        document.body.style.right = "";
-        window.scrollTo(0, savedScrollY);
-      }
       void document.body.offsetHeight;
       const skillEl = document.getElementById("about-skill-section");
       const el = skillEl || skillHobbyWrapperRef.current;
@@ -253,11 +197,81 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
         const targetScroll = window.scrollY + rect.top - topOffsetPx;
         const clampedScroll = Math.max(0, Math.min(targetScroll, maxScroll));
         window.scrollTo(0, clampedScroll);
+        // Skill が表示される位置までスクロールしたあと、オーバーレイを外す（表示されるまでオーバーレイを維持）
+        hideOverlayId = window.setTimeout(() => {
+          setMobileCloseOverlayVisible(false);
+        }, 350);
+      } else {
+        setMobileCloseOverlayVisible(false);
       }
       setAccordionCloseInstantForMobile(false);
     }, delayMs);
-    return () => window.clearTimeout(timeoutId);
+    return () => {
+      window.clearTimeout(timeoutId);
+      if (hideOverlayId != null) window.clearTimeout(hideOverlayId);
+    };
   }, [strengthAccordionOpen]);
+
+  // オーバーレイを出したあと、描画されてから unpin する（モバイル・デスクトップ共通・ワープがオーバーレイで隠れるように）
+  useEffect(() => {
+    if (!mobileCloseOverlayVisible || !pendingUnpinRef.current) return;
+    const payload = pendingUnpinRef.current;
+    pendingUnpinRef.current = null;
+    const runUnpin = () => {
+      const wrapper = strengthWrapperRef.current;
+      const section = strengthSectionRef.current;
+      if (!wrapper || !section) return;
+      hasUnpinnedAfterCompleteRef.current = true;
+      isPinnedRef.current = false;
+      pinStartRef.current = null;
+      wrapper.style.height = "auto";
+      wrapper.style.zIndex = "0";
+      section.style.position = "relative";
+      section.style.top = "auto";
+      section.style.left = "auto";
+      section.style.zIndex = "0";
+      if (strengthTitleRef.current) {
+        strengthTitleRef.current.style.visibility = "hidden";
+        strengthTitleRef.current.style.pointerEvents = "none";
+      }
+      if (payload.isMobile) {
+        mobileUnpinScrollRef.current = true;
+        setAccordionCloseInstantForMobile(true);
+      } else {
+        window.setTimeout(() => {
+          const skillEl = document.getElementById("about-skill-section");
+          const el = skillEl || skillHobbyWrapperRef.current;
+          if (el) {
+            const rect = el.getBoundingClientRect();
+            const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+            const targetScroll = window.scrollY + rect.top - 80;
+            const clamped = Math.max(0, Math.min(targetScroll, maxScroll));
+            window.scrollTo(0, clamped);
+          }
+          setMobileCloseOverlayVisible(false);
+        }, 400);
+      }
+      photoRefs.current.forEach((el) => {
+        if (el) {
+          el.style.opacity = "0";
+          el.style.transform = "translate3d(0, 0, 0)";
+          el.style.filter = "";
+          el.style.pointerEvents = "none";
+        }
+      });
+      strengthRefs.current.forEach((el) => {
+        if (el) {
+          el.style.opacity = "0";
+          el.style.pointerEvents = "none";
+        }
+      });
+      setActiveStrengthIndex(-1);
+      setStrengthAccordionOpen(false);
+    };
+    requestAnimationFrame(() => {
+      requestAnimationFrame(runUnpin);
+    });
+  }, [mobileCloseOverlayVisible]);
 
   // Strengthパララックス効果を適用する関数
   const applyStrengthParallax = useCallback(() => {
@@ -454,94 +468,20 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
     const DISPLAY_CATCHUP_THRESHOLD = 0.88;
     const MIN_PROGRESS_BEFORE_SKILL_UNPIN = 0.2; // パララックスを 20% 以上スクロールしたときだけ Skill 進入で unpin
     if (skillHobbyInView && isPinnedRef.current && pinProgress >= MIN_PROGRESS_BEFORE_SKILL_UNPIN) {
-      hasUnpinnedAfterCompleteRef.current = true;
-      const startY = pinStartRef.current;
-      isPinnedRef.current = false;
-      pinStartRef.current = null;
-      wrapper.style.height = "auto";
-      wrapper.style.zIndex = "0";
-      section.style.position = "relative";
-      section.style.top = "auto";
-      section.style.left = "auto";
-      section.style.zIndex = "0";
-      if (strengthTitleRef.current) {
-        strengthTitleRef.current.style.visibility = "hidden";
-        strengthTitleRef.current.style.pointerEvents = "none";
-      }
-      // デスクトップ: 閉じたあとの見え方に合わせてスクロール。モバイル: Strength を中央で上に消すアニメ後に Skill へスクロール
-      if (isMobileView) {
-        const animatingIndex = Math.min(2, Math.floor(displayProgress * 3));
-        setMobileUnpinAnimatingIndex(animatingIndex);
-        setMobileUnpinAnimating(true);
-      } else {
-        lockDesktopScroll1s();
-        const targetScroll = Math.max(0, (startY ?? 0) - 60);
-        window.scrollTo(0, targetScroll);
-      }
-      photoRefs.current.forEach((el) => {
-        if (el) {
-          el.style.opacity = "0";
-          el.style.transform = "translate3d(0, 0, 0)";
-          el.style.pointerEvents = "none";
-        }
-      });
-      strengthRefs.current.forEach((el) => {
-        if (el) {
-          el.style.opacity = "0";
-          el.style.pointerEvents = "none";
-        }
-      });
-      setActiveStrengthIndex(-1);
-      setStrengthAccordionOpen(false);
+      const startY = pinStartRef.current ?? 0;
+      setMobileCloseOverlayVisible(true);
+      pendingUnpinRef.current = { startY, isMobile: isMobileView };
       return;
     }
 
     // 下スクロールで progress 1 に到達したらpin解除（表示が追いついてから解除＝速スクロールでも見える）
     if (!enteredFromBottomRef.current && pinProgress >= 1) {
       if (displayProgress >= DISPLAY_CATCHUP_THRESHOLD) {
-        hasUnpinnedAfterCompleteRef.current = true;
-        const startY = pinStartRef.current;
-        isPinnedRef.current = false;
-        pinStartRef.current = null;
-        wrapper.style.height = "auto";
-        wrapper.style.zIndex = "0";
-        section.style.position = "relative";
-        section.style.top = "auto";
-        section.style.left = "auto";
-        section.style.zIndex = "0";
-        if (strengthTitleRef.current) {
-          strengthTitleRef.current.style.visibility = "hidden";
-          strengthTitleRef.current.style.pointerEvents = "none";
-        }
-        // デスクトップ: 閉じたあとの見え方に合わせてスクロール。モバイル: Strength を中央で上に消すアニメ後に Skill へスクロール
-        if (isMobileView) {
-          const animatingIndex = Math.min(2, Math.floor(displayProgress * 3));
-          setMobileUnpinAnimatingIndex(animatingIndex);
-          setMobileUnpinAnimating(true);
-        } else {
-          lockDesktopScroll1s();
-          const targetScroll = Math.max(0, (startY ?? 0) - 60);
-          window.scrollTo(0, targetScroll);
-        }
-
-      photoRefs.current.forEach((el) => {
-        if (el) {
-          el.style.opacity = "0";
-          el.style.transform = "translate3d(0, 0, 0)";
-          el.style.filter = "";
-          el.style.pointerEvents = "none";
-        }
-      });
-      strengthRefs.current.forEach((el) => {
-        if (el) {
-          el.style.opacity = "0";
-          el.style.pointerEvents = "none";
-        }
-      });
-      setActiveStrengthIndex(-1);
-      setStrengthAccordionOpen(false);
-      return;
-    }
+        const startY = pinStartRef.current ?? 0;
+        setMobileCloseOverlayVisible(true);
+        pendingUnpinRef.current = { startY, isMobile: isMobileView };
+        return;
+      }
       // まだ表示が追いついていない → このフレームは解除せず、下のパララックス適用を続行
     }
 
@@ -706,7 +646,7 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
         setActiveStrengthIndex(i);
       }
     });
-  }, [strengths, photos, lockDesktopScroll1s]);
+  }, [strengths, photos]);
 
   // 写真の位置・サイズを画面幅に応じて適用（モバイルは小さく）
   const applyPhotoLayout = useCallback(() => {
@@ -933,6 +873,10 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
         <button
           type="button"
           onClick={() => {
+            hasUnpinnedAfterCompleteRef.current = false;
+            wasSectionOutRef.current = false;
+            enteredFromBottomRef.current = false;
+            pendingUnpinRef.current = null;
             requestAnimationFrame(() => {
               requestAnimationFrame(() => {
                 setStrengthAccordionOpen(true);
@@ -1008,6 +952,7 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
           {/* 写真（背景） */}
           {photos.map((src, i) => {
             const slug = src.split("/").pop() ?? "";
+            const noBorder = noBorderSlugs.some((s) => slug === s);
             const noBorderContain = noBorderContainSlugs.some((s) => slug === s);
             const isPortrait = portraitSlugs.some((s) => slug === s);
             const aspectClass = isPortrait ? "aspect-[3/4]" : "aspect-video";
@@ -1017,11 +962,7 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
                 ref={(el) => {
                   photoRefs.current[i] = el;
                 }}
-                className={`absolute overflow-hidden ${
-                  noBorderContain
-                    ? ""
-                    : "rounded-xl border border-white/30 shadow-xl"
-                }`}
+                className={`absolute overflow-hidden ${noBorder ? "" : "rounded-xl border border-white/30 shadow-xl"}`}
                 style={{
                   transform: "translate3d(0, 0, 0)",
                   opacity: 0,
@@ -1033,14 +974,14 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
               >
                 <div
                   className={`w-full flex items-center justify-center ${
-                    noBorderContain ? (isPortrait ? aspectClass : "aspect-video") : "h-full"
+                    noBorderContain ? "" : "h-full"
                   }`}
                 >
                   {noBorderContain ? (
                     <img
                       src={src}
                       alt=""
-                      className="w-full h-full max-h-full object-contain"
+                      className="w-full h-auto object-contain"
                       style={{ willChange: "transform" }}
                     />
                   ) : (
@@ -1095,44 +1036,6 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
           </div>
         </div>
       </div>
-
-      {/* モバイルのみ：モーダル閉じ時に pin されていた Strength を中央で上に消すオーバーレイ */}
-      {mobileUnpinAnimating && (() => {
-        const s = strengths[mobileUnpinAnimatingIndex];
-        if (!s) return null;
-        return (
-          <div
-            className="fixed inset-0 z-[95] flex items-center justify-center bg-[#121316]"
-            style={{ pointerEvents: "none" }}
-            aria-hidden
-          >
-            <div
-              ref={mobileUnpinOverlayRef}
-              className="w-full flex items-center justify-center px-4 sm:px-6 md:px-8"
-              style={{ willChange: "transform" }}
-            >
-              <article className="max-w-3xl w-full px-4 sm:px-6 md:max-w-4xl md:px-8">
-                <div className="flex gap-4 sm:gap-6 md:gap-8">
-                  <span className="neon-cyan text-6xl sm:text-7xl md:text-8xl font-extrabold shrink-0 tracking-widest
-                                 [filter:drop-shadow(0_0_12px_rgba(44,205,185,0.6))]">
-                    {s.num}
-                  </span>
-                  <div className="min-w-0">
-                    <h4 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#c4a8ff]
-                       [text-shadow:_0_0_14px_rgba(109,50,194,.6),_0_0_28px_rgba(109,50,194,.4),_0_0_48px_rgba(109,50,194,.25),_0_2px_4px_rgba(0,0,0,0.5)]">
-                      {s.title}
-                    </h4>
-                    <p className="mt-3 sm:mt-4 text-base sm:text-lg md:text-xl text-white leading-8 sm:leading-9 md:leading-10 font-semibold
-                       [text-shadow:_0_0_8px_rgba(255,255,255,0.15),_0_2px_4px_rgba(0,0,0,0.9)]">
-                      {s.text}
-                    </p>
-                  </div>
-                </div>
-              </article>
-            </div>
-          </div>
-        );
-      })()}
 
       {/* ===============================
           Skill / Hobby（Strengthより前面に表示・背景でパララックスが透けないようにする）
@@ -1194,6 +1097,14 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
           />
         </div>
       </div>
+
+      {/* モバイル：アコーディオン閉じた直後～約1秒、Contact ワープを隠すオーバーレイ（閉じたことがわかるようにフェードアウト） */}
+      {mobileCloseOverlayVisible && (
+        <div
+          className="fixed inset-0 z-[30] bg-[#121316] pointer-events-none animate-mobile-accordion-overlay"
+          aria-hidden
+        />
+      )}
     </section>
   );
 }
