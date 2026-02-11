@@ -73,12 +73,12 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
       "/parallax/cowcowburger.png",
       "/parallax/beach.jpg",
       "/parallax/noise.jpg",
-      "/parallax/emo.jpg",
+      "/parallax/emo.JPG",
       "/parallax/syokunin.jpeg",
       "/parallax/syokunin2.png",
       "/parallax/syokunin3.jpeg",
       "/parallax/site.png",
-      "/parallax/07.jpg",
+      "/parallax/07.JPG",
       "/parallax/coding.png",
     ],
     []
@@ -129,19 +129,19 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
   // モバイル用：13枚（1の時は散らす、3の時はバランスよく）
   const mobilePos: Pos[] = useMemo(
     () => [
-      { top: "4%", left: "2%", w: "90px" },
-      { top: "2%", left: "70%", w: "100px" },
-      { top: "42%", left: "0%", w: "85px" },
-      { top: "48%", left: "68%", w: "95px" },
-      { top: "4%", left: "12%", w: "95px" },
-      { top: "20%", left: "40%", w: "110px" },
-      { top: "8%", left: "62%", w: "100px" },
-      { top: "12%", left: "8%", w: "90px" },
-      { top: "38%", left: "58%", w: "110px" },
-      { top: "35%", left: "18%", w: "115px" },
-      { top: "10%", left: "18%", w: "90px" },
-      { top: "42%", left: "38%", w: "105px" },
-      { top: "72%", left: "54%", w: "100px" },
+      { top: "12%", left: "2%", w: "90px" },
+      { top: "16%", left: "70%", w: "100px" },
+      { top: "65%", left: "0%", w: "85px" },
+      { top: "70%", left: "68%", w: "95px" },
+      { top: "32%", left: "12%", w: "95px" },
+      { top: "32%", left: "60%", w: "140px" },
+      { top: "63%", left: "62%", w: "150px" },
+      { top: "27%", left: "8%", w: "90px" },
+      { top: "38%", left: "58%", w: "150px" },
+      { top: "60%", left: "18%", w: "115px" },
+      { top: "25%", left: "18%", w: "150px" },
+      { top: "42%", left: "38%", w: "150px" },
+      { top: "68%", left: "54%", w: "150px" },
     ],
     []
   );
@@ -791,15 +791,13 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
             willChange: "transform",
           }}
         >
-          {/* モバイル: 画面幅いっぱい・縦長 4/5 */}
-          <div className="w-[80%] mx-auto max-md:w-screen max-md:relative max-md:left-1/2 max-md:-translate-x-1/2 max-md:max-w-[100vw]">
+          <div className="w-[80%] mx-auto">
             <div
               ref={imgRef}
               className={[
                 "warp-image",
                 "w-full max-w-[1600px] rounded-xl overflow-hidden bg-[#e9ebee]",
                 "h-[260px] sm:h-[320px] md:h-[520px] lg:h-[620px]",
-                "max-md:h-auto max-md:aspect-[4/5] max-md:min-h-0",
                 imgWarpOn ? "warp-on" : "",
               ].join(" ")}
               style={
@@ -825,7 +823,7 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
           {/* 肩書き・スキルタグ（名前直下） */}
           <div className="flex flex-wrap justify-center items-center gap-x-2 gap-y-1.5 mt-2 max-md:mt-1.5 max-md:px-2">
             <span className="text-sm text-white/80 max-md:text-[13px]">
-              Frontend Engineer / UI Designer
+              Frontend Engineer / UIUX
             </span>
           </div>
           <div className="flex flex-wrap justify-center gap-1.5 mt-1.5 max-md:gap-1 max-md:px-2">
@@ -1062,7 +1060,7 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
                 label: "写真",
                 description: "最近はデジカメにハマってます。",
                 category: "PHOTOGRAPHY",
-                meta: ["Canon EOS R6", "2024"],
+                // meta: ["Canon EOS R6", "2024"],
               },
               {
                 src: "/hobby/movie1.jpg",
@@ -1083,15 +1081,15 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
                 alt: "Car",
                 label: "CIVIC",
                 description: "車の運転が得意です。",
-                category: "CAR",
+                category: "CIVIC",
               },
               {
                 src: "/hobby/NewYork.jpg",
                 alt: "NewYork",
                 label: "ニューヨーク",
-                description: "海外のデザインを見て勉強しています。",
+                description: "海外のデザインやサイトを見て勉強しています。",
                 category: "TRAVEL",
-                meta: ["New York, USA", "2023"],
+                // meta: ["New York, USA", "2023"],
               },
             ]}
           />
