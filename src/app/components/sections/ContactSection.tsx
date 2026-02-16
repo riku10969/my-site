@@ -7,8 +7,8 @@ import NeonParticleStars from "../canvas/NeonParticleStars";
 
 export default function ContactSection() {
   const ref = useRef<HTMLDivElement | null>(null);
-  const [triggered, setTriggered] = useState(false);
   const [litIndex, setLitIndex] = useState(-1);
+  const timeoutIdsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => {
     const el = ref.current;
@@ -16,18 +16,30 @@ export default function ContactSection() {
     const io = new IntersectionObserver(
       (entries) => {
         const e = entries[0];
-        if (e.isIntersecting && !triggered) {
-          setTriggered(true);
-          [0, 1, 2].forEach((i) => {
-            setTimeout(() => setLitIndex(i), i * 400);
-          });
+        if (e.isIntersecting) {
+          // 表示されるたびに光るシーケンスを実行（始まりを少し遅らせる）
+          const initialDelay = 450;
+          const stepDelay = 550;
+          setLitIndex(-1);
+          timeoutIdsRef.current.forEach((id) => clearTimeout(id));
+          timeoutIdsRef.current = [0, 1, 2].map((i) =>
+            setTimeout(() => setLitIndex(i), initialDelay + i * stepDelay)
+          );
+        } else {
+          // 画面外に出たらリセット（次回スクロールでまた光る）
+          timeoutIdsRef.current.forEach((id) => clearTimeout(id));
+          timeoutIdsRef.current = [];
+          setLitIndex(-1);
         }
       },
       { threshold: 0.35 }
     );
     io.observe(el);
-    return () => io.disconnect();
-  }, [triggered]);
+    return () => {
+      io.disconnect();
+      timeoutIdsRef.current.forEach((id) => clearTimeout(id));
+    };
+  }, []);
 
   return (
     <section
