@@ -12,6 +12,7 @@ export default function BackgroundStage() {
     const canvas = canvasRef.current!;
     // --- renderer ---
     const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
+    renderer.outputColorSpace = THREE.SRGBColorSpace; // 背景ハートを元の色で表示
     const maxDpr = 1.6;
     const setSize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
@@ -57,6 +58,10 @@ export default function BackgroundStage() {
     let logoActive = false;      // 表示開始フラグ
     let swayStrength = 0.02;     // ゆらぎ量（ロード後は少し弱めに）
 
+    const isDesktop = typeof window !== "undefined" && window.innerWidth > 767;
+    const fadeInSpeed = isDesktop ? 0.011 : 0.02;   // デスクトップはややゆっくりフェード
+    const moveInSpeed = isDesktop ? 0.022 : 0.04;  // デスクトップはややゆっくり手前に
+
     const loadLogo = () => {
       if (logo) return;
       const isMobile = typeof window !== "undefined" && window.innerWidth <= 767;
@@ -66,6 +71,7 @@ export default function BackgroundStage() {
         "/RikuLogo3.png",
         (tex) => {
           tex.premultiplyAlpha = false;
+          tex.colorSpace = THREE.SRGBColorSpace; // PNG の元の色（薄くならない）
           logoMat = new THREE.MeshBasicMaterial({
             map: tex,
             transparent: true,
@@ -115,13 +121,14 @@ export default function BackgroundStage() {
       // ロゴのフェード & ゆらぎ
         if (logo && logoMat && logo.visible !== false) {
         if (logoActive) {
-          // フェードイン & 手前へ
-          if (logoMat.opacity < 1) logoMat.opacity = Math.min(1, logoMat.opacity + 0.02);
-          if (logo.position.z < 0) logo.position.z += 0.04;
+          // フェードイン & 手前へ（デスクトップはゆっくり）
+          if (logoMat.opacity < 1) logoMat.opacity = Math.min(1, logoMat.opacity + fadeInSpeed);
+          if (logo.position.z < 0) logo.position.z += moveInSpeed;
           if (logoMat.opacity >= 1 && logo.position.z >= 0) {
             // 完了後はゆらぎだけ継続（少し弱く）
             logoActive = false;
             swayStrength = 0.012;
+            window.dispatchEvent(new CustomEvent("heart:complete"));
           }
         }
         // 常時ゆらゆら

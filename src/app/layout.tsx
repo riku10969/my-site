@@ -17,6 +17,9 @@ const jaro = Jaro({
 export const metadata: Metadata = {
   title: "Riku Ohashi Portfolio",
   description: "Next.js + TypeScript + Tailwind + Gsap + Three.js",
+  icons: {
+    icon: "/RikuLogo3.png?v=2",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
