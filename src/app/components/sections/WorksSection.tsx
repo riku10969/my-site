@@ -25,9 +25,9 @@ export default function Works() {
 
   // PC/スマホでカード幅・ギャップ・速度（小さいほど速い）を切替
   const cardW = isMobile ? 140 : 240;
-  const gap   = isMobile ? 16  : 32;
+  const gap = isMobile ? 16 : 32;
   const speedGraphic = isMobile ? 40 : 50;
-  const speedWeb     = isMobile ? 30 : 50;
+  const speedWeb = isMobile ? 30 : 50;
 
   const sections = useMemo((): Array<{
     key: SectionKey;
@@ -40,164 +40,164 @@ export default function Works() {
     items: WorkItem[];
     borderClasses: string;
   }> => [
-    {
-      key: "graphic",
-      label: "Graphic",
-      accentClass: "text-teal-300",
-      direction: "right",
-      speed: speedGraphic,
-      itemWidth: cardW,
-      gap,
-       borderClasses:
-      // 太めの枠＋ホバーで少し明るく＆仄かにグロー
-      "border-2 border-teal-400/40 group-hover:border-teal-300/80 " +
-      "ring-0 group-hover:ring-4 group-hover:ring-teal-300/20",
-      items: [
-        {
-          src: "/works/graphic1.png",
-          title: "名刺作成",
-          subtitle: "名刺作成",          // 作品全体のサブタイトル（任意）
-          description: "全体の説明（フォールバック）",
-          tools: ["Illustrator"],
-          period: "2024.11",
-          kind: "graphic",
-          images: [
-          { src: "/works/graphic1.png",  desc: "デジリグ課題の一環として、Illustratorによる名刺制作。"},
-          ],
-        },
-        {
-          src: "/works/graphic2.png",
-          title: "COWCOW BARGER",
-          subtitle: "ロゴ制作　クライアントワーク",          // 作品全体のサブタイトル（任意）
-          description: "全体の説明（フォールバック）",
-          tools: ["Illustrator","Photoshop"],
-          period: "2024.12",
-          kind: "graphic",
-          images: [
-          { src: "/works/graphic2.png",   desc: "デジリグ課題＋クライアントワークとして、ハンバーガー屋さんのロゴ制作。",   subtitle: "クライアントワーク" },
-          { src: "/works/graphic2-1.png", desc: "企画書の作成" },
-          { src: "/works/graphic2-2.png", desc: "バリエーション" },
-          { src: "/works/graphic2-3.png", desc: "使用例１"},
-          { src: "/works/graphic2-4.png", desc: "使用例２" },
-          ],
-        },
-        {
-          src: "/works/graphic3-2.png",
-          title: "彩の森　Dog Run Party",
-          subtitle: "ポスター　リデザイン",          // 作品全体のサブタイトル（任意）
-          description: "全体の説明（フォールバック）",
-          tools: ["Illustrator","Photoshop"],
-          period: "2025.01",
-          kind: "graphic",
-          images: [
-          { src: "/works/graphic3.png",   desc: "デジリグ課題の一環として、イベントポスターのリデザイン" },
-          { src: "/works/graphic3-1.png", desc: "元の写真" }
-          ],
-        },
-        {
-          src: "/works/graphic4.png",
-          title: "Space Kelvin",
-          subtitle: "広告物作成",          // 作品全体のサブタイトル（任意）
-          description: "",
-          tools: ["Illustrator","Photoshop"],
-          period: "2025.02",
-          kind: "graphic",
-          images: [
-          { src: "/works/graphic4.png",   desc: "デジリグ課題の一環として、宇宙をテーマとしたアイス屋さんの広告物作成" },
-          { src: "/works/graphic4-1.png", desc: "企画書作成" },
-          { src: "/works/graphic4-2.png", desc: "ロゴの制作" },
-          { src: "/works/graphic4-3.png", desc: "キービジュアル作成" },
-          ],
-        },
-        {
-          src: "/works/graphic5.png",
-          title: "The Sauna",
-          subtitle: "バナー制作",          // 作品全体のサブタイトル（任意）
-          description: "デジリグ課題の一環として、長野県にあるプライベートサウナThe Saunaのバナー制作",
-          tools: ["Photoshop"],
-          period: "2025.10",
-          kind: "graphic",
-          images: [
-          { src: "/works/graphic5.png",   desc: "デジリグ課題の一環として、TheSaunaのバナー制作",   subtitle: "課題" },
-          ],
-        },
-      ],
-    },
-    {
-      key: "web",
-      label: "Web",
-      accentClass: "text-[#9d7cdb]",
-      direction: "left",
-      speed: speedWeb,
-      itemWidth: cardW,
-      gap,
-      borderClasses:
-      "border-2 border-[#9d7cdb]/50 group-hover:border-[#9d7cdb]/90 " +
-      "ring-0 group-hover:ring-4 group-hover:ring-[#9d7cdb]/25",
-      items: [
-        {
-          src: "/works/web1.png",
-          title: "デジリグHP デザイン制作",
-          subtitle: "広告物作成",          // 作品全体のサブタイトル（任意）
-          description: "デジリグ課題の一環として、デジリグHPのデザインをFigmaで制作",
-          tools: ["Figma"],
-          period: "2025.04",
-          kind: "web",
-          // link: "https://www.figma.com/design/4u1f7qzDBmwDh2kvIfOXa5/LIG?node-id=0-1&t=aAxCldnMJRNgwzyQ-1",
-          images: [
-          { src: "/works/web1.png",   desc: "FigmaによるデジリグHPのデザイン作成"},
-          { src: "/works/web1-1.png", desc: "FigmaによるデジリグHPのデザイン作成" },
-          ],
-        },
-        {
-          src: "/works/web2.png",
-          title: "ネイルサロン　BB",
-          subtitle: "Web作成",          // 作品全体のサブタイトル（任意）
-          description: "ネイルサロンBBのデザイン、サイト作成",
-          tools: ["Illustrator", "Figma", "React", "TypeScript"],
-          period: "2025.06〜2025.07",
-          kind: "web",
-          link: "https://nail-salon-bb.vercel.app/",
-          images: [
-          { src: "/works/web2.png",   desc: "クライアントワークとして、フェミニンをベースとしたネイルサロンBBのデザイン、サイト作成"},
-          { src: "/works/web2-1.png", desc: "お店のコンセプト、ターゲットなどをヒアリングして企画書の作成" },
-          { src: "/works/web2-2.png", desc: "Illustratorでロゴの作成" },
-          { src: "/works/web2-3.png", desc: "FigmaによるHPのデザイン作成" },
-          { src: "/works/web2-4.png", desc: "React、TypeScriptでのHP作成" },
-          ],
-        },
-        {
-          src: "/works/web3.png",
-          title: "ポートフォリオ",
-          subtitle: "Web作成",  
-          description: "本サイト",
-          languages: ["React","TypeScript", "Three.js","GSAP","Next.js","WebGL","TailWindCss"],
-          period: "2025.08〜",
-          kind: "web",
-          images: [
-          { src: "/works/web3.png",   desc: "React Next.jsによるポートフォリオ作成"},
-          { src: "/works/web3-1.png", desc: "Figmaによるデザイン作成。" },
-          { src: "/works/web3-2.png", desc: "Three.js GSAP WEBGL TailWIndcssを使用し、アニメーションなどの実装" },
-          ],
-        },
-        {
-          src: "/works/web4.png",
-          title: "クラビーパティー（架空店）",
-          subtitle: "Web作成",  
-          description: "本サイト",
-          languages: ["React","TypeScript","Next.js","TailWindCss"],
-          link: "https://krabby-patty-henna.vercel.app/",
-          period: "2025.09〜11",
-          kind: "web",
-          images: [
-          { src: "/works/web4.png",   desc: "React Next.jsによる架空店サイト作成"},
-          { src: "/works/web4-1.png", desc: "海辺の近くでシーフード取り扱うハンバーガー屋" },
-          { src: "/works/web4-2.png", desc: "モバイルオーダーのデモを実装" },
-          ],
-        },
-      ],
-    },
-  ], [cardW, gap, speedGraphic, speedWeb]);
+      {
+        key: "graphic",
+        label: "Graphic",
+        accentClass: "text-teal-300",
+        direction: "right",
+        speed: speedGraphic,
+        itemWidth: cardW,
+        gap,
+        borderClasses:
+          // 太めの枠＋ホバーで少し明るく＆仄かにグロー
+          "border-2 border-teal-400/40 group-hover:border-teal-300/80 " +
+          "ring-0 group-hover:ring-4 group-hover:ring-teal-300/20",
+        items: [
+          {
+            src: "/works/graphic1.png",
+            title: "名刺作成",
+            subtitle: "名刺作成",          // 作品全体のサブタイトル（任意）
+            description: "全体の説明（フォールバック）",
+            tools: ["Illustrator"],
+            period: "2024.11",
+            kind: "graphic",
+            images: [
+              { src: "/works/graphic1.png", desc: "デジリグ課題の一環として、Illustratorによる名刺制作。" },
+            ],
+          },
+          {
+            src: "/works/graphic2.png",
+            title: "COWCOW BARGER",
+            subtitle: "ロゴ制作　クライアントワーク",          // 作品全体のサブタイトル（任意）
+            description: "全体の説明（フォールバック）",
+            tools: ["Illustrator", "Photoshop"],
+            period: "2024.12",
+            kind: "graphic",
+            images: [
+              { src: "/works/graphic2.png", desc: "デジリグ課題＋クライアントワークとして、ハンバーガー屋さんのロゴ制作。", subtitle: "クライアントワーク" },
+              { src: "/works/graphic2-1.png", desc: "企画書の作成" },
+              { src: "/works/graphic2-2.png", desc: "バリエーション" },
+              { src: "/works/graphic2-3.png", desc: "使用例１" },
+              { src: "/works/graphic2-4.png", desc: "使用例２" },
+            ],
+          },
+          // {
+          //   src: "/works/graphic3-2.png",
+          //   title: "彩の森　Dog Run Party",
+          //   subtitle: "ポスター　リデザイン",          // 作品全体のサブタイトル（任意）
+          //   description: "全体の説明（フォールバック）",
+          //   tools: ["Illustrator","Photoshop"],
+          //   period: "2025.01",
+          //   kind: "graphic",
+          //   images: [
+          //   { src: "/works/graphic3.png",   desc: "デジリグ課題の一環として、イベントポスターのリデザイン" },
+          //   { src: "/works/graphic3-1.png", desc: "元の写真" }
+          //   ],
+          // },
+          {
+            src: "/works/graphic4.png",
+            title: "Space Kelvin",
+            subtitle: "広告物作成",          // 作品全体のサブタイトル（任意）
+            description: "",
+            tools: ["Illustrator", "Photoshop"],
+            period: "2025.02",
+            kind: "graphic",
+            images: [
+              { src: "/works/graphic4.png", desc: "デジリグ課題の一環として、宇宙をテーマとしたアイス屋さんの広告物作成" },
+              { src: "/works/graphic4-1.png", desc: "企画書作成" },
+              { src: "/works/graphic4-2.png", desc: "ロゴの制作" },
+              { src: "/works/graphic4-3.png", desc: "キービジュアル作成" },
+            ],
+          },
+          {
+            src: "/works/graphic5.png",
+            title: "The Sauna",
+            subtitle: "バナー制作",          // 作品全体のサブタイトル（任意）
+            description: "デジリグ課題の一環として、長野県にあるプライベートサウナThe Saunaのバナー制作",
+            tools: ["Photoshop"],
+            period: "2025.10",
+            kind: "graphic",
+            images: [
+              { src: "/works/graphic5.png", desc: "デジリグ課題の一環として、TheSaunaのバナー制作", subtitle: "課題" },
+            ],
+          },
+        ],
+      },
+      {
+        key: "web",
+        label: "Web",
+        accentClass: "text-[#9d7cdb]",
+        direction: "left",
+        speed: speedWeb,
+        itemWidth: cardW,
+        gap,
+        borderClasses:
+          "border-2 border-[#9d7cdb]/50 group-hover:border-[#9d7cdb]/90 " +
+          "ring-0 group-hover:ring-4 group-hover:ring-[#9d7cdb]/25",
+        items: [
+          {
+            src: "/works/web1.png",
+            title: "デジリグHP デザイン制作",
+            subtitle: "広告物作成",          // 作品全体のサブタイトル（任意）
+            description: "デジリグ課題の一環として、デジリグHPのデザインをFigmaで制作",
+            tools: ["Figma"],
+            period: "2025.04",
+            kind: "web",
+            // link: "https://www.figma.com/design/4u1f7qzDBmwDh2kvIfOXa5/LIG?node-id=0-1&t=aAxCldnMJRNgwzyQ-1",
+            images: [
+              { src: "/works/web1.png", desc: "FigmaによるデジリグHPのデザイン作成" },
+              { src: "/works/web1-1.png", desc: "FigmaによるデジリグHPのデザイン作成" },
+            ],
+          },
+          {
+            src: "/works/web2.png",
+            title: "ネイルサロン　BB",
+            subtitle: "Web作成",          // 作品全体のサブタイトル（任意）
+            description: "ネイルサロンBBのデザイン、サイト作成",
+            tools: ["Illustrator", "Figma", "React", "TypeScript"],
+            period: "2025.06〜2025.07",
+            kind: "web",
+            link: "https://nail-salon-bb.vercel.app/",
+            images: [
+              { src: "/works/web2.png", desc: "クライアントワークとして、フェミニンをベースとしたネイルサロンBBのデザイン、サイト作成" },
+              { src: "/works/web2-1.png", desc: "お店のコンセプト、ターゲットなどをヒアリングして企画書の作成" },
+              { src: "/works/web2-2.png", desc: "Illustratorでロゴの作成" },
+              { src: "/works/web2-3.png", desc: "FigmaによるHPのデザイン作成" },
+              { src: "/works/web2-4.png", desc: "React、TypeScriptでのHP作成" },
+            ],
+          },
+          {
+            src: "/works/web3.png",
+            title: "ポートフォリオ",
+            subtitle: "Web作成",
+            description: "本サイト",
+            languages: ["React", "TypeScript", "Three.js", "GSAP", "Next.js", "WebGL", "TailWindCss"],
+            period: "2025.08〜",
+            kind: "web",
+            images: [
+              { src: "/works/web3.png", desc: "React Next.jsによるポートフォリオ作成" },
+              { src: "/works/web3-1.png", desc: "Figmaによるデザイン作成。" },
+              { src: "/works/web3-2.png", desc: "Three.js GSAP WEBGL TailWIndcssを使用し、アニメーションなどの実装" },
+            ],
+          },
+          {
+            src: "/works/web4.png",
+            title: "クラビーパティー（架空店）",
+            subtitle: "Web作成",
+            description: "本サイト",
+            languages: ["React", "TypeScript", "Next.js", "TailWindCss"],
+            link: "https://krabby-patty-henna.vercel.app/",
+            period: "2025.09〜11",
+            kind: "web",
+            images: [
+              { src: "/works/web4.png", desc: "React Next.jsによる架空店サイト作成" },
+              { src: "/works/web4-1.png", desc: "海辺の近くでシーフード取り扱うハンバーガー屋" },
+              { src: "/works/web4-2.png", desc: "モバイルオーダーのデモを実装" },
+            ],
+          },
+        ],
+      },
+    ], [cardW, gap, speedGraphic, speedWeb]);
 
   // モーダル制御
   const [open, setOpen] = useState(false);
@@ -246,15 +246,15 @@ export default function Works() {
   return (
     <section className="bg-[#1f1f1f] text-white py-12 md:py-16 px-0">
       <span className="font-display">
-      <h2 className="text-center mb-8 md:mb-10">
-        <FadeInText
-          text="Works"
-          from="right"
-          stagger={0.08}
-          baseDelay={0.3}
-          className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-display"
-        />
-      </h2>
+        <h2 className="text-center mb-8 md:mb-10">
+          <FadeInText
+            text="Works"
+            from="right"
+            stagger={0.08}
+            baseDelay={0.3}
+            className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-display"
+          />
+        </h2>
       </span>
 
       {sections.map((sec) => {
@@ -279,7 +279,7 @@ export default function Works() {
               gap={sec.gap}
               onItemClick={(idx) => handleOpen(sec.key)(idx)}
               renderItem={({ index, src, width, height, radius = 16, onClick }) => (
-                
+
                 // ホバーあり（拡大&タイトル帯）版
                 <button
                   type="button"
@@ -288,14 +288,14 @@ export default function Works() {
                   style={{ width }}
                 >
                   <div
-        className={
-          // ここを変更：既存のカードクラスに sec.borderClasses を追加
-          "relative rounded-2xl bg-[#121212] overflow-hidden shadow-lg " +
-          "transition-transform duration-300 group-hover:scale-[1.04] " +
-          sec.borderClasses           // ←強めの枠＆ホバー演出
-        }
-        style={{ width, height, borderRadius: radius }}
-      >
+                    className={
+                      // ここを変更：既存のカードクラスに sec.borderClasses を追加
+                      "relative rounded-2xl bg-[#121212] overflow-hidden shadow-lg " +
+                      "transition-transform duration-300 group-hover:scale-[1.04] " +
+                      sec.borderClasses           // ←強めの枠＆ホバー演出
+                    }
+                    style={{ width, height, borderRadius: radius }}
+                  >
                     {/* 画像は外側で丸め、object-contain で中央に余白 */}
                     <img
                       src={src}

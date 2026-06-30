@@ -30,6 +30,44 @@ export default function ProjectsIntro() {
   const [activeIndex, setActiveIndex] = useState(0);
   const router = useRouter();
   const { push } = usePageTransition();
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+
+  // アニメーションで流れる画像を事前に読み込み・デコードする
+  useEffect(() => {
+    let active = true;
+    const promises = projects.map((p) => {
+      return new Promise<void>((resolve) => {
+        const img = new Image();
+        img.src = p.image;
+        const onComplete = () => {
+          if (active) resolve();
+        };
+
+        if (img.complete) {
+          onComplete();
+        } else {
+          img.onload = () => {
+            if (typeof img.decode === "function") {
+              img.decode().then(onComplete).catch(onComplete);
+            } else {
+              onComplete();
+            }
+          };
+          img.onerror = onComplete;
+        }
+      });
+    });
+
+    Promise.all(promises).then(() => {
+      if (active) {
+        setImagesLoaded(true);
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // ハート表示完了でスワイパーアニメ開始
   useEffect(() => {
@@ -52,7 +90,7 @@ export default function ProjectsIntro() {
 
   // --- 初回アニメ: 高速ループ → 徐々に遅く → Contact→Works→About で About が中央で止まる ---
   useLayoutEffect(() => {
-    if (!loaded || !heartComplete || !placeholderRef.current) return;
+    if (!loaded || !heartComplete || !imagesLoaded || !placeholderRef.current) return;
 
     cardRefs.current = cardRefs.current.slice(0, projects.length);
 
@@ -116,7 +154,7 @@ export default function ProjectsIntro() {
     }, placeholderRef);
 
     return () => ctx.revert();
-  }, [loaded, heartComplete]);
+  }, [loaded, heartComplete, imagesLoaded]);
 
   // --- プレースホルダ → Swiper の切り替え（重ねず順番に＝変形を防ぐ） ---
   useLayoutEffect(() => {
