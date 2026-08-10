@@ -267,6 +267,82 @@
     0 0 28px rgba(255,255,255,.7),
     0 0 52px rgba(255,255,255,.55);
 }
+/* === 404 の最後の「4」用：切れかけの電球 ===
+   グリッチ演出（約0.55秒）が終わってから接触不良のようにチカチカする。
+     ・color       … シアン → くすんだ灰色（消えた電球の色）
+     ・text-shadow … 4段のグローを縮めて「光が弱くなる」
+     ・opacity     … 明滅
+
+   ポイントは timing-function の steps(1, end)。
+   これで各キーフレームの値が「次のキーフレームまで保持」され、
+   中間の補間が起きない＝カクッと瞬時に切り替わる（電球の断続と同じ挙動）。
+   linear だとフワッと明滅して「呼吸」に見えてしまう。
+
+   キーフレームの位置は不均等。役割はこう分けている：
+     ・2〜3% 間隔が続く区間 … ジジッと痙攣する（1コマ約100ms）
+     ・22%→32% のような区間 … 何事もなく点いている（油断させる）
+     ・36%→48% のような区間 … 完全に消えたまま沈黙する */
+@keyframes neon-dying {
+  /* しっかり点灯：本来のシアン＋フルのグロー */
+  0%, 10%, 22%, 56%, 66%, 83%, 96% {
+    color: #2ccdb9;
+    text-shadow:
+      0 0 6px #2ccdb9,
+      0 0 14px #2ccdb9,
+      0 0 28px rgba(44, 205, 185, .8),
+      0 0 56px rgba(44, 205, 185, .6);
+    opacity: 1;
+  }
+
+  /* 点きかけ：色が抜けかけ・グローも半分以下 */
+  6%, 34%, 48%, 60%, 78%, 92% {
+    color: #8a9fa1;
+    text-shadow:
+      0 0 4px rgba(44, 205, 185, .45),
+      0 0 9px rgba(44, 205, 185, .25),
+      0 0 16px rgba(44, 205, 185, .12),
+      0 0 28px rgba(44, 205, 185, .06);
+    opacity: .78;
+  }
+
+  /* 消灯：完全に灰色・グローほぼ無し */
+  4%, 8%, 12%, 32%, 36%, 54%, 58%, 62%, 76%, 80%, 85%, 94%, 98%, 100% {
+    color: #5a6265;
+    text-shadow:
+      0 0 2px rgba(150, 160, 165, .25),
+      0 0 4px rgba(150, 160, 165, .12),
+      0 0 6px rgba(150, 160, 165, 0),
+      0 0 8px rgba(150, 160, 165, 0);
+    opacity: .32;
+  }
+}
+
+/* ⚠ 必ず .glitch（GlitchText）の "外側" のラッパーに付けること。
+   GlitchText と同じ要素に付けると、.glitch.on（詳細度 0,2,0）の
+   `animation: glitch-shake ...` に負けて（.neon-dying は 0,1,0）
+   animation ショートハンドごと上書きされ、まったく点滅しなくなる。
+   ラッパーにすれば color / text-shadow は内側の文字に継承され、
+   opacity も子孫ごと効くので見た目は同じ。
+
+   fill-mode を付けないのも重要：delay 中は neon-cyan のまま普通に点灯し、
+   0.95秒後（グリッチ完了後）から接触不良が始まる。 */
+.neon-dying {
+  display: inline-block;
+  animation: neon-dying 5s 0.95s steps(1, end) infinite;
+}
+
+/* 動きを減らす設定では点滅させず、消灯した灰色で固定（元気のなさは維持） */
+@media (prefers-reduced-motion: reduce) {
+  .neon-dying {
+    animation: none;
+    color: #5a6265;
+    text-shadow:
+      0 0 2px rgba(150, 160, 165, .25),
+      0 0 4px rgba(150, 160, 165, .12);
+    opacity: .5;
+  }
+}
+
 .flicker {
   animation: flicker 2.8s ease-in-out infinite;
 }
