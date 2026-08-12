@@ -10,6 +10,11 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
+  // `next lint` は Next 16 で削除されたので `eslint .` で直接動かしている。
+  // その場合ビルド成果物が除外されないため、ここで明示的に外す。
+  {
+    ignores: [".next/**", "out/**", "build/**", "node_modules/**", "next-env.d.ts"],
+  },
   ...compat.extends("next/core-web-vitals", "next/typescript"),
 ];
 
