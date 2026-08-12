@@ -11,9 +11,9 @@ export type Project = {
 };
 
 export const projects: Project[] = [
-  { title: "About",   image: "/projects/project1.jpg", slug: "about",   path: "/project/about" },
-  { title: "Works",   image: "/projects/project2.jpg", slug: "works",   path: "/project/works" },
-  { title: "Contact", image: "/projects/project3.png", slug: "contact", path: "/project/contact" },
+  { title: "About",   image: "/projects/project1.webp", slug: "about",   path: "/project/about" },
+  { title: "Works",   image: "/projects/project2.webp", slug: "works",   path: "/project/works" },
+  { title: "Contact", image: "/projects/project3.webp", slug: "contact", path: "/project/contact" },
 ];
 
 // ★ セクション縦並び用（先頭だけ入れ替える）

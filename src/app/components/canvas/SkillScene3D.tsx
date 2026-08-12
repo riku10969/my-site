@@ -3,7 +3,7 @@
 import React, { useEffect, useRef } from "react";
 import * as THREE from "three";
 
-const SKILL_IMAGES = ["/RikuLogo3.png"];
+const SKILL_IMAGES = ["/RikuLogo3.webp"];
 
 /** スクロール進行 0..1 をイージング（easeOutCubic） */
 function easeOutCubic(t: number): number {

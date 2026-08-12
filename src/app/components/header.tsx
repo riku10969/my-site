@@ -60,7 +60,7 @@ export default function Header() {
           // 最初の画面（ホーム）ではロゴ押下で遷移させない
           <div className="flex items-center select-none cursor-default">
             <Image
-              src="/RikuLogo3.png"
+              src="/RikuLogo3.webp"
               alt="UI/UX RIKU"
               width={160}
               height={70}
@@ -71,7 +71,7 @@ export default function Header() {
         ) : (
           <TransitionLink href="/" className="flex items-center">
             <Image
-              src="/RikuLogo3.png"
+              src="/RikuLogo3.webp"
               alt="UI/UX RIKU"
               width={160}
               height={70}

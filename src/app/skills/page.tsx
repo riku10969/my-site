@@ -16,7 +16,7 @@ const SKILLS = [
     tagJa: "ブランディング",
     body:
       "ヒアリングからコンセプト設計、配色・タイポ・ビジュアルデザインまで、Web・ロゴ制作をトータルに対応。企画書やモックアップで具体的な提案が可能です。",
-    imgs: ["/skill/branding1.jpg", "/skill/branding2.jpg", "/skill/branding3.jpg"],
+    imgs: ["/skill/branding1.webp", "/skill/branding2.webp", "/skill/branding3.webp"],
   },
   {
     id: "design",
@@ -25,7 +25,7 @@ const SKILLS = [
     tagJa: "デザイン",
     body:
       "Illustrator・Photoshop・Figmaなどのデザインツールを活用し、ロゴやポスター制作、写真加工、Web UIデザインまで幅広く対応可能です。",
-    imgs: ["/skill/design1.jpg", "/skill/design2.jpg", "/skill/design3.jpg"],
+    imgs: ["/skill/design1.webp", "/skill/design2.webp", "/skill/design3.webp"],
   },
   {
     id: "frontend",
@@ -34,7 +34,7 @@ const SKILLS = [
     tagJa: "フロントエンド開発",
     body:
       "GSAPやThree.jsを用いたWebGLアニメーションの実装、ローダーやテキストへの動きを取り入れたUI／UX演出を設計。FigmaデザインをReactコンポーネントとして忠実に再現できます。",
-    imgs: ["/skill/frontend1.jpg", "/skill/frontend2.jpg"],
+    imgs: ["/skill/frontend1.webp", "/skill/frontend2.webp"],
   },
   {
     id: "subskill",
@@ -43,7 +43,7 @@ const SKILLS = [
     tagJa: "補助スキル",
     body:
       "VBAを活用した業務効率化ツールの開発経験があり、Gitを用いたバージョン管理にも対応できます。",
-    imgs: ["/skill/subskill1.jpg", "/skill/subskill2.jpg"],
+    imgs: ["/skill/subskill1.webp", "/skill/subskill2.webp"],
   },
 ];
 

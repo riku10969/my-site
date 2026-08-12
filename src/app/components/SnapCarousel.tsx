@@ -303,9 +303,9 @@ function SlideCard({
 
 export function ProjectsIntroReplacement() {
   const items: SlideItem[] = [
-    { title: "About", image: "/projects/project1.jpg", path: "/project/about" },
-    { title: "Works", image: "/projects/project2.jpg", path: "/project/works" },
-    { title: "Contact", image: "/projects/project3.png", path: "/project/contact" },
+    { title: "About", image: "/projects/project1.webp", path: "/project/about" },
+    { title: "Works", image: "/projects/project2.webp", path: "/project/works" },
+    { title: "Contact", image: "/projects/project3.webp", path: "/project/contact" },
   ];
 
   return (

@@ -54,7 +54,7 @@ export default function Works() {
           "ring-0 group-hover:ring-4 group-hover:ring-teal-300/20",
         items: [
           {
-            src: "/works/graphic1.png",
+            src: "/works/graphic1.webp",
             title: "名刺作成",
             subtitle: "名刺作成",          // 作品全体のサブタイトル（任意）
             description: "全体の説明（フォールバック）",
@@ -62,11 +62,11 @@ export default function Works() {
             period: "2024.11",
             kind: "graphic",
             images: [
-              { src: "/works/graphic1.png", desc: "デジリグ課題の一環として、Illustratorによる名刺制作。" },
+              { src: "/works/graphic1.webp", desc: "デジリグ課題の一環として、Illustratorによる名刺制作。" },
             ],
           },
           {
-            src: "/works/graphic2.png",
+            src: "/works/graphic2.webp",
             title: "COWCOW BARGER",
             subtitle: "ロゴ制作　クライアントワーク",          // 作品全体のサブタイトル（任意）
             description: "全体の説明（フォールバック）",
@@ -74,15 +74,15 @@ export default function Works() {
             period: "2024.12",
             kind: "graphic",
             images: [
-              { src: "/works/graphic2.png", desc: "デジリグ課題＋クライアントワークとして、ハンバーガー屋さんのロゴ制作。", subtitle: "クライアントワーク" },
-              { src: "/works/graphic2-1.png", desc: "企画書の作成" },
-              { src: "/works/graphic2-2.png", desc: "バリエーション" },
-              { src: "/works/graphic2-3.png", desc: "使用例１" },
-              { src: "/works/graphic2-4.png", desc: "使用例２" },
+              { src: "/works/graphic2.webp", desc: "デジリグ課題＋クライアントワークとして、ハンバーガー屋さんのロゴ制作。", subtitle: "クライアントワーク" },
+              { src: "/works/graphic2-1.webp", desc: "企画書の作成" },
+              { src: "/works/graphic2-2.webp", desc: "バリエーション" },
+              { src: "/works/graphic2-3.webp", desc: "使用例１" },
+              { src: "/works/graphic2-4.webp", desc: "使用例２" },
             ],
           },
           // {
-          //   src: "/works/graphic3-2.png",
+          //   src: "/works/graphic3-2.webp",
           //   title: "彩の森　Dog Run Party",
           //   subtitle: "ポスター　リデザイン",          // 作品全体のサブタイトル（任意）
           //   description: "全体の説明（フォールバック）",
@@ -90,12 +90,12 @@ export default function Works() {
           //   period: "2025.01",
           //   kind: "graphic",
           //   images: [
-          //   { src: "/works/graphic3.png",   desc: "デジリグ課題の一環として、イベントポスターのリデザイン" },
-          //   { src: "/works/graphic3-1.png", desc: "元の写真" }
+          //   { src: "/works/graphic3.webp",   desc: "デジリグ課題の一環として、イベントポスターのリデザイン" },
+          //   { src: "/works/graphic3-1.webp", desc: "元の写真" }
           //   ],
           // },
           {
-            src: "/works/graphic4.png",
+            src: "/works/graphic4.webp",
             title: "Space Kelvin",
             subtitle: "広告物作成",          // 作品全体のサブタイトル（任意）
             description: "",
@@ -103,14 +103,14 @@ export default function Works() {
             period: "2025.02",
             kind: "graphic",
             images: [
-              { src: "/works/graphic4.png", desc: "デジリグ課題の一環として、宇宙をテーマとしたアイス屋さんの広告物作成" },
-              { src: "/works/graphic4-1.png", desc: "企画書作成" },
-              { src: "/works/graphic4-2.png", desc: "ロゴの制作" },
-              { src: "/works/graphic4-3.png", desc: "キービジュアル作成" },
+              { src: "/works/graphic4.webp", desc: "デジリグ課題の一環として、宇宙をテーマとしたアイス屋さんの広告物作成" },
+              { src: "/works/graphic4-1.webp", desc: "企画書作成" },
+              { src: "/works/graphic4-2.webp", desc: "ロゴの制作" },
+              { src: "/works/graphic4-3.webp", desc: "キービジュアル作成" },
             ],
           },
           {
-            src: "/works/graphic5.png",
+            src: "/works/graphic5.webp",
             title: "The Sauna",
             subtitle: "バナー制作",          // 作品全体のサブタイトル（任意）
             description: "デジリグ課題の一環として、長野県にあるプライベートサウナThe Saunaのバナー制作",
@@ -118,7 +118,7 @@ export default function Works() {
             period: "2025.10",
             kind: "graphic",
             images: [
-              { src: "/works/graphic5.png", desc: "デジリグ課題の一環として、TheSaunaのバナー制作", subtitle: "課題" },
+              { src: "/works/graphic5.webp", desc: "デジリグ課題の一環として、TheSaunaのバナー制作", subtitle: "課題" },
             ],
           },
         ],
@@ -136,7 +136,7 @@ export default function Works() {
           "ring-0 group-hover:ring-4 group-hover:ring-[#9d7cdb]/25",
         items: [
           {
-            src: "/works/web1.png",
+            src: "/works/web1.webp",
             title: "デジリグHP デザイン制作",
             subtitle: "広告物作成",          // 作品全体のサブタイトル（任意）
             description: "デジリグ課題の一環として、デジリグHPのデザインをFigmaで制作",
@@ -145,12 +145,12 @@ export default function Works() {
             kind: "web",
             // link: "https://www.figma.com/design/4u1f7qzDBmwDh2kvIfOXa5/LIG?node-id=0-1&t=aAxCldnMJRNgwzyQ-1",
             images: [
-              { src: "/works/web1.png", desc: "FigmaによるデジリグHPのデザイン作成" },
-              { src: "/works/web1-1.png", desc: "FigmaによるデジリグHPのデザイン作成" },
+              { src: "/works/web1.webp", desc: "FigmaによるデジリグHPのデザイン作成" },
+              { src: "/works/web1-1.webp", desc: "FigmaによるデジリグHPのデザイン作成" },
             ],
           },
           {
-            src: "/works/web2.png",
+            src: "/works/web2.webp",
             title: "ネイルサロン　BB",
             subtitle: "Web作成",          // 作品全体のサブタイトル（任意）
             description: "ネイルサロンBBのデザイン、サイト作成",
@@ -159,15 +159,15 @@ export default function Works() {
             kind: "web",
             link: "https://nail-salon-bb.vercel.app/",
             images: [
-              { src: "/works/web2.png", desc: "クライアントワークとして、フェミニンをベースとしたネイルサロンBBのデザイン、サイト作成" },
-              { src: "/works/web2-1.png", desc: "お店のコンセプト、ターゲットなどをヒアリングして企画書の作成" },
-              { src: "/works/web2-2.png", desc: "Illustratorでロゴの作成" },
-              { src: "/works/web2-3.png", desc: "FigmaによるHPのデザイン作成" },
-              { src: "/works/web2-4.png", desc: "React、TypeScriptでのHP作成" },
+              { src: "/works/web2.webp", desc: "クライアントワークとして、フェミニンをベースとしたネイルサロンBBのデザイン、サイト作成" },
+              { src: "/works/web2-1.webp", desc: "お店のコンセプト、ターゲットなどをヒアリングして企画書の作成" },
+              { src: "/works/web2-2.webp", desc: "Illustratorでロゴの作成" },
+              { src: "/works/web2-3.webp", desc: "FigmaによるHPのデザイン作成" },
+              { src: "/works/web2-4.webp", desc: "React、TypeScriptでのHP作成" },
             ],
           },
           {
-            src: "/works/web3.png",
+            src: "/works/web3.webp",
             title: "ポートフォリオ",
             subtitle: "Web作成",
             description: "本サイト",
@@ -175,13 +175,13 @@ export default function Works() {
             period: "2025.08〜",
             kind: "web",
             images: [
-              { src: "/works/web3.png", desc: "React Next.jsによるポートフォリオ作成" },
-              { src: "/works/web3-1.png", desc: "Figmaによるデザイン作成。" },
-              { src: "/works/web3-2.png", desc: "Three.js GSAP WEBGL TailWIndcssを使用し、アニメーションなどの実装" },
+              { src: "/works/web3.webp", desc: "React Next.jsによるポートフォリオ作成" },
+              { src: "/works/web3-1.webp", desc: "Figmaによるデザイン作成。" },
+              { src: "/works/web3-2.webp", desc: "Three.js GSAP WEBGL TailWIndcssを使用し、アニメーションなどの実装" },
             ],
           },
           {
-            src: "/works/web4.png",
+            src: "/works/web4.webp",
             title: "クラビーパティー（架空店）",
             subtitle: "Web作成",
             description: "本サイト",
@@ -190,9 +190,9 @@ export default function Works() {
             period: "2025.09〜11",
             kind: "web",
             images: [
-              { src: "/works/web4.png", desc: "React Next.jsによる架空店サイト作成" },
-              { src: "/works/web4-1.png", desc: "海辺の近くでシーフード取り扱うハンバーガー屋" },
-              { src: "/works/web4-2.png", desc: "モバイルオーダーのデモを実装" },
+              { src: "/works/web4.webp", desc: "React Next.jsによる架空店サイト作成" },
+              { src: "/works/web4-1.webp", desc: "海辺の近くでシーフード取り扱うハンバーガー屋" },
+              { src: "/works/web4-2.webp", desc: "モバイルオーダーのデモを実装" },
             ],
           },
         ],

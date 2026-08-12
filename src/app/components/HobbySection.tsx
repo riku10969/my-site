@@ -400,12 +400,12 @@ function HobbyTile({
 export default function HobbySection({
   title = "My Hobby",
   items = [
-    { src: "/hobby/figaro.jpg", alt: "Figaro" },
-    { src: "/hobby/snow.jpg", alt: "Snow Trip" },
-    { src: "/hobby/NewYork.jpg", alt: "NewYork" },
-    { src: "/hobby/camera.jpg", alt: "Photography" },
-    { src: "/hobby/movie1.jpg", alt: "Cinema" },
-    { src: "/hobby/car.jpg", alt: "Car" },
+    { src: "/hobby/figaro.webp", alt: "Figaro" },
+    { src: "/hobby/snow.webp", alt: "Snow Trip" },
+    { src: "/hobby/NewYork.webp", alt: "NewYork" },
+    { src: "/hobby/camera.webp", alt: "Photography" },
+    { src: "/hobby/movie1.webp", alt: "Cinema" },
+    { src: "/hobby/car.webp", alt: "Car" },
   ],
 }: {
   title?: string;

@@ -67,38 +67,38 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
   // 写真13枚：0-3はパララックス中ずっと表示（RikuLogo3, spacekelvin, shark, cowcowburger）。4-12はStrengthごとに下から流れ込み・上に流れ出る
   const photos = useMemo(
     () => [
-      "/RikuLogo3.png",
-      "/parallax/spacekelvin.png",
-      "/parallax/shark.png",
-      "/parallax/cowcowburger.png",
-      "/parallax/beach.jpg",
-      "/parallax/noise.jpg",
-      "/parallax/emo.JPG",
-      "/parallax/syokunin.jpeg",
-      "/parallax/syokunin2.png",
-      "/parallax/syokunin3.jpeg",
-      "/parallax/site.png",
-      "/parallax/07.JPG",
-      "/parallax/coding.png",
+      "/RikuLogo3.webp",
+      "/parallax/spacekelvin.webp",
+      "/parallax/shark.webp",
+      "/parallax/cowcowburger.webp",
+      "/parallax/beach.webp",
+      "/parallax/noise.webp",
+      "/parallax/emo.webp",
+      "/parallax/syokunin.webp",
+      "/parallax/syokunin2.webp",
+      "/parallax/syokunin3.webp",
+      "/parallax/site.webp",
+      "/parallax/07.webp",
+      "/parallax/coding.webp",
     ],
     []
   );
 
   // この4枚だけ罫線をつけない（RikuLogo3, spacekelvin, shark, cowcowburger）
   const noBorderSlugs = useMemo(
-    () => ["RikuLogo3.png", "spacekelvin.png", "shark.png", "cowcowburger.png"],
+    () => ["RikuLogo3.webp", "spacekelvin.webp", "shark.webp", "cowcowburger.webp"],
     []
   );
   // 罫線なし・画像全体表示（写真幅に合わせて contain）にする写真
   const noBorderContainSlugs = useMemo(
     () => [
-      "RikuLogo3.png",
-      "spacekelvin.png",
-      "cowcowburger.png",
-      "shark.png",
-      "syokunin.jpeg",
-      "beach.jpg",
-      "syokunin3.jpeg",
+      "RikuLogo3.webp",
+      "spacekelvin.webp",
+      "cowcowburger.webp",
+      "shark.webp",
+      "syokunin.webp",
+      "beach.webp",
+      "syokunin3.webp",
     ],
     []
   );
@@ -801,7 +801,7 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
               ].join(" ")}
               style={
                 {
-                  ["--img" as any]: "url(/projects/project1.jpg)",
+                  ["--img" as any]: "url(/projects/project1.webp)",
                 } as React.CSSProperties
               }
               aria-label="About visual"
@@ -1037,14 +1037,14 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
           <HobbySection
             items={[
               {
-                src: "/hobby/figaro.jpg",
+                src: "/hobby/figaro.webp",
                 alt: "Figaro",
                 label: "フィガロ",
                 description: "チワワとペキニーズのミックス犬。毎日の癒しです。",
                 category: "Figaro",
               },
               {
-                src: "/hobby/camera.jpg",
+                src: "/hobby/camera.webp",
                 alt: "Photography",
                 label: "写真",
                 description: "最近はデジカメにハマってます。",
@@ -1052,28 +1052,28 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
                 // meta: ["Canon EOS R6", "2024"],
               },
               {
-                src: "/hobby/movie1.jpg",
+                src: "/hobby/movie1.webp",
                 alt: "Cinema",
                 label: "映画",
                 description: "休日は映画館で映画をよく観ています。",
                 category: "CINEMA",
               },
               {
-                src: "/hobby/snow.jpg",
+                src: "/hobby/snow.webp",
                 alt: "Snow Trip",
                 label: "スノーボード",
                 description: "唯一の体を動かす趣味です。",
                 category: "SNOWBOARD",
               },
               {
-                src: "/hobby/car.jpg",
+                src: "/hobby/car.webp",
                 alt: "Car",
                 label: "CIVIC",
                 description: "車の運転が得意です。",
                 category: "CIVIC",
               },
               {
-                src: "/hobby/NewYork.jpg",
+                src: "/hobby/NewYork.webp",
                 alt: "NewYork",
                 label: "ニューヨーク",
                 description: "海外のデザインやサイトを見て勉強しています。",

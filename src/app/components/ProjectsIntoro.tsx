@@ -16,9 +16,9 @@ type Project = { title: string; image: string; path: string };
 
 // 流れ順: Contact → Works → About（最後に About が中央で止まる）
 const projects: Project[] = [
-  { title: "Contact", image: "/projects/project3.png", path: "/project/contact" },
-  { title: "Works",   image: "/projects/project2.jpg", path: "/project/works" },
-  { title: "About",   image: "/projects/project1.jpg", path: "/project/about" },
+  { title: "Contact", image: "/projects/project3.webp", path: "/project/contact" },
+  { title: "Works",   image: "/projects/project2.webp", path: "/project/works" },
+  { title: "About",   image: "/projects/project1.webp", path: "/project/about" },
 ];
 
 export default function ProjectsIntro() {

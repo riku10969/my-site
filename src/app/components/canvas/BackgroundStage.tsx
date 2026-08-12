@@ -68,7 +68,7 @@ export default function BackgroundStage() {
       const logoW = isMobile ? 2.2 : 3.6;
       const logoH = isMobile ? 2.0 : 3.0;
       new THREE.TextureLoader().load(
-        "/RikuLogo3.png",
+        "/RikuLogo3.webp",
         (tex) => {
           tex.premultiplyAlpha = false;
           tex.colorSpace = THREE.SRGBColorSpace; // PNG の元の色（薄くならない）

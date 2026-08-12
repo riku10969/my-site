@@ -17,9 +17,8 @@ const jaro = Jaro({
 export const metadata: Metadata = {
   title: "Riku Ohashi Portfolio",
   description: "Next.js + TypeScript + Tailwind + Gsap + Three.js",
-  icons: {
-    icon: "/RikuLogo3.png?v=2",
-  },
+  // ファビコンは src/app/icon.png（192x192 / 12KB）を Next の規約で自動認識させる。
+  // 以前はヘッダー用の 1.5MB のロゴをそのまま指定していた。
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

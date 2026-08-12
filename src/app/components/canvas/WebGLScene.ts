@@ -51,7 +51,7 @@ export function initWebGLScene(
     dprMax = mobile ? 1.2 : 1.6,
     showCenterImage = false,
     afterTyping = false,
-    imagePath = "/RikuLogo3.png",
+    imagePath = "/RikuLogo3.webp",
     noiseSpeed = mobile ? 40 : 60,
     centerFracDesktop = 0.77,   // 画面幅の28%
     centerFracMobile = 0.42,    // モバイルは少し小さめに 42% → 必要に応じて下げる/上げる
