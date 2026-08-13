@@ -5,6 +5,12 @@ import * as THREE from "three";
 import { noiseBackgroundVertex } from "./shaders/noiseBackgroundVertex";
 import { noiseBackgroundFragment } from "./shaders/noiseBackgroundFragment";
 
+/**
+ * サイト全体の背景（砂嵐ノイズ + 中央ロゴ）。
+ * ページ内で唯一の WebGL コンテキストなので、ここで描画のオン/オフを一元管理する。
+ * - タブが非表示（document.hidden）の間は rAF を止める
+ * - prefers-reduced-motion: reduce のときはループを回さず 1 枚だけ描く
+ */
 export default function BackgroundStage() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -96,6 +102,7 @@ export default function BackgroundStage() {
           logo.add(logoBackdrop);
           scene.add(logo);
           logoActive = true;           // フェードイン開始
+          requestStaticRender();       // 静止モードでもロゴが出るように
         },
         undefined,
         () => console.warn("logo image not found")
@@ -108,39 +115,100 @@ export default function BackgroundStage() {
     };
     window.addEventListener("bg:showLogo", onShowLogo);
 
-    // --- loop ---
-    let raf = 0;
-    const noiseSpeed = 60; // 砂嵐速度
-    const loop = () => {
-      raf = requestAnimationFrame(loop);
-      const t = clock.getElapsedTime();
+    // --- draw ---
+    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let reducedMotion = motionQuery.matches;
 
+    const noiseSpeed = 60; // 砂嵐速度
+    // uTime の折り返し。シェーダーの hash は fract(sin(dot(...))) なので、
+    // 引数が大きくなるほど float の刻みが粗くなり粒がにじむ。値は乱数なので
+    // 折り返しても見た目は変わらない。
+    const noiseTimeWrap = 100;
+
+    let elapsed = 0; // 描画している間だけ進む時間
+
+    const drawFrame = () => {
       // 背景ノイズ
-      bgUniforms.uTime.value = t * noiseSpeed;
+      bgUniforms.uTime.value = (elapsed * noiseSpeed) % noiseTimeWrap;
 
       // ロゴのフェード & ゆらぎ
-        if (logo && logoMat && logo.visible !== false) {
-        if (logoActive) {
-          // フェードイン & 手前へ（デスクトップはゆっくり）
-          if (logoMat.opacity < 1) logoMat.opacity = Math.min(1, logoMat.opacity + fadeInSpeed);
-          if (logo.position.z < 0) logo.position.z += moveInSpeed;
-          if (logoMat.opacity >= 1 && logo.position.z >= 0) {
-            // 完了後はゆらぎだけ継続（少し弱く）
+      if (logo && logoMat && logo.visible !== false) {
+        if (reducedMotion) {
+          // 動きを減らす設定：アニメーションせず完成状態で出す
+          if (logoActive) {
+            logoMat.opacity = 1;
+            logo.position.z = 0;
             logoActive = false;
-            swayStrength = 0.012;
             window.dispatchEvent(new CustomEvent("heart:complete"));
           }
+        } else {
+          if (logoActive) {
+            // フェードイン & 手前へ（デスクトップはゆっくり）
+            if (logoMat.opacity < 1) logoMat.opacity = Math.min(1, logoMat.opacity + fadeInSpeed);
+            if (logo.position.z < 0) logo.position.z += moveInSpeed;
+            if (logoMat.opacity >= 1 && logo.position.z >= 0) {
+              // 完了後はゆらぎだけ継続（少し弱く）
+              logoActive = false;
+              swayStrength = 0.012;
+              window.dispatchEvent(new CustomEvent("heart:complete"));
+            }
+          }
+          // 常時ゆらゆら
+          logo.rotation.z = Math.sin(elapsed * 0.6) * 0.06;
+          logo.rotation.y = Math.sin(elapsed * 0.4) * 0.06;
+          logo.position.x = Math.sin(elapsed * 0.25) * swayStrength;
+          logo.position.y = Math.cos(elapsed * 0.2) * swayStrength;
         }
-        // 常時ゆらゆら
-        logo.rotation.z = Math.sin(t * 0.6) * 0.06;
-        logo.rotation.y = Math.sin(t * 0.4) * 0.06;
-        logo.position.x = Math.sin(t * 0.25) * swayStrength;
-        logo.position.y = Math.cos(t * 0.2) * swayStrength;
       }
 
       renderer.render(scene, camera);
     };
-    loop();
+
+    // --- loop control ---
+    let raf = 0;      // ループ中のみ非 0
+    let onceRaf = 0;  // 静止モードの単発描画
+
+    const loop = () => {
+      raf = requestAnimationFrame(loop);
+      elapsed += clock.getDelta();
+      drawFrame();
+    };
+
+    /** ループを回さないとき（静止 / リサイズ後）に 1 枚だけ描き直す */
+    const requestStaticRender = () => {
+      if (raf || onceRaf || document.hidden) return;
+      onceRaf = requestAnimationFrame(() => {
+        onceRaf = 0;
+        drawFrame();
+      });
+    };
+
+    const stopLoop = () => {
+      if (raf) cancelAnimationFrame(raf);
+      raf = 0;
+    };
+
+    /** 「動かす条件が揃っているか」を見て描画を開始／停止する */
+    const syncRunState = () => {
+      if (document.hidden || reducedMotion) {
+        stopLoop();
+        requestStaticRender();
+        return;
+      }
+      if (raf) return;
+      clock.getDelta(); // 止まっていた間の差分を捨てる（時間が飛ばないように）
+      loop();
+    };
+    syncRunState();
+
+    const onVisibilityChange = () => syncRunState();
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    const onMotionChange = (e: MediaQueryListEvent) => {
+      reducedMotion = e.matches;
+      syncRunState();
+    };
+    motionQuery.addEventListener("change", onMotionChange);
 
     // --- resize ---
     const onResize = () => {
@@ -150,21 +218,26 @@ export default function BackgroundStage() {
       const newGeo = createFullScreenPlane(-5);
       bg.geometry.dispose();
       bg.geometry = newGeo;
+      requestStaticRender(); // 静止中でもリサイズ結果を反映
     };
     window.addEventListener("resize", onResize);
 
     // === 追加：ロゴ即消しイベント ===
-     const onLogoHideImmediate = () => {
-    if (logo && logoMat) {
-     logoMat.opacity = 0;
-     logo.visible = false;  // 子の backdrop も一緒に非表示
-     logoActive = false;    // フェードインの途中でも止める
-   }
- };
- window.addEventListener("bg:logo:hideImmediate", onLogoHideImmediate);
+    const onLogoHideImmediate = () => {
+      if (logo && logoMat) {
+        logoMat.opacity = 0;
+        logo.visible = false;  // 子の backdrop も一緒に非表示
+        logoActive = false;    // フェードインの途中でも止める
+        requestStaticRender();
+      }
+    };
+    window.addEventListener("bg:logo:hideImmediate", onLogoHideImmediate);
 
     return () => {
-      cancelAnimationFrame(raf);
+      stopLoop();
+      if (onceRaf) cancelAnimationFrame(onceRaf);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      motionQuery.removeEventListener("change", onMotionChange);
       window.removeEventListener("resize", onResize);
       window.removeEventListener("bg:showLogo", onShowLogo);
       window.removeEventListener("bg:logo:hideImmediate", onLogoHideImmediate);

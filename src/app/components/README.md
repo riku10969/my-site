@@ -58,7 +58,6 @@ components/
 |---|---|
 | `header.tsx` / `Footer.tsx` | 共通レイアウト |
 | `PageTransition.tsx` | 遷移演出の Context。実装は `gsap/` に委譲 |
-| `RouteLogoController.tsx` | ルートに応じたロゴ表示制御 |
 | `Loader.tsx` | タイプ演出付きローダー |
 | `GlitchText.tsx` / `FadeInText.tsx` | テキスト演出 |
 | `InfiniteMarquee.tsx` | 無限スクロール |

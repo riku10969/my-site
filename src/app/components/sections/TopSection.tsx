@@ -1,23 +1,10 @@
-"use client";
-
 import styles from "../../styles/Top.module.css";
-import { useRef, useEffect } from "react";
-import { initWebGLScene } from "../webgl/WebGLScene";
 
+/**
+ * トップの 100vh 分の場所取り。
+ * 背景ノイズは画面全体に敷く BackgroundStage が唯一の描画担当なので、
+ * ここでは WebGL コンテキストを持たない。
+ */
 export default function TopSection() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    if (canvasRef.current) {
-      initWebGLScene(canvasRef.current);
-    }
-  }, []);
-
-  return (
-    <section className={styles.top}>
-      <div className="bgHost">
-      <canvas ref={canvasRef} className={styles.canvas}></canvas>
-      </div>
-    </section>
-  );
+  return <section className={styles.top} />;
 }
