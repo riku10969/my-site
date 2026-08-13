@@ -1005,10 +1005,12 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
                     {s.num}
                   </span>
                   <div className="min-w-0">
-                    <h4 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#c4a8ff]
+                    {/* 見出しレベルはプロフィールの h2 直下なので h3。
+                        文字サイズはクラス側で指定しているのでタグ変更の影響を受けない */}
+                    <h3 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#c4a8ff]
                        [text-shadow:_0_0_14px_rgba(109,50,194,.6),_0_0_28px_rgba(109,50,194,.4),_0_0_48px_rgba(109,50,194,.25),_0_2px_4px_rgba(0,0,0,0.5)]">
                       {s.title}
-                    </h4>
+                    </h3>
                     <p className="mt-3 sm:mt-4 text-base sm:text-lg md:text-xl text-white leading-8 sm:leading-9 md:leading-10 font-semibold
                        [text-shadow:_0_0_8px_rgba(255,255,255,0.15),_0_2px_4px_rgba(0,0,0,0.9)]">
                       {s.text}

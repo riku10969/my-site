@@ -95,16 +95,18 @@ function ZoomImageModal({
 
   useEffect(() => setMounted(true), []);
 
+  // clone / backdrop は body 直下へ直接 appendChild しており React の管理外なので、
+  // playClose() を通らずにアンマウントされると（開いたままページ遷移した場合など）
+  // position:fixed のまま次のページに残り続ける。ここで確実に後片付けする。
   useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
-    document.addEventListener("keydown", onKey);
-    document.documentElement.style.overflow = "hidden";
     return () => {
-      document.removeEventListener("keydown", onKey);
+      cloneRef.current?.remove();
+      cloneRef.current = null;
+      backdropRef.current?.remove();
+      backdropRef.current = null;
       document.documentElement.style.overflow = "";
     };
-  }, [open]);
+  }, []);
 
   const playOpen = useCallback(() => {
     if (!item || !originEl) return;
@@ -267,6 +269,23 @@ function ZoomImageModal({
     playClose();
   }, [animating, playClose]);
 
+  // Esc で閉じる + 背面スクロール固定。
+  // close より後ろに置くことで依存配列に入れられる（前に置くと TDZ で
+  // "Cannot access 'close' before initialization" になる）。
+  // close を deps に入れないと、open が true になった瞬間の close が
+  // リスナーに焼き付き、originSize/modalSize が null のままなので
+  // playClose() が即 return して Esc が効かなくなる。
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
+    document.addEventListener("keydown", onKey);
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.documentElement.style.overflow = "";
+    };
+  }, [open, close]);
+
   useEffect(() => {
     if (open && item && originEl && mounted) playOpen();
   }, [open, item, originEl, mounted, playOpen]);
@@ -373,9 +392,16 @@ function HobbyTile({
         }}
         className="h-full w-full cursor-pointer"
         onClick={handleOpen}
-        onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) =>
-          (e.key === "Enter" || e.key === " ") && handleOpen()
-        }
+        // div なので button 相当の挙動を自前で用意する。
+        // preventDefault が無いと Space がブラウザ標準のページスクロールとして残り、
+        // モーダルを開くのと同時に裏のページがずれる
+        onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            handleOpen();
+          }
+        }}
+        role="button"
         tabIndex={0}
         aria-label={`${item.alt} enlarge`}
       >

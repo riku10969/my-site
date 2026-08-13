@@ -41,8 +41,10 @@ export default function Header() {
       >
         {/* Left: Hamburger (mobile) */}
         <button
-          aria-label="Open menu"
+          // 1つのボタンで開閉を兼ねるので、名前も状態に追従させる
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
           aria-expanded={menuOpen}
+          aria-controls="mobile-drawer"
           onClick={() => setMenuOpen((v) => !v)}
           className="
             md:hidden inline-flex flex-col gap-1.5
@@ -121,8 +123,12 @@ export default function Header() {
         <div className="w-10 md:w-14" aria-hidden />
       </div>
 
-      {/* Mobile Drawer */}
+      {/* Mobile Drawer
+          max-h-0 / opacity-0 は見えなくするだけでフォーカス順からは外れないので、
+          閉じている間は inert で無効化する。DOM に残すため閉じるアニメーションは維持される */}
       <div
+        id="mobile-drawer"
+        inert={!menuOpen}
         className={`
           md:hidden
           absolute top-16 left-0 w-full

@@ -278,12 +278,18 @@ export default function Works() {
               itemWidth={sec.itemWidth}
               gap={sec.gap}
               onItemClick={(idx) => handleOpen(sec.key)(idx)}
-              renderItem={({ index, src, width, height, radius = 16, onClick }) => (
+              renderItem={({ index, src, width, height, radius = 16, onClick }) => {
+                // indexは元配列基準で安全に参照
+                const item = sec.items[index % sec.items.length];
 
+                return (
                 // ホバーあり（拡大&タイトル帯）版
                 <button
                   type="button"
                   onClick={onClick}
+                  // ボタンの中身は alt="" の画像とホバー時だけ見えるタイトル帯なので、
+                  // 名前を明示しないと支援技術には「ボタン」としか伝わらない
+                  aria-label={item?.title ?? `${sec.label}作品の詳細`}
                   className="group relative block focus:outline-none my-4"
                   style={{ width }}
                 >
@@ -305,20 +311,22 @@ export default function Works() {
                       draggable={false}
                     />
 
-                    {/* タイトル帯：ホバーでフェードイン（indexは元配列基準で安全に参照） */}
-                    <div className="pointer-events-none absolute inset-x-0 bottom-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    {/* タイトル帯：ホバーでフェードイン。
+                        aria-label で名前を付けたので、こちらは視覚表現として隠す */}
+                    <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                       <div className="mx-2 mb-2 rounded-xl bg-black/55 backdrop-blur-sm px-3 py-2">
                         <p className="text-sm font-semibold leading-none">
-                          {sec.items[index % sec.items.length]?.title ?? ""}
+                          {item?.title ?? ""}
                         </p>
                         <p className="text-[11px] opacity-80 mt-1">
-                          {(sec.items[index % sec.items.length]?.tools ?? []).join(", ")}
+                          {(item?.tools ?? []).join(", ")}
                         </p>
                       </div>
                     </div>
                   </div>
                 </button>
-              )}
+                );
+              }}
             />
           </div>
         );
