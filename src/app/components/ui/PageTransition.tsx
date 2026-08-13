@@ -10,8 +10,8 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
-import { useTileTransition } from "./TileTransition";
-import { useNeonPanelTransition } from "./NeonPanelTransition";
+import { useTileTransition } from "../gsap/TileTransition";
+import { useNeonPanelTransition } from "../gsap/NeonPanelTransition";
 
 const PageTransitionCtx = createContext<{
   push: (href: string) => void;

@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import GlitchText from "../GlitchText";
-import SkillBarsAbout from "../SkillBarsAbout";
-import HobbySection from "../HobbySection";
+import GlitchText from "../ui/GlitchText";
+import SkillBarsAbout from "./SkillBarsAbout";
+import HobbySection from "./HobbySection";
 
 type Strength = { num: string; title: string; text: string };
 type Pos = { top: string; left: string; w: string };

@@ -1,8 +1,8 @@
 // src/app/not-found.tsx
 import type { Metadata } from "next";
-import Footer from "./components/Footer";
-import GlitchText from "./components/GlitchText";
-import { TransitionLink } from "./components/PageTransition";
+import Footer from "./components/ui/Footer";
+import GlitchText from "./components/ui/GlitchText";
+import { TransitionLink } from "./components/ui/PageTransition";
 
 export const metadata: Metadata = {
   title: "404 – Not Found",

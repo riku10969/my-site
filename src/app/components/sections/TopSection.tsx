@@ -1,10 +1,10 @@
 "use client";
 
-import styles from "../styles/Top.module.css";
+import styles from "../../styles/Top.module.css";
 import { useRef, useEffect } from "react";
-import { initWebGLScene } from "./canvas/WebGLScene";
+import { initWebGLScene } from "../webgl/WebGLScene";
 
-export default function Top() {
+export default function TopSection() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {

@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import React, { useEffect, useState, useRef } from "react";
-import Footer from "../components/Footer";
-import SkillScene3D from "../components/canvas/SkillScene3D";
+import Footer from "../components/ui/Footer";
+import SkillScene3D from "../components/webgl/SkillScene3D";
 
 /* ----------------------------------------------------
    SKILL データ

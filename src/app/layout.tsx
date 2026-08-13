@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Header from "./components/header";
-import BackgroundStage from "./components/canvas/BackgroundStage";
-import RouteLogoController from "./components/RouteLogoController";
-import IntroGate from "./components/IntoroGate";
-import { PageTransitionProvider } from "./components/PageTransition";
+import Header from "./components/ui/header";
+import { PageTransitionProvider } from "./components/ui/PageTransition";
 import { Jaro } from "next/font/google"; // ← これ
 
 const jaro = Jaro({
@@ -28,12 +25,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* ★ ここで全体をラップ */}
         <PageTransitionProvider>
           <Header />
-          {/* 必要なら以下のコンポーネントもここに置く */}
-          {/* <BackgroundStage /> */}
-          {/* <RouteLogoController/> */}
-          {/* <IntroGate>
-            <div style={{ position: "relative", zIndex: 1 }}>{children}</div>
-          </IntroGate> */}
           <div className="w-full pt-16">
             {children}
           </div>

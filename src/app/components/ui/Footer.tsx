@@ -3,8 +3,8 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import GlitchText from "../components/GlitchText";   
-import FadeInText from "../components/FadeInText";   // 例: components/FadeInText.tsx
+import GlitchText from "./GlitchText";   
+import FadeInText from "./FadeInText";   // 例: components/FadeInText.tsx
 
 function LogoStack() {
   return (

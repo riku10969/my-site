@@ -3,7 +3,7 @@
 import NextImage from "next/image";
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
-import GlitchText from "./GlitchText";
+import GlitchText from "../ui/GlitchText";
 
 /* =====================
    Tilt（3Dチルト）Hook（変更なし）

@@ -2,15 +2,15 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import gsap from "gsap";
-import styles from "../styles/ProjectsSwiper.module.css";
+import styles from "../../styles/ProjectsSwiper.module.css";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Navigation } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 import { useRouter } from "next/navigation";
-import { usePageTransition } from "./PageTransition";
-import Loader from "./Loader";
-import DistortOverlay from "./canvas/DistortOverlay";
+import { usePageTransition } from "../ui/PageTransition";
+import Loader from "../ui/Loader";
+import DistortOverlay from "../webgl/DistortOverlay";
 
 type Project = { title: string; image: string; path: string };
 

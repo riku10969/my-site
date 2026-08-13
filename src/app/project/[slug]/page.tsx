@@ -2,7 +2,7 @@
 import type { Metadata } from "next";
 import type { ComponentType } from "react";
 import { notFound } from "next/navigation";
-import Footer from "../../components/Footer";
+import Footer from "../../components/ui/Footer";
 
 import AboutSection from "../../components/sections/AboutSection";
 import WorksSection from "../../components/sections/WorksSection";

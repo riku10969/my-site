@@ -1,9 +1,9 @@
 "use client";
 import { useMemo, useState, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
-import InfiniteMarquee from "../InfiniteMarquee";
-import CurtainModal, { WorkItem } from "../CurtainModal";
-import FadeInText from "../FadeInText";
+import InfiniteMarquee from "../ui/InfiniteMarquee";
+import CurtainModal, { WorkItem } from "../ui/CurtainModal";
+import FadeInText from "../ui/FadeInText";
 
 /** 画面幅でSP判定（Tailwindのsm相当 640px） */
 function useIsMobile(breakpoint = 640) {

@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import styles from "../styles/SkillBars.module.css";
-import GlitchText from "./GlitchText";
-import { TransitionLink } from "./PageTransition";
+import styles from "../../styles/SkillBars.module.css";
+import GlitchText from "../ui/GlitchText";
+import { TransitionLink } from "../ui/PageTransition";
 
 type Skill = { label: string; blocks: number }; // 0..5
 type Group = {

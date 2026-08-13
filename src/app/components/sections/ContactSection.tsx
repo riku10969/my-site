@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { FaInstagram } from "react-icons/fa";
 import { SiGmail } from "react-icons/si";
-import NeonParticleStars from "../canvas/NeonParticleStars";
+import NeonParticleStars from "../webgl/NeonParticleStars";
 
 export default function ContactSection() {
   const ref = useRef<HTMLDivElement | null>(null);

@@ -1,16 +1,14 @@
-import Top from "./components/top";
-import ProjectsIntro from "./components/ProjectsIntoro";
-// import Projects from "./components/Projects";
-import BackgroundStage from "./components/canvas/BackgroundStage";
-import RouteLogoController from "./components/RouteLogoController";
+import TopSection from "./components/sections/TopSection";
+import ProjectsIntro from "./components/sections/ProjectsIntoro";
+import BackgroundStage from "./components/webgl/BackgroundStage";
+import RouteLogoController from "./components/ui/RouteLogoController";
 
 export default function Page() {
   return (
     <>
-      <Top />
+      <TopSection />
       <BackgroundStage />
       <RouteLogoController/>
-      {/* <Projects/> */}
       <ProjectsIntro />
     </>
   );
