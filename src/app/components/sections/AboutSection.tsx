@@ -1,17 +1,16 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import GlitchText from "../ui/GlitchText";
+import CharReveal from "../gsap/CharReveal";
+import { useHeroBandParallax } from "../gsap/HeroBandParallax";
 import StrengthParallax from "../gsap/StrengthParallax";
 import SkillBarsAbout from "./SkillBarsAbout";
 import HobbySection from "./HobbySection";
 
-gsap.registerPlugin(ScrollTrigger);
-
 export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }) {
   const sectionRef = useRef<HTMLElement | null>(null);
+  const bandRef = useRef<HTMLDivElement | null>(null);
   const heroRef = useRef<HTMLDivElement | null>(null);
   const imgRef = useRef<HTMLDivElement | null>(null);
   const [imgWarpOn, setImgWarpOn] = useState(false);
@@ -35,111 +34,89 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
     return () => io.disconnect();
   }, []);
 
-  // ヒーロー（写真＋プロフィール）の軽いパララックス
-  useEffect(() => {
-    const hero = heroRef.current;
-    const section = sectionRef.current;
-    if (!hero || !section) return;
-
-    const mm = gsap.matchMedia();
-
-    // 動きを減らす設定では何も作らない（条件が match しなければコールバックは走らない）
-    mm.add("(prefers-reduced-motion: no-preference)", () => {
-      gsap.fromTo(
-        hero,
-        { y: 0 },
-        {
-          y: -60,
-          ease: "none",
-          scrollTrigger: {
-            trigger: section,
-            start: "top 50%",
-            end: () => `+=${window.innerHeight * 2}`,
-            scrub: true,
-            invalidateOnRefresh: true,
-          },
-        }
-      );
-    });
-
-    return () => mm.revert();
-  }, []);
+  // 帯の中の写真をゆっくり持ち上げる。実装は gsap/ に委譲
+  useHeroBandParallax({ bandRef, imageRef: heroRef });
 
   return (
     <section
       ref={sectionRef}
       className="relative w-full bg-[#121316] text-white max-md:overflow-x-clip"
     >
-      <div className="w-full max-w-[1600px] mx-auto px-6 md:px-10 lg:px-14 pt-24 pb-14">
-        {/* ===============================
-            左右レイアウト: 写真（左） + 名前・プロフィール（右）
-           =============================== */}
+      {/* ===============================
+          ヒーロー：全幅の帯に写真、その上に名前を重ねる
+         =============================== */}
+      <div
+        ref={bandRef}
+        className="relative w-full overflow-hidden h-[300px] sm:h-[380px] md:h-[480px] lg:h-[560px]"
+      >
+        {/*
+          帯より 20% 高くして上に逃がしてある。パララックスで持ち上げても
+          下端に隙間ができないようにするため（yPercent なので帯の高さに追従する）。
+        */}
         <div
           ref={heroRef}
-          className="flex flex-col md:flex-row md:items-start md:gap-10 lg:gap-14"
+          className="absolute inset-x-0 top-[-4%] h-[120%]"
         >
-          {/* 左: 写真 */}
-          <div className="w-full md:flex-shrink-0 md:w-[50%] lg:w-[48%] max-md:mx-auto max-md:w-[80%]">
-            <div
-              ref={imgRef}
-              className={[
-                "warp-image",
-                "w-full rounded-xl overflow-hidden bg-[#e9ebee]",
-                "h-[260px] sm:h-[320px] md:h-[440px] lg:h-[540px]",
-                imgWarpOn ? "warp-on" : "",
-              ].join(" ")}
-              style={
-                {
-                  ["--img" as string]: "url(/projects/project1.webp)",
-                } as React.CSSProperties
-              }
-              aria-label="About visual"
-              role="img"
-            />
-          </div>
+          <div
+            ref={imgRef}
+            className={[
+              "warp-image w-full h-full bg-[#e9ebee]",
+              imgWarpOn ? "warp-on" : "",
+            ].join(" ")}
+            style={
+              {
+                ["--img" as string]: "url(/projects/about-hero.webp)",
+                // 1537x1023（比 1.50）。全幅の帯にすると縦が 4 割ほど切れるので、
+                // 顔が帯の中央やや上に来る位置で切る（計算上の最適値は 47%）
+                ["--img-pos" as string]: "center 47%",
+              } as React.CSSProperties
+            }
+            aria-label="About visual"
+            role="img"
+          />
+        </div>
 
-          {/* 右: 名前・肩書き・プロフィール */}
-          <div className="flex flex-col md:flex-1 md:min-w-0 max-md:items-center max-md:mt-6 pt-8 md:pt-14 lg:pt-20">
-            <GlitchText
-              key={`imgname-${isLoaded ? "on" : "off"}`}
+        {/* 写真の上に名前。下端のグラデーションで文字を読みやすくする */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-[#121316] via-[#121316]/55 to-transparent pt-20 pb-6 md:pb-10">
+          <div className="w-full max-w-[1600px] mx-auto px-6 md:px-10 lg:px-14">
+            <CharReveal
               as="div"
               text="Riku Ohashi"
-              delaySec={0.55}
-              className="font-serif text-[44px] md:text-[50px] tracking-[0.12em] max-md:text-[clamp(26px,7.5vw,36px)] max-md:tracking-[0.04em] text-white/90"
-              trigger="scroll"
-              armed={isLoaded}
+              delay={0.15}
+              className="font-serif text-[clamp(34px,9vw,50px)] md:text-[clamp(40px,5vw,68px)]
+                         tracking-[0.12em] max-md:tracking-[0.04em] leading-none text-white
+                         [text-shadow:_0_2px_16px_rgba(0,0,0,0.55)]"
             />
-
-            <div className="flex flex-wrap justify-center md:justify-start items-center gap-x-2 gap-y-1.5 mt-2 max-md:mt-1.5 max-md:px-2">
-              <span className="text-sm text-white/80 max-md:text-[13px]">
-                Frontend Engineer / UIUX
-              </span>
-            </div>
-
-            {/* プロフィール（右カラム内） */}
-            <div className="max-md:px-1 mt-8 md:mt-10">
-              <h2 className="text-[20px] md:text-[22px] font-semibold">
-                <GlitchText
-                  key={`profile-${isLoaded ? "on" : "off"}`}
-                  as="span"
-                  text="大橋 陸　1999年生まれ、埼玉県出身"
-                  delaySec={1}
-                  trigger="scroll"
-                  armed={isLoaded}
-                />
-              </h2>
-
-              <p className="mt-4 px-2 sm:px-0 text-[15px] sm:text-[17px] md:text-[20px] leading-7 sm:leading-8 md:leading-8 text-[#d6d8de] max-w-[1100px] max-md:text-[15px] max-md:leading-[1.8] max-md:px-5">
-                高校卒業後、職人として現場で働いた経験から、丁寧さと粘り強さを大切にする姿勢を培いました。
-                その後、フロントエンドエンジニアとして実務を経験し、Reactを中心にWebサイトの開発を担当。
-                デジリグに入校してデザインを体系的に学び、現在は
-                <strong className="text-white">「デザイン × 実装」</strong>
-                の両面から提案することが可能です。
-                ユーザーにとって直感的で心地よい体験を生み出すことを目指しています。
-              </p>
-            </div>
+            <span className="mt-3 block text-sm md:text-base text-white/80">
+              Frontend Engineer / UIUX
+            </span>
           </div>
         </div>
+      </div>
+
+      {/* ===============================
+          プロフィール（帯の下）
+         =============================== */}
+      <div className="w-full max-w-[1600px] mx-auto px-6 md:px-10 lg:px-14 pt-12 md:pt-16 pb-14">
+        <h2 className="text-[20px] md:text-[22px] font-semibold">
+          <GlitchText
+            key={`profile-${isLoaded ? "on" : "off"}`}
+            as="span"
+            text="大橋 陸　1999年生まれ、埼玉県出身"
+            delaySec={0.6}
+            trigger="scroll"
+            armed={isLoaded}
+          />
+        </h2>
+
+        <p className="mt-4 text-[15px] sm:text-[17px] md:text-[20px] leading-7 sm:leading-8 md:leading-8 text-[#d6d8de] max-w-[1100px] max-md:text-[15px] max-md:leading-[1.8]">
+          高校卒業後、職人として現場で働いた経験から、丁寧さと粘り強さを大切にする姿勢を培いました。
+          その後、フロントエンドエンジニアとして実務を経験し、Reactを中心にWebサイトの開発を担当。
+          デジリグに入校してデザインを体系的に学び、現在は
+          <strong className="text-white">「デザイン × 実装」</strong>
+          の両面から提案することが可能です。
+          ユーザーにとって直感的で心地よい体験を生み出すことを目指しています。
+        </p>
       </div>
 
       {/* Strength（全画面パララックス）。pin の高さは pin-spacer が確保する */}

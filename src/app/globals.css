@@ -267,11 +267,27 @@ body {
   animation: neon-dying 5s 0.95s steps(1, end) infinite;
 }
 
+/* === スクロールの合図の矢印（gsap/StrengthParallax） ====================
+   Strength が下から上がってくる間だけ出る「↓↓↓」。3つを少しずつ遅らせて
+   流れているように見せる。表示の出し入れと Strength への入れ替えは GSAP 側 */
+@keyframes cue-arrow {
+  0%, 100% { opacity: 0.2; transform: translateY(-3px) }
+  50%      { opacity: 1;   transform: translateY(4px) }
+}
+.cue-arrow {
+  display: inline-block;
+  animation: cue-arrow 1.4s ease-in-out infinite;
+}
+.cue-arrow:nth-child(2) { animation-delay: 0.15s }
+.cue-arrow:nth-child(3) { animation-delay: 0.3s }
+
 /* === Warp（sections/AboutSection のヒーロー画像）: 一度だけ歪む ========= */
+/* --img-pos で切り位置を指定できる。全幅の帯にすると縦が大きく切られるので、
+   人物の顔が残る高さに寄せるために使う（既定は center） */
 .warp-image {
   position: relative;
   background-image: var(--img);
-  background-position: center;
+  background-position: var(--img-pos, center);
   background-size: cover;
   background-repeat: no-repeat;
   filter: saturate(1.05) contrast(1.06);
@@ -283,7 +299,7 @@ body {
   position: absolute;
   inset: 0;
   background-image: var(--img);
-  background-position: center;
+  background-position: var(--img-pos, center);
   background-size: cover;
   background-repeat: no-repeat;
   opacity: 0;
@@ -426,11 +442,13 @@ body {
    GSAP 側の演出は各フックが gsap.matchMedia で同じ条件を見ている。
    -------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
-  /* 無限ループ系は停止 */
+  /* 無限ループ系は停止。矢印は動かなくなるが「↓↓↓」自体は残るので意味は伝わる */
   .flicker,
   .logo-breathe,
-  .footer-shine {
+  .footer-shine,
+  .cue-arrow {
     animation: none;
+    opacity: 1;
   }
 
   /* 404 は点滅させず、消灯した灰色で固定（元気のなさは維持） */
