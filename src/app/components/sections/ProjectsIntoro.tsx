@@ -1,14 +1,13 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import gsap from "gsap";
+import { useEffect, useState } from "react";
 import styles from "../../styles/ProjectsSwiper.module.css";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Navigation } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
-import { useRouter } from "next/navigation";
 import { usePageTransition } from "../ui/PageTransition";
+import { useProjectsIntroReel } from "../gsap/ProjectsIntroReel";
 import Loader from "../ui/Loader";
 import DistortOverlay from "../webgl/DistortOverlay";
 
@@ -28,9 +27,18 @@ export default function ProjectsIntro() {
   const [hidePlaceholder, setHidePlaceholder] = useState(false);
   const [distortSettled, setDistortSettled] = useState(false); // とどまった直後のゆがみ切り替えを遅らせる
   const [activeIndex, setActiveIndex] = useState(0);
-  const router = useRouter();
   const { push } = usePageTransition();
   const [imagesLoaded, setImagesLoaded] = useState(false);
+
+  // イントロのリール演出とクロスフェードは gsap/ProjectsIntroReel に委譲。
+  // マークアップ（カード / Swiper）はここに残るので ref を受け取る
+  const { placeholderRef, swiperWrapperRef, cardRefs } = useProjectsIntroReel({
+    cardCount: projects.length,
+    ready: loaded && heartComplete && imagesLoaded,
+    showSwiper,
+    onReelComplete: () => setShowSwiper(true),
+    onPlaceholderHidden: () => setHidePlaceholder(true),
+  });
 
   // アニメーションで流れる画像を事前に読み込み・デコードする
   useEffect(() => {
@@ -82,94 +90,6 @@ export default function ProjectsIntro() {
     const t = setTimeout(() => setDistortSettled(true), 420);
     return () => clearTimeout(t);
   }, [hidePlaceholder]);
-
-  // プレースホルダのルート&カード参照
-  const placeholderRef = useRef<HTMLDivElement | null>(null);
-  const swiperWrapperRef = useRef<HTMLDivElement | null>(null);
-  const cardRefs = useRef<HTMLDivElement[]>([]);
-
-  // --- 初回アニメ: 高速ループ → 徐々に遅く → Contact→Works→About で About が中央で止まる ---
-  useLayoutEffect(() => {
-    if (!loaded || !heartComplete || !imagesLoaded || !placeholderRef.current) return;
-
-    cardRefs.current = cardRefs.current.slice(0, projects.length);
-
-    const ctx = gsap.context(() => {
-      const cards = cardRefs.current.filter(Boolean);
-      if (cards.length < 3) return;
-
-      const W = window.innerWidth || 1;
-
-      gsap.set(cards, {
-        transformOrigin: "50% 50%",
-        xPercent: -50,
-        yPercent: -50,
-        x: W,
-        y: 0,
-        opacity: 0,
-        willChange: "transform,opacity",
-      });
-
-      // 全カード共通: 必ず右から入って左へ出る（毎回右にリセットしてから動かす）
-      const runCard = (index: number, duration: number, timeline: gsap.core.Timeline) => {
-        timeline
-          .set(cards[index], { x: W, y: 0, opacity: 0 })
-          .to(cards[index], { x: 0, y: 0, opacity: 1, duration })
-          .to(cards[index], { x: -W, y: 0, opacity: 0, duration });
-      };
-
-      const tl = gsap.timeline({ defaults: { ease: "power2.inOut" } });
-
-      // Phase 1: 見えないくらい速いループ 2周（ほんの少し遅くして流れを感じやすく）
-      const blur = 0.072;
-      for (let cycle = 0; cycle < 2; cycle++) {
-        runCard(0, blur, tl);
-        runCard(1, blur, tl);
-        runCard(2, blur, tl);
-      }
-
-      // Phase 2: 1周だけ少し遅く（形が見え始める）
-      const mid = 0.17;
-      runCard(0, mid, tl);
-      runCard(1, mid, tl);
-      runCard(2, mid, tl);
-
-      // Phase 3: 本番 — 右から左へ Contact→Works→About、About が中央に残る（最後の一周はゆっくり）
-      tl.set(cards[0], { x: W, y: 0, opacity: 0 })
-        .to(cards[0], { x: 0, y: 0, opacity: 1, duration: 0.34 })
-        .to(cards[0], { x: -W, y: 0, opacity: 0, duration: 0.34 })
-        .set(cards[1], { x: W, y: 0, opacity: 0 })
-        .to(cards[1], { x: 0, y: 0, opacity: 1, duration: 0.4 })
-        .to(cards[1], { x: -W, y: 0, opacity: 0, duration: 0.4 })
-        .set(cards[2], { x: W, y: 0, opacity: 0 })
-        .to(cards[2], {
-          x: 0,
-          y: 0,
-          opacity: 1,
-          duration: 0.48,
-          ease: "power2.out",
-        })
-        // とどまった状態を少し保持してから Swiper 表示（変形の一瞬を防ぐ）
-        .to({}, { duration: 0.22, onComplete: () => setShowSwiper(true) });
-    }, placeholderRef);
-
-    return () => ctx.revert();
-  }, [loaded, heartComplete, imagesLoaded]);
-
-  // --- プレースホルダ → Swiper の切り替え（重ねず順番に＝変形を防ぐ） ---
-  useLayoutEffect(() => {
-    if (!showSwiper || hidePlaceholder || !swiperWrapperRef.current || !placeholderRef.current) return;
-
-    const placeholderEl = placeholderRef.current;
-    const swiperEl = swiperWrapperRef.current;
-    gsap.set(swiperEl, { opacity: 0 });
-    const tl = gsap.timeline();
-    // 1. アニメ用画像を先に完全にフェードアウト（スワイパー画像と重ならない）
-    tl.to(placeholderEl, { opacity: 0, duration: 0.28, ease: "power2.in" });
-    // 2. プレースホルダを DOM から外してからスワイパーをフェードイン
-    tl.add(() => setHidePlaceholder(true));
-    tl.to(swiperEl, { opacity: 1, duration: 0.28, ease: "power2.out" });
-  }, [showSwiper, hidePlaceholder]);
 
   // --- Loader ---
   if (!loaded) {
