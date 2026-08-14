@@ -1,150 +1,20 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import GlitchText from "../ui/GlitchText";
+import StrengthParallax from "../gsap/StrengthParallax";
 import SkillBarsAbout from "./SkillBarsAbout";
 import HobbySection from "./HobbySection";
 
-type Strength = { num: string; title: string; text: string };
-type Pos = { top: string; left: string; w: string };
+gsap.registerPlugin(ScrollTrigger);
 
 export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }) {
-  const imgRef = useRef<HTMLDivElement | null>(null);
   const sectionRef = useRef<HTMLElement | null>(null);
+  const heroRef = useRef<HTMLDivElement | null>(null);
+  const imgRef = useRef<HTMLDivElement | null>(null);
   const [imgWarpOn, setImgWarpOn] = useState(false);
-  const [parallaxProgress, setParallaxProgress] = useState(0);
-  
-  // Strengthパララックス用のrefs
-  const strengthWrapperRef = useRef<HTMLDivElement | null>(null);
-  const strengthSectionRef = useRef<HTMLDivElement | null>(null);
-  const strengthTitleRef = useRef<HTMLDivElement | null>(null); // unpin時は非表示にして下のセクションを覆わない
-  const strengthRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const photoRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const [activeStrengthIndex, setActiveStrengthIndex] = useState(-1);
-  const isPinnedRef = useRef(false);
-  const rafIdRef = useRef<number | null>(null);
-  const pinStartRef = useRef<number | null>(null);
-  const originalHeightRef = useRef<number | null>(null);
-  const wasSectionOutRef = useRef(false); // セクションが一度ビューポート外に出たか
-  const enteredFromBottomRef = useRef(false); // 下から入ったか（上スクロール時）
-  const hasUnpinnedAfterCompleteRef = useRef(false); // progress>=1で解除した直後は再pinしない
-  const lastCompletelyOutAtRef = useRef<number | null>(null); // セクションがビューポート外になった時刻（1.5秒以上外なら再pin許可）
-  const smoothedProgressRef = useRef(0); // 表示用の補間済みprogress（速スクロールで飛ばない）
-  const rafLoopRef = useRef<number | null>(null); // pin中は毎フレーム補間を更新するループ用
-  const skillHobbyWrapperRef = useRef<HTMLDivElement | null>(null); // Skill/Hobby直前でパララックス終了判定用
-  const [strengthAccordionOpen, setStrengthAccordionOpen] = useState(false);
-  const strengthAccordionOpenRef = useRef(false); // applyStrengthParallax から参照（パネル未表示時はパララックス無効）
-  const strengthPanelRef = useRef<HTMLDivElement | null>(null);
-  // モバイルでパララックス終了時にアコーディオンを即閉じしてワープ防止（transition 0ms + 閉じた直後に1回だけスクロール）
-  const [accordionCloseInstantForMobile, setAccordionCloseInstantForMobile] = useState(false);
-  const mobileUnpinScrollRef = useRef(false);
-  /** モバイルでアコーディオンが閉じたとき、Contact が一瞬見えるワープを隠すオーバーレイ */
-  const [mobileCloseOverlayVisible, setMobileCloseOverlayVisible] = useState(false);
-  /** オーバーレイを出したあと、描画を待ってから unpin するための遅延実行用（モバイル・デスクトップ共通） */
-  const pendingUnpinRef = useRef<{ startY: number; isMobile: boolean } | null>(null);
-
-  const strengths: Strength[] = useMemo(
-    () => [
-      {
-        num: "01",
-        title: "適応力",
-        text: "短期間で新しい環境に適応し、必要なスキルを吸収して成果につなげてきました。",
-      },
-      {
-        num: "02",
-        title: "メンタル",
-        text: "職人時代の経験から、困難な状況でも冷静に対応できるメンタルがあります。",
-      },
-      {
-        num: "03",
-        title: "探求心",
-        text: "新しい技術や手法に興味を持ち、学び続ける姿勢を持っています。",
-      },
-    ],
-    []
-  );
-
-  // 写真13枚：0-3はパララックス中ずっと表示（RikuLogo3, spacekelvin, shark, cowcowburger）。4-12はStrengthごとに下から流れ込み・上に流れ出る
-  const photos = useMemo(
-    () => [
-      "/RikuLogo3.webp",
-      "/parallax/spacekelvin.webp",
-      "/parallax/shark.webp",
-      "/parallax/cowcowburger.webp",
-      "/parallax/beach.webp",
-      "/parallax/noise.webp",
-      "/parallax/emo.webp",
-      "/parallax/syokunin.webp",
-      "/parallax/syokunin2.webp",
-      "/parallax/syokunin3.webp",
-      "/parallax/site.webp",
-      "/parallax/07.webp",
-      "/parallax/coding.webp",
-    ],
-    []
-  );
-
-  // この4枚だけ罫線をつけない（RikuLogo3, spacekelvin, shark, cowcowburger）
-  const noBorderSlugs = useMemo(
-    () => ["RikuLogo3.webp", "spacekelvin.webp", "shark.webp", "cowcowburger.webp"],
-    []
-  );
-  // 罫線なし・画像全体表示（写真幅に合わせて contain）にする写真
-  const noBorderContainSlugs = useMemo(
-    () => [
-      "RikuLogo3.webp",
-      "spacekelvin.webp",
-      "cowcowburger.webp",
-      "shark.webp",
-      "syokunin.webp",
-      "beach.webp",
-      "syokunin3.webp",
-    ],
-    []
-  );
-  // 縦長アスペクト（画像に合わせて縦長表示）にする写真
-  const portraitSlugs = useMemo(() => [], []);
-  const MOBILE_BREAKPOINT = 768;
-
-  // 13枚分の位置（デスクトップ）：0-3=常時表示、4-6=Strength1（散らす）、7-9=Strength2、10-12=Strength3（左中右バランス）
-  const desktopPos: Pos[] = useMemo(
-    () => [
-      { top: "8%", left: "5%", w: "280px" },
-      { top: "5%", left: "68%", w: "320px" },
-      { top: "50%", left: "2%", w: "260px" },
-      { top: "55%", left: "72%", w: "300px" },
-      { top: "40%", left: "18%", w: "320px" },
-      { top: "22%", left: "44%", w: "380px" },
-      { top: "35%", left: "68%", w: "380px" },
-      { top: "32%", left: "5%", w: "300px" },
-      { top: "45%", left: "70%", w: "400px" },
-      { top: "55%", left: "12%", w: "420px" },
-      { top: "12%", left: "22%", w: "400px" },
-      { top: "40%", left: "42%", w: "360px" },
-      { top: "66%", left: "58%", w: "380px" },
-    ],
-    []
-  );
-
-  // モバイル用：13枚（1の時は散らす、3の時はバランスよく）
-  const mobilePos: Pos[] = useMemo(
-    () => [
-      { top: "12%", left: "2%", w: "90px" },
-      { top: "16%", left: "70%", w: "100px" },
-      { top: "65%", left: "0%", w: "85px" },
-      { top: "70%", left: "68%", w: "95px" },
-      { top: "32%", left: "12%", w: "95px" },
-      { top: "32%", left: "60%", w: "140px" },
-      { top: "63%", left: "62%", w: "150px" },
-      { top: "27%", left: "8%", w: "90px" },
-      { top: "38%", left: "58%", w: "150px" },
-      { top: "60%", left: "18%", w: "115px" },
-      { top: "25%", left: "18%", w: "150px" },
-      { top: "42%", left: "38%", w: "150px" },
-      { top: "68%", left: "54%", w: "150px" },
-    ],
-    []
-  );
 
   // 画像が一度だけ画面に入ったら歪み演出ON
   useEffect(() => {
@@ -165,629 +35,48 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
     return () => io.disconnect();
   }, []);
 
+  // ヒーロー（写真＋プロフィール）の軽いパララックス
   useEffect(() => {
-    strengthAccordionOpenRef.current = strengthAccordionOpen;
-  }, [strengthAccordionOpen]);
+    const hero = heroRef.current;
+    const section = sectionRef.current;
+    if (!hero || !section) return;
 
-  // アコーディオンを開いたときに再pin可能にする（2回目以降もパララックスが動くように）
-  useEffect(() => {
-    if (strengthAccordionOpen) {
-      hasUnpinnedAfterCompleteRef.current = false;
-    }
-  }, [strengthAccordionOpen]);
+    const mm = gsap.matchMedia();
 
-  // モバイルでパララックス終了時：モーダルが閉じたあと高さを計測し、Skill が表示される位置にスクロール。Skill が表示されたらオーバーレイを外す
-  useEffect(() => {
-    if (strengthAccordionOpen) return;
-    if (!mobileUnpinScrollRef.current || typeof window === "undefined" || window.innerWidth >= MOBILE_BREAKPOINT) {
-      setAccordionCloseInstantForMobile(false);
-      return;
-    }
-    mobileUnpinScrollRef.current = false;
-    let hideOverlayId: number | null = null;
-    const delayMs = 400;
-    const timeoutId = window.setTimeout(() => {
-      void document.body.offsetHeight;
-      const skillEl = document.getElementById("about-skill-section");
-      const el = skillEl || skillHobbyWrapperRef.current;
-      if (el) {
-        const rect = el.getBoundingClientRect();
-        const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-        const topOffsetPx = 80;
-        const targetScroll = window.scrollY + rect.top - topOffsetPx;
-        const clampedScroll = Math.max(0, Math.min(targetScroll, maxScroll));
-        window.scrollTo(0, clampedScroll);
-        // Skill が表示される位置までスクロールしたあと、オーバーレイを外す（表示されるまでオーバーレイを維持）
-        hideOverlayId = window.setTimeout(() => {
-          setMobileCloseOverlayVisible(false);
-        }, 350);
-      } else {
-        setMobileCloseOverlayVisible(false);
-      }
-      setAccordionCloseInstantForMobile(false);
-    }, delayMs);
-    return () => {
-      window.clearTimeout(timeoutId);
-      if (hideOverlayId != null) window.clearTimeout(hideOverlayId);
-    };
-  }, [strengthAccordionOpen]);
-
-  // オーバーレイを出したあと、描画されてから unpin する（モバイル・デスクトップ共通・ワープがオーバーレイで隠れるように）
-  useEffect(() => {
-    if (!mobileCloseOverlayVisible || !pendingUnpinRef.current) return;
-    const payload = pendingUnpinRef.current;
-    pendingUnpinRef.current = null;
-    const runUnpin = () => {
-      const wrapper = strengthWrapperRef.current;
-      const section = strengthSectionRef.current;
-      if (!wrapper || !section) return;
-      hasUnpinnedAfterCompleteRef.current = true;
-      isPinnedRef.current = false;
-      pinStartRef.current = null;
-      wrapper.style.height = "auto";
-      wrapper.style.zIndex = "0";
-      section.style.position = "relative";
-      section.style.top = "auto";
-      section.style.left = "auto";
-      section.style.zIndex = "0";
-      if (strengthTitleRef.current) {
-        strengthTitleRef.current.style.visibility = "hidden";
-        strengthTitleRef.current.style.pointerEvents = "none";
-      }
-      if (payload.isMobile) {
-        mobileUnpinScrollRef.current = true;
-        setAccordionCloseInstantForMobile(true);
-      } else {
-        window.setTimeout(() => {
-          const skillEl = document.getElementById("about-skill-section");
-          const el = skillEl || skillHobbyWrapperRef.current;
-          if (el) {
-            const rect = el.getBoundingClientRect();
-            const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-            const targetScroll = window.scrollY + rect.top - 80;
-            const clamped = Math.max(0, Math.min(targetScroll, maxScroll));
-            window.scrollTo(0, clamped);
-          }
-          setMobileCloseOverlayVisible(false);
-        }, 400);
-      }
-      photoRefs.current.forEach((el) => {
-        if (el) {
-          el.style.opacity = "0";
-          el.style.transform = "translate3d(0, 0, 0)";
-          el.style.filter = "";
-          el.style.pointerEvents = "none";
+    // 動きを減らす設定では何も作らない（条件が match しなければコールバックは走らない）
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+      gsap.fromTo(
+        hero,
+        { y: 0 },
+        {
+          y: -60,
+          ease: "none",
+          scrollTrigger: {
+            trigger: section,
+            start: "top 50%",
+            end: () => `+=${window.innerHeight * 2}`,
+            scrub: true,
+            invalidateOnRefresh: true,
+          },
         }
-      });
-      strengthRefs.current.forEach((el) => {
-        if (el) {
-          el.style.opacity = "0";
-          el.style.pointerEvents = "none";
-        }
-      });
-      setActiveStrengthIndex(-1);
-      setStrengthAccordionOpen(false);
-    };
-    requestAnimationFrame(() => {
-      requestAnimationFrame(runUnpin);
-    });
-  }, [mobileCloseOverlayVisible]);
-
-  // Strengthパララックス効果を適用する関数
-  const applyStrengthParallax = useCallback(() => {
-    if (!strengthSectionRef.current || !strengthWrapperRef.current) return;
-    if (!strengthAccordionOpenRef.current) {
-      if (isPinnedRef.current) {
-        isPinnedRef.current = false;
-        pinStartRef.current = null;
-        const wrapper = strengthWrapperRef.current;
-        const section = strengthSectionRef.current;
-        if (wrapper) {
-          wrapper.style.height = "auto";
-          wrapper.style.zIndex = "0";
-        }
-        if (section) {
-          section.style.position = "relative";
-          section.style.top = "auto";
-          section.style.left = "auto";
-          section.style.zIndex = "0";
-        }
-        if (strengthTitleRef.current) {
-          strengthTitleRef.current.style.visibility = "hidden";
-          strengthTitleRef.current.style.pointerEvents = "none";
-        }
-      }
-      return;
-    }
-
-    const section = strengthSectionRef.current;
-    const wrapper = strengthWrapperRef.current;
-    const viewportHeight = window.innerHeight;
-    const isMobileView = typeof window !== "undefined" && window.innerWidth < MOBILE_BREAKPOINT;
-
-    // アンカー要素の位置を取得
-    const anchor = document.querySelector("#strength-start-anchor");
-    if (!anchor) return;
-
-    const anchorRect = anchor.getBoundingClientRect();
-    const anchorTop = anchorRect.top;
-    const sectionHeight = section.offsetHeight;
-
-    // pin用のスクロール範囲（先に計算）
-    const baseScrollRange = viewportHeight * strengths.length * 1.5;
-    const extraSpace = viewportHeight * 0.3;
-    const pinScrollRange = baseScrollRange + extraSpace;
-
-    // パララックス範囲を Skill/Hobby 直前までに制限。Skill が表示される前に終わらせるため、少し手前（80px）で unpin。
-    const skillHobbyEl = skillHobbyWrapperRef.current;
-    let skillHobbyInView = false;
-    const SKILL_HOBBY_BUFFER_PX = 80; // Skill が画面に入るこの px 手前でパララックス終了
-    if (skillHobbyEl) {
-      const skillHobbyRect = skillHobbyEl.getBoundingClientRect();
-      skillHobbyInView = skillHobbyRect.top < viewportHeight + SKILL_HOBBY_BUFFER_PX;
-    }
-
-    // アンカーが画面上端に来たらpin。解除直後だけ再pinしない（以降のセクションを隠さない）
-    const shouldPin = anchorTop <= 0 && !hasUnpinnedAfterCompleteRef.current;
-
-    // pin状態の管理
-    if (shouldPin && !isPinnedRef.current) {
-      isPinnedRef.current = true;
-      originalHeightRef.current = wrapper.offsetHeight;
-      wrapper.style.height = `${originalHeightRef.current + pinScrollRange}px`;
-
-      // 下から入ったか（上スクロールでセクションが戻ってきた）→ progress 1 から開始
-      if (wasSectionOutRef.current) {
-        enteredFromBottomRef.current = true;
-        pinStartRef.current = window.scrollY - pinScrollRange; // progress が 1 から始まる
-        wasSectionOutRef.current = false;
-      } else {
-        enteredFromBottomRef.current = false;
-        pinStartRef.current = window.scrollY;
-      }
-
-      section.style.position = "fixed";
-      section.style.top = "0";
-      section.style.left = "0";
-      section.style.width = "100%";
-      section.style.zIndex = "10";
-      wrapper.style.zIndex = "10";
-      smoothedProgressRef.current = enteredFromBottomRef.current ? 1 : 0;
-      if (strengthTitleRef.current) {
-        strengthTitleRef.current.style.visibility = "";
-        strengthTitleRef.current.style.pointerEvents = "";
-      }
-    } else if (!shouldPin && isPinnedRef.current) {
-      isPinnedRef.current = false;
-      pinStartRef.current = null;
-      wrapper.style.height = "auto";
-      wrapper.style.zIndex = "0";
-      section.style.position = "relative";
-      section.style.top = "auto";
-      section.style.left = "auto";
-      section.style.zIndex = "0";
-      if (strengthTitleRef.current) {
-        strengthTitleRef.current.style.visibility = "hidden";
-        strengthTitleRef.current.style.pointerEvents = "none";
-      }
-    }
-
-    // セクションが完全にビューポート外に出たかチェック
-    const sectionRect = section.getBoundingClientRect();
-    const isCompletelyOut = sectionRect.top > viewportHeight || sectionRect.bottom < 0;
-
-    if (isCompletelyOut) {
-      wasSectionOutRef.current = true;
-      if (lastCompletelyOutAtRef.current === null) {
-        lastCompletelyOutAtRef.current = Date.now();
-      }
-      const OUT_VIEW_COOLDOWN_MS = 1500;
-      if (Date.now() - (lastCompletelyOutAtRef.current ?? 0) >= OUT_VIEW_COOLDOWN_MS) {
-        hasUnpinnedAfterCompleteRef.current = false; // 1.5秒以上外なら次回pin可能（SkillBarsAbout表示時はパララックス確実に終了済み）
-      }
-      if (isPinnedRef.current) {
-        isPinnedRef.current = false;
-        pinStartRef.current = null;
-        wrapper.style.zIndex = "0";
-        section.style.position = "relative";
-        section.style.top = "auto";
-        section.style.left = "auto";
-        section.style.zIndex = "0";
-        if (strengthTitleRef.current) {
-          strengthTitleRef.current.style.visibility = "hidden";
-          strengthTitleRef.current.style.pointerEvents = "none";
-        }
-      }
-      if (wrapper.style.height !== "auto") {
-        wrapper.style.height = "auto";
-      }
-
-      photoRefs.current.forEach((el) => {
-        if (el) {
-          el.style.opacity = "0";
-          el.style.transform = "translate3d(0, 0, 0)";
-          el.style.filter = "";
-          el.style.pointerEvents = "none";
-        }
-      });
-
-      strengthRefs.current.forEach((el) => {
-        if (el) {
-          el.style.opacity = "0";
-          el.style.pointerEvents = "none";
-        }
-      });
-
-      setActiveStrengthIndex(-1);
-      return;
-    }
-
-    lastCompletelyOutAtRef.current = null; // 画面内にいる間はリセット
-
-    // pin前でもセクションが画面内なら最初のStrengthと写真を表示（黒画面を防ぐ）
-    if (!isPinnedRef.current) {
-      const inView =
-        sectionRect.top < viewportHeight && sectionRect.bottom > 0;
-      // 上スクロールでStrengthが下から入ってきた（Skill/Hobby直後）→ 再pin許可して03→02→01の逆パララックス
-      if (inView && sectionRect.top > 0) {
-        hasUnpinnedAfterCompleteRef.current = false;
-      }
-      if (inView) {
-        strengthRefs.current.forEach((el, i) => {
-          if (el) {
-            el.style.opacity = i === 0 ? "1" : "0";
-            el.style.pointerEvents = i === 0 ? "auto" : "none";
-          }
-        });
-        photoRefs.current.forEach((el, idx) => {
-          if (!el) return;
-          const isFixed = idx < 4;
-          const isStrength0Flow = idx >= 4 && idx < 7;
-          const visible = isFixed || isStrength0Flow;
-          el.style.opacity = visible ? (isFixed ? "0.4" : "0.4") : "0";
-          el.style.transform = "translate3d(0, 0, 0)";
-          el.style.filter = "";
-          el.style.pointerEvents = visible ? "auto" : "none";
-        });
-      }
-      return;
-    }
-
-    if (pinStartRef.current === null) return;
-
-    const currentScroll = window.scrollY - pinStartRef.current;
-    const pinProgress = Math.max(0, Math.min(1, currentScroll / pinScrollRange));
-
-    // 表示用progressを補間（速スクロールで一気に飛ばない）
-    const SMOOTH_FACTOR = 0.22;
-    smoothedProgressRef.current +=
-      (pinProgress - smoothedProgressRef.current) * SMOOTH_FACTOR;
-    const displayProgress = smoothedProgressRef.current;
-
-    // Skill/Hobby が画面に入ったら強制 unpin（ただし pin 直後は閉じない＝パララックスが動く前にアコーディオンが閉じないようにする）
-    const DISPLAY_CATCHUP_THRESHOLD = 0.88;
-    const MIN_PROGRESS_BEFORE_SKILL_UNPIN = 0.2; // パララックスを 20% 以上スクロールしたときだけ Skill 進入で unpin
-    if (skillHobbyInView && isPinnedRef.current && pinProgress >= MIN_PROGRESS_BEFORE_SKILL_UNPIN) {
-      const startY = pinStartRef.current ?? 0;
-      setMobileCloseOverlayVisible(true);
-      pendingUnpinRef.current = { startY, isMobile: isMobileView };
-      return;
-    }
-
-    // 下スクロールで progress 1 に到達したらpin解除（表示が追いついてから解除＝速スクロールでも見える）
-    if (!enteredFromBottomRef.current && pinProgress >= 1) {
-      if (displayProgress >= DISPLAY_CATCHUP_THRESHOLD) {
-        const startY = pinStartRef.current ?? 0;
-        setMobileCloseOverlayVisible(true);
-        pendingUnpinRef.current = { startY, isMobile: isMobileView };
-        return;
-      }
-      // まだ表示が追いついていない → このフレームは解除せず、下のパララックス適用を続行
-    }
-
-    // 上スクロールで progress 0 に到達したらpin解除（同様に表示が追いついてから）
-    if (enteredFromBottomRef.current && pinProgress <= 0) {
-      if (displayProgress <= 1 - DISPLAY_CATCHUP_THRESHOLD) {
-        isPinnedRef.current = false;
-        pinStartRef.current = null;
-        enteredFromBottomRef.current = false;
-        wrapper.style.height = "auto";
-        wrapper.style.zIndex = "0";
-        section.style.position = "relative";
-        section.style.top = "auto";
-        section.style.left = "auto";
-        section.style.zIndex = "0";
-        if (strengthTitleRef.current) {
-          strengthTitleRef.current.style.visibility = "hidden";
-          strengthTitleRef.current.style.pointerEvents = "none";
-        }
-
-        photoRefs.current.forEach((el) => {
-          if (el) {
-            el.style.opacity = "0";
-            el.style.transform = "translate3d(0, 0, 0)";
-            el.style.filter = "";
-            el.style.pointerEvents = "none";
-          }
-        });
-        strengthRefs.current.forEach((el) => {
-          if (el) {
-            el.style.opacity = "0";
-            el.style.pointerEvents = "none";
-          }
-        });
-        setActiveStrengthIndex(-1);
-        return;
-      }
-    }
-
-    // 写真：0-3はパララックス中ずっと表示（RikuLogo3, spacekelvin, shark, cowcowburger）。4-12は下から流れ込み・上に流れ出る
-    const isReverse = enteredFromBottomRef.current;
-    const isMobile = typeof window !== "undefined" && window.innerWidth < MOBILE_BREAKPOINT;
-    const depthBase = isMobile ? 80 : 150;
-    const depthStep = isMobile ? 28 : 60;
-    const swayPx = isMobile ? 14 : 28;
-    const T = Math.PI * 2;
-    const SEGMENT = 1 / strengths.length;
-    const FADE_DUR = 0.06;
-    const FLOW_PX = 56;
-
-    photoRefs.current.forEach((el, i) => {
-      if (!el) return;
-
-      const progress = displayProgress;
-
-      if (i < 4) {
-        // 常時表示4枚：パララックスを通してずっと表示（スクロールで動く）
-        const depth = depthBase + i * depthStep;
-        const parallaxSpeed = (0.6 + (i % 3) * 0.2) * 1.4;
-        let yOffset = 0;
-        if (isReverse) {
-          yOffset = depth * (progress * parallaxSpeed);
-        } else {
-          yOffset = depth * (1 - progress * parallaxSpeed);
-        }
-        let opacity = 1;
-        if (progress < 0.1) {
-          opacity = Math.max(0.35, Math.min(1, progress / 0.08));
-        } else if (progress > 0.9) {
-          opacity = Math.max(0, (1 - progress) / 0.1);
-        }
-        let transform = `translate3d(0, ${yOffset}px, 0)`;
-        if (i === 0) {
-          const scale = 0.88 + 0.24 * (1 + Math.sin(progress * T * 3)) / 2;
-          transform += ` scale(${scale})`;
-        } else if (i === 1) {
-          transform += ` rotate(${progress * 360}deg)`;
-        } else if (i === 2) {
-          transform += ` translateX(${swayPx * Math.sin(progress * T * 3)}px)`;
-        } else if (i === 3) {
-          const glow = 0.42 + 0.58 * (1 + Math.sin(progress * T * 3)) / 2;
-          opacity *= glow;
-        }
-        el.style.transform = transform;
-        el.style.opacity = opacity.toString();
-        if (i === 3) {
-          el.style.filter = `brightness(${0.7 + 0.6 * (1 + Math.sin(progress * T * 3)) / 2})`;
-        } else {
-          el.style.filter = "";
-        }
-        el.style.willChange = "transform, opacity";
-        el.style.pointerEvents = opacity > 0.1 ? "auto" : "none";
-        return;
-      }
-
-      // 4-12: スクロールでは動かさず。表示時は下から上へ流れながらフェードイン、消えるときは上へ流れながら透明になって消える
-      const flowIndex = i - 4;
-      const group = Math.floor(flowIndex / 3);
-      const segmentStart = group * SEGMENT;
-      const segmentEnd = (group + 1) * SEGMENT;
-      const fadeInEnd = segmentStart + FADE_DUR;
-      const fadeOutStart = segmentEnd - FADE_DUR;
-
-      let opacity = 0;
-      let flowY = 0;
-      if (progress < segmentStart) {
-        opacity = 0;
-        flowY = FLOW_PX;
-      } else if (progress >= segmentStart && progress < fadeInEnd) {
-        const t = (progress - segmentStart) / FADE_DUR;
-        opacity = t;
-        flowY = FLOW_PX * (1 - t);
-      } else if (progress >= fadeInEnd && progress < fadeOutStart) {
-        opacity = 1;
-        flowY = 0;
-      } else if (progress >= fadeOutStart && progress < segmentEnd) {
-        const t = (progress - fadeOutStart) / (segmentEnd - fadeOutStart);
-        opacity = 1 - t;
-        flowY = -FLOW_PX * t;
-      } else {
-        opacity = 0;
-        flowY = -FLOW_PX;
-      }
-
-      el.style.transform = `translate3d(0, ${flowY}px, 0)`;
-      el.style.opacity = opacity.toString();
-      el.style.filter = "";
-      el.style.willChange = "transform, opacity";
-      el.style.pointerEvents = opacity > 0.1 ? "auto" : "none";
+      );
     });
 
-    // テキストの表示制御（表示用はdisplayProgressで滑らかに）
-    const textDuration = 1 / strengths.length;
-
-    strengths.forEach((_, i) => {
-      const el = strengthRefs.current[i];
-      if (!el) return;
-
-      const textStart = i * textDuration;
-      const textEnd = textStart + textDuration;
-      const fadeDuration = 0.15;
-
-      let opacity = 0;
-
-      if (displayProgress >= textStart && displayProgress < textEnd) {
-        const localProgress = (displayProgress - textStart) / textDuration;
-
-        if (localProgress < fadeDuration) {
-          opacity = i === 0 && displayProgress < 0.02 ? 1 : localProgress / fadeDuration;
-        } else if (localProgress < 1 - fadeDuration) {
-          opacity = 1;
-        } else {
-          opacity = Math.max(0, (1 - localProgress) / fadeDuration);
-        }
-      }
-
-      el.style.opacity = opacity.toString();
-      el.style.pointerEvents = opacity > 0.5 ? "auto" : "none";
-      el.style.willChange = "opacity";
-
-      if (opacity > 0.5) {
-        setActiveStrengthIndex(i);
-      }
-    });
-  }, [strengths, photos]);
-
-  // 写真の位置・サイズを画面幅に応じて適用（モバイルは小さく）
-  const applyPhotoLayout = useCallback(() => {
-    const isMobile = typeof window !== "undefined" && window.innerWidth < MOBILE_BREAKPOINT;
-    const posList = isMobile ? mobilePos : desktopPos;
-    photoRefs.current.forEach((el, i) => {
-      if (!el) return;
-      const p = posList[i];
-      el.style.position = "absolute";
-      el.style.top = p.top;
-      el.style.left = p.left;
-      el.style.width = p.w;
-      el.style.transform = "translate3d(0, 0, 0)";
-      el.style.opacity = "0";
-      el.style.filter = "";
-      el.style.willChange = "transform, opacity";
-      el.style.pointerEvents = "none";
-      el.style.zIndex = "2";
-    });
-  }, [desktopPos, mobilePos]);
-
-  // Strengthパララックスのスクロールイベントハンドラー
-  useEffect(() => {
-    const wrapper = strengthWrapperRef.current;
-    const section = strengthSectionRef.current;
-    if (wrapper) {
-      wrapper.style.height = "";
-      wrapper.style.zIndex = "";
-    }
-    if (section) {
-      section.style.position = "";
-      section.style.top = "";
-      section.style.left = "";
-      section.style.zIndex = "";
-    }
-
-    const handleScroll = () => {
-      if (rafIdRef.current !== null) {
-        cancelAnimationFrame(rafIdRef.current);
-      }
-
-      rafIdRef.current = requestAnimationFrame(() => {
-        applyStrengthParallax();
-      });
-    };
-
-    const handleResize = () => {
-      applyPhotoLayout();
-      handleScroll();
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("resize", handleResize);
-
-    // 初期配置（モバイルなら小さく）
-    applyPhotoLayout();
-
-    strengthRefs.current.forEach((el) => {
-      if (el) {
-        el.style.opacity = "0";
-        el.style.pointerEvents = "none";
-        el.style.willChange = "opacity";
-      }
-    });
-
-    handleScroll();
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", handleResize);
-      if (rafIdRef.current !== null) {
-        cancelAnimationFrame(rafIdRef.current);
-      }
-    };
-  }, [applyStrengthParallax, applyPhotoLayout]);
-
-  // pin中は毎フレーム補間を更新（スクロール停止後も表示が目標に追いつく）
-  useEffect(() => {
-    const loop = () => {
-      if (isPinnedRef.current) applyStrengthParallax();
-      rafLoopRef.current = requestAnimationFrame(loop);
-    };
-    rafLoopRef.current = requestAnimationFrame(loop);
-    return () => {
-      if (rafLoopRef.current != null) cancelAnimationFrame(rafLoopRef.current);
-    };
-  }, [applyStrengthParallax]);
-
-  // 通常のパララックス効果の計算（ヒーローエリア用）
-  useEffect(() => {
-    let rafId: number | null = null;
-
-    const handleScroll = () => {
-      if (!sectionRef.current) return;
-
-      rafId = requestAnimationFrame(() => {
-        const rect = sectionRef.current?.getBoundingClientRect();
-        if (!rect) return;
-
-        const vh = window.innerHeight;
-        const scrollY = window.scrollY;
-
-        const sectionTop = scrollY + rect.top;
-        const startOffset = sectionTop - vh * 0.5;
-        const progress = Math.max(0, Math.min(1, (scrollY - startOffset) / (vh * 2)));
-
-        setParallaxProgress(progress);
-      });
-    };
-
-    handleScroll();
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("resize", handleScroll);
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", handleScroll);
-      if (rafId !== null) {
-        cancelAnimationFrame(rafId);
-      }
-    };
+    return () => mm.revert();
   }, []);
-
-  // パララックスオフセット計算（ヒーローエリア用）
-  const heroOffsetY = parallaxProgress * -60; // スクロールに合わせて上に移動
 
   return (
     <section
       ref={sectionRef}
-      className="relative w-full bg-[#121316] text-white max-md:overflow-x-hidden"
+      className="relative w-full bg-[#121316] text-white max-md:overflow-x-clip"
     >
       <div className="w-full max-w-[1600px] mx-auto px-6 md:px-10 lg:px-14 pt-24 pb-14">
         {/* ===============================
             左右レイアウト: 写真（左） + 名前・プロフィール（右）
            =============================== */}
         <div
+          ref={heroRef}
           className="flex flex-col md:flex-row md:items-start md:gap-10 lg:gap-14"
-          style={{
-            transform: `translateY(${heroOffsetY}px)`,
-            willChange: "transform",
-          }}
         >
           {/* 左: 写真 */}
           <div className="w-full md:flex-shrink-0 md:w-[50%] lg:w-[48%] max-md:mx-auto max-md:w-[80%]">
@@ -801,7 +90,7 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
               ].join(" ")}
               style={
                 {
-                  ["--img" as any]: "url(/projects/project1.webp)",
+                  ["--img" as string]: "url(/projects/project1.webp)",
                 } as React.CSSProperties
               }
               aria-label="About visual"
@@ -853,185 +142,16 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
         </div>
       </div>
 
-      {/* ===============================
-          Strength（中央ボタンでパララックス表示・pin）
-         =============================== */}
-      <div className="mt-12 flex justify-center">
-        <button
-          type="button"
-          onClick={() => {
-            hasUnpinnedAfterCompleteRef.current = false;
-            wasSectionOutRef.current = false;
-            enteredFromBottomRef.current = false;
-            pendingUnpinRef.current = null;
-            requestAnimationFrame(() => {
-              requestAnimationFrame(() => {
-                setStrengthAccordionOpen(true);
-              });
-            });
-            setTimeout(() => {
-              document.getElementById("strength-start-anchor")?.scrollIntoView({ behavior: "smooth", block: "start" });
-            }, 420);
-          }}
-          aria-expanded={strengthAccordionOpen}
-          aria-controls="strength-parallax-panel"
-          className="rounded-xl border px-6 py-3 md:px-8 md:py-4 text-xl md:text-3xl font-serif font-bold text-white
-                     transition-[transform,background-color,border-color,box-shadow] duration-200 ease-out
-                     border-[#A855F7]/40 bg-[#2ccdb9]/15
-                     hover:border-[#A855F7]/50 hover:bg-[#A855F7]/25 hover:shadow-[0_0_24px_rgba(168,85,247,0.25)]
-                     active:scale-[0.98]
-                     backdrop-blur-sm
-                     [text-shadow:_0_0_20px_rgba(255,255,255,0.3),_0_1px_2px_rgba(0,0,0,0.5)]"
-        >
-          <GlitchText as="span" text="My Strength" trigger="manual" replayOnHover={true} />
-        </button>
-      </div>
-
-      <div className="mt-0">
-        <div
-          ref={strengthPanelRef}
-          id="strength-parallax-panel"
-          role="region"
-          aria-label="Strength パララックス"
-          className="overflow-hidden"
-          style={{
-            maxHeight: strengthAccordionOpen ? "6000px" : "0",
-            transitionProperty: "max-height",
-            transitionDuration: accordionCloseInstantForMobile && !strengthAccordionOpen ? "0ms" : strengthAccordionOpen ? "550ms" : "400ms",
-            transitionTimingFunction: strengthAccordionOpen ? "cubic-bezier(0.32, 0.72, 0, 1)" : "cubic-bezier(0.4, 0, 0.2, 1)",
-            transitionDelay: strengthAccordionOpen ? "0ms" : "220ms",
-          }}
-        >
-          <div
-            className={`overflow-hidden ${
-              strengthAccordionOpen ? "opacity-100 overflow-visible" : "opacity-0"
-            }`}
-            style={{
-              transitionProperty: "opacity",
-              transitionDuration: accordionCloseInstantForMobile && !strengthAccordionOpen ? "0ms" : strengthAccordionOpen ? "380ms" : "220ms",
-              transitionTimingFunction: "ease-out",
-              transitionDelay: strengthAccordionOpen ? "120ms" : "0ms",
-            }}
-          >
-            <div id="strength-start-anchor" />
-            <div ref={strengthWrapperRef} className="relative">
-              <div
-                ref={strengthSectionRef}
-                className="relative w-screen h-screen bg-[#121316] overflow-hidden"
-                style={{
-                  willChange: "transform",
-                  isolation: "isolate",
-                }}
-              >
-                {/* タイトル（pin中のみ表示・ヘッダーと重ならないよう下げて表示） */}
-                <div ref={strengthTitleRef} className="fixed top-20 md:top-24 inset-x-0 z-20 text-center px-2">
-            <GlitchText
-              text="Strength"
-              variant="mono"
-              className="text-[52px] sm:text-[68px] md:text-[96px] font-serif font-bold text-white
-                         [text-shadow:_0_0_24px_rgba(255,255,255,0.4),_0_0_48px_rgba(255,255,255,0.2),_0_2px_4px_rgba(0,0,0,0.5)]"
-              armed={isLoaded}
-            />
-            <p className="text-lg sm:text-xl md:text-2xl text-white/90 mt-2 font-medium
-                       [text-shadow:_0_0_12px_rgba(255,255,255,0.25),_0_1px_2px_rgba(0,0,0,0.6)]">私の強み</p>
-          </div>
-
-          {/* 写真（背景） */}
-          {photos.map((src, i) => {
-            const slug = src.split("/").pop() ?? "";
-            const noBorder = noBorderSlugs.some((s) => slug === s);
-            const noBorderContain = noBorderContainSlugs.some((s) => slug === s);
-            const isPortrait = portraitSlugs.some((s) => slug === s);
-            const aspectClass = isPortrait ? "aspect-[3/4]" : "aspect-video";
-            return (
-              <div
-                key={i}
-                ref={(el) => {
-                  photoRefs.current[i] = el;
-                }}
-                className={`absolute overflow-hidden ${noBorder ? "" : "rounded-xl border border-white/30 shadow-xl"}`}
-                style={{
-                  transform: "translate3d(0, 0, 0)",
-                  opacity: 0,
-                  willChange: "transform, opacity",
-                  backfaceVisibility: "hidden",
-                  perspective: "1000px",
-                  zIndex: 2,
-                }}
-              >
-                <div
-                  className={`w-full flex items-center justify-center ${
-                    noBorderContain ? "" : "h-full"
-                  }`}
-                >
-                  {noBorderContain ? (
-                    <img
-                      src={src}
-                      alt=""
-                      className="w-full h-auto object-contain"
-                      style={{ willChange: "transform" }}
-                    />
-                  ) : (
-                    <div
-                      className={`w-full ${aspectClass} bg-cover bg-center`}
-                      style={{
-                        backgroundImage: `url(${src})`,
-                        willChange: "transform",
-                      }}
-                    />
-                  )}
-                </div>
-              </div>
-            );
-          })}
-
-          {/* Strengthテキスト（順番にフェードイン・フェードアウト） */}
-          {strengths.map((s, i) => (
-            <div
-              key={s.num}
-              ref={(el) => {
-                strengthRefs.current[i] = el;
-              }}
-              className="fixed inset-0 flex items-center justify-center z-30"
-              style={{
-                opacity: activeStrengthIndex === i ? 1 : 0,
-                willChange: "opacity",
-              }}
-            >
-              <article className="max-w-3xl px-4 sm:px-6 md:max-w-4xl md:px-8">
-                <div className="flex gap-4 sm:gap-6 md:gap-8">
-                  <span className="neon-cyan text-6xl sm:text-7xl md:text-8xl font-extrabold shrink-0 tracking-widest
-                                 [filter:drop-shadow(0_0_12px_rgba(44,205,185,0.6))]">
-                    {s.num}
-                  </span>
-                  <div className="min-w-0">
-                    {/* 見出しレベルはプロフィールの h2 直下なので h3。
-                        文字サイズはクラス側で指定しているのでタグ変更の影響を受けない */}
-                    <h3 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-[#c4a8ff]
-                       [text-shadow:_0_0_14px_rgba(109,50,194,.6),_0_0_28px_rgba(109,50,194,.4),_0_0_48px_rgba(109,50,194,.25),_0_2px_4px_rgba(0,0,0,0.5)]">
-                      {s.title}
-                    </h3>
-                    <p className="mt-3 sm:mt-4 text-base sm:text-lg md:text-xl text-white leading-8 sm:leading-9 md:leading-10 font-semibold
-                       [text-shadow:_0_0_8px_rgba(255,255,255,0.15),_0_2px_4px_rgba(0,0,0,0.9)]">
-                      {s.text}
-                    </p>
-                  </div>
-                </div>
-              </article>
-            </div>
-          ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Strength（全画面パララックス）。pin の高さは pin-spacer が確保する */}
+      <StrengthParallax isLoaded={isLoaded} />
 
       {/* ===============================
-          Skill / Hobby（Strengthより前面に表示・背景でパララックスが透けないようにする）
-          この要素がビューポートに入ったらパララックス強制終了
+          Skill / Hobby
+          Strength は unpin 後にセクションごと上へ流れて退場するので、
+          ここで大きな余白を取ると「何もない画面」が伸びる
          =============================== */}
-      <div ref={skillHobbyWrapperRef} className="relative z-10 w-full max-w-[1600px] mx-auto px-4 sm:px-6 md:px-10 lg:px-14 bg-[#121316] pb-10 md:pb-14">
-        <div id="about-skill-section" className="mt-12 md:mt-20">
+      <div className="relative z-10 w-full max-w-[1600px] mx-auto px-4 sm:px-6 md:px-10 lg:px-14 bg-[#121316] pb-10 md:pb-14">
+        <div id="about-skill-section" className="mt-6 md:mt-10">
           <SkillBarsAbout />
         </div>
 
@@ -1051,7 +171,6 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
                 label: "写真",
                 description: "最近はデジカメにハマってます。",
                 category: "PHOTOGRAPHY",
-                // meta: ["Canon EOS R6", "2024"],
               },
               {
                 src: "/hobby/movie1.webp",
@@ -1080,20 +199,11 @@ export default function AboutSection({ isLoaded = true }: { isLoaded?: boolean }
                 label: "ニューヨーク",
                 description: "海外のデザインやサイトを見て勉強しています。",
                 category: "TRAVEL",
-                // meta: ["New York, USA", "2023"],
               },
             ]}
           />
         </div>
       </div>
-
-      {/* モバイル：アコーディオン閉じた直後～約1秒、Contact ワープを隠すオーバーレイ（閉じたことがわかるようにフェードアウト） */}
-      {mobileCloseOverlayVisible && (
-        <div
-          className="fixed inset-0 z-[30] bg-[#121316] pointer-events-none animate-mobile-accordion-overlay"
-          aria-hidden
-        />
-      )}
     </section>
   );
 }
