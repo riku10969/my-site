@@ -37,6 +37,16 @@ const PHOTOS_PER_STRENGTH = 3;
 const FLOW_FADE = 0.06;
 const FLOW_PX = 56;
 
+/**
+ * pin が始まってから中身が立ち上がるまでの長さ（timeline 全体を 1 とした割合）。
+ *
+ * pin 前（timeline は progress 0 のまま）に中身が見えていると、パララックスが
+ * 始まる前に写真とテキストが中途半端に見えてしまう。progress 0 では全部
+ * 隠しておき、pin に入ってからこの区間で立ち上げる。
+ */
+const INTRO = 0.05;
+/** SCROLL → Strength の入れ替えにかける長さ（timeline 全体を 1 とした割合） */
+const SWAP = 0.07;
 /** 常時表示の写真の揺れ・回転の往復回数。半周期 = 1 / (PULSE_CYCLES * 2) */
 const PULSE_CYCLES = 3;
 
@@ -135,6 +145,8 @@ const mobilePos: Pos[] = [
 
 export default function StrengthParallax({ isLoaded = true }: { isLoaded?: boolean }) {
   const sectionRef = useRef<HTMLDivElement | null>(null);
+  const titleRef = useRef<HTMLDivElement | null>(null);
+  const cueRef = useRef<HTMLDivElement | null>(null);
   const photoRefs = useRef<(HTMLDivElement | null)[]>([]);
   const textRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -193,6 +205,41 @@ export default function StrengthParallax({ isLoaded = true }: { isLoaded?: boole
         // 総尺を 1 に固定する背骨
         tl.to({}, { duration: 1 }, 0);
 
+        /*
+          「SCROLL ↓↓↓」→「Strength」の入れ替え。
+
+          pin と同じ 1 本の timeline に両方を入れる。別トリガーに分けると、
+          範囲を過ぎたトリガーが終端の値を保持し続けて同じプロパティを
+          取り合い、打ち消し合う（実際それで SCROLL が消えなかった）。
+          コールバック（onEnter）で再生する方式も、発火しない条件があると
+          そのまま出なくなるので採らない。
+
+          progress 0（pin 前）では position 0 の tween が from 側を描くので、
+          SCROLL が見えて Strength が隠れている状態になる。
+        */
+        if (cueRef.current) {
+          tl.fromTo(
+            cueRef.current,
+            { autoAlpha: 1, rotationX: 0 },
+            {
+              autoAlpha: 0,
+              rotationX: reduce ? 0 : 90,
+              duration: SWAP * 0.6,
+              ease: "power2.in",
+            },
+            0
+          );
+        }
+        if (titleRef.current) {
+          tl.fromTo(
+            titleRef.current,
+            { autoAlpha: 0, rotationX: reduce ? 0 : -90 },
+            { autoAlpha: 1, rotationX: 0, duration: SWAP, ease: "power2.out" },
+            SWAP * 0.35
+          );
+        }
+
+
         photoEls.forEach((el, i) => {
           if (!el) return;
           const p = posList[i];
@@ -210,7 +257,7 @@ export default function StrengthParallax({ isLoaded = true }: { isLoaded?: boole
               top: p.top,
               left: p.left,
               width: p.w,
-              opacity: 0.35,
+              opacity: 0,
               y: reduce ? 0 : depth,
               x: !reduce && i === 2 ? -swayPx : 0,
               scale: !reduce && i === 0 ? 0.88 : 1,
@@ -219,7 +266,7 @@ export default function StrengthParallax({ isLoaded = true }: { isLoaded?: boole
             });
             if (inner) gsap.set(inner, { opacity: !reduce && i === 3 ? 0.42 : 1 });
 
-            tl.fromTo(el, { opacity: 0.35 }, { opacity: 1, duration: 0.08 }, 0);
+            tl.fromTo(el, { opacity: 0 }, { opacity: 1, duration: INTRO }, 0);
 
             if (reduce) return;
 
@@ -287,14 +334,19 @@ export default function StrengthParallax({ isLoaded = true }: { isLoaded?: boole
         // 最後の1枚はフェードアウトさせず、セクションごと流れて退場させる。
         textEls.forEach((el, i) => {
           if (!el) return;
-          gsap.set(el, { autoAlpha: i === 0 ? 1 : 0 });
+          gsap.set(el, { autoAlpha: 0 });
 
           const segStart = i * SEGMENT;
           const segEnd = segStart + SEGMENT;
 
-          if (i > 0) {
-            tl.fromTo(el, { autoAlpha: 0 }, { autoAlpha: 1, duration: TEXT_FADE }, segStart);
-          }
+          // 01 は pin に入ってから立ち上げる（pin 前に見えていると、
+          // パララックスが始まる前に中身が読めてしまう）
+          tl.fromTo(
+            el,
+            { autoAlpha: 0 },
+            { autoAlpha: 1, duration: i === 0 ? INTRO : TEXT_FADE },
+            segStart
+          );
           if (i < strengths.length - 1) {
             tl.fromTo(
               el,
@@ -318,22 +370,67 @@ export default function StrengthParallax({ isLoaded = true }: { isLoaded?: boole
       style={{ isolation: "isolate" }}
       aria-label="Strength"
     >
-      {/* タイトル（pin 中は position: fixed 相当の見え方になる。
-          top-20 = 固定ヘッダー 64px を避ける） */}
-      <div className="absolute top-20 md:top-24 inset-x-0 z-20 text-center px-2">
-        <GlitchText
-          text="Strength"
-          variant="mono"
-          className="text-[52px] sm:text-[68px] md:text-[96px] font-serif font-bold text-white
-                     [text-shadow:_0_0_24px_rgba(255,255,255,0.4),_0_0_48px_rgba(255,255,255,0.2),_0_2px_4px_rgba(0,0,0,0.5)]"
-          armed={isLoaded}
-        />
-        <p
-          className="text-lg sm:text-xl md:text-2xl text-white/90 mt-2 font-medium
-                     [text-shadow:_0_0_12px_rgba(255,255,255,0.25),_0_1px_2px_rgba(0,0,0,0.6)]"
-        >
-          私の強み
-        </p>
+      {/*
+        見出しの場所。2つの表示を同じ位置に重ねてある。
+
+          進入中     … SCROLL ↓↓↓（中身を隠したまま「まだ続く」と伝える）
+          pin 開始と同時に前後の回転で入れ替わる
+          パララックス中 … Strength / 私の強み
+
+        top-20 は固定ヘッダー 64px を避けるため。
+        perspective は入れ替えの回転に奥行きを出すために親側で持つ。
+      */}
+      <div
+        className="absolute top-20 md:top-24 inset-x-0 z-20 px-2"
+        style={{ perspective: 900 }}
+      >
+        <div className="relative">
+          {/* Strength 側が高さを決める。SCROLL はこれに重ねる。
+              初期状態は必ずここで隠しておく。GSAP の gsap.set だけに任せると、
+              それが走るまでの間 SCROLL と重なって両方見えてしまう */}
+          <div
+            ref={titleRef}
+            className="text-center"
+            style={{ opacity: 0, visibility: "hidden" }}
+          >
+            <GlitchText
+              text="Strength"
+              variant="mono"
+              className="text-[52px] sm:text-[68px] md:text-[96px] font-serif font-bold text-white
+                         [text-shadow:_0_0_24px_rgba(255,255,255,0.4),_0_0_48px_rgba(255,255,255,0.2),_0_2px_4px_rgba(0,0,0,0.5)]"
+              armed={isLoaded}
+            />
+            <p
+              className="text-lg sm:text-xl md:text-2xl text-white/90 mt-2 font-medium
+                         [text-shadow:_0_0_12px_rgba(255,255,255,0.25),_0_1px_2px_rgba(0,0,0,0.6)]"
+            >
+              私の強み
+            </p>
+          </div>
+
+          {/* SCROLL は最初から見えている側。pin に入ると奥へ倒れて消える */}
+          <div
+            ref={cueRef}
+            className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2"
+            style={{ opacity: 1, visibility: "visible" }}
+            aria-hidden
+          >
+            {/* Strength と同じ字面（font-serif / 同じサイズ）にして、
+                入れ替わったことが大きさの変化ではなく中身の変化として伝わるようにする */}
+            <span
+              className="text-[52px] sm:text-[68px] md:text-[96px] font-serif font-bold leading-none
+                         tracking-[0.12em] text-[#2ccdb9]
+                         [text-shadow:_0_0_24px_rgba(44,205,185,0.45),_0_0_48px_rgba(44,205,185,0.25)]"
+            >
+              SCROLL
+            </span>
+            <span className="mt-1 flex gap-3 text-[52px] sm:text-[68px] md:text-[96px] font-serif font-bold leading-none text-[#2ccdb9]">
+              <span className="cue-arrow">↓</span>
+              <span className="cue-arrow">↓</span>
+              <span className="cue-arrow">↓</span>
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* 写真（背景・装飾なので支援技術からは隠す） */}
@@ -387,10 +484,8 @@ export default function StrengthParallax({ isLoaded = true }: { isLoaded?: boole
             textRefs.current[i] = el;
           }}
           className="absolute inset-0 flex items-center justify-center z-30"
-          style={{
-            opacity: i === 0 ? 1 : 0,
-            visibility: i === 0 ? "visible" : "hidden",
-          }}
+          // 01 も pin に入ってから立ち上げるので、初期状態は全部隠す
+          style={{ opacity: 0, visibility: "hidden" }}
         >
           <article className="max-w-3xl px-4 sm:px-6 md:max-w-4xl md:px-8">
             <div className="flex gap-4 sm:gap-6 md:gap-8">
