@@ -1,7 +1,11 @@
 .top {
   position: relative;
   width: 100%;
-  height: 100vh; /* 必要なら 100svh */
+  /* 4rem は layout.tsx のラッパーが固定ヘッダーぶん空けている pt-16。
+     100vh のままだとその 64px だけ文書がはみ出し、中身が無いのに
+     スクロールバーが出てしまう（ui/ScrollLock で止めてはいるが、
+     はみ出させないほうがスクロールバーの分の横ズレも起きない） */
+  height: calc(100vh - 4rem);
   overflow: hidden;
   z-index: 0;                /* 背面 */
 }
