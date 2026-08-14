@@ -96,6 +96,11 @@ export default function DistortOverlay({
         img.src,
         () => {
           this.ready = true;
+          // 差分の基準を今の位置に取り直す。0 のままだと最初の 1 フレームで
+          // dx = -rect.left という巨大な移動があったことになり、歪みが最大まで振れる
+          this.prevLeft = this.img.getBoundingClientRect().left;
+          this.setFromDOM();
+          this.mesh.visible = true;
           this.img.style.transition = "opacity .25s ease";
           this.img.style.opacity = "0";
         }
@@ -113,17 +118,35 @@ export default function DistortOverlay({
         });
 
         this.mesh = new THREE.Mesh(geo, mat);
+        // テクスチャが来るまでは描かない。<img> 側はまだ opacity を落としていないので、
+        // ここで出すと未読込のテクスチャや古い位置が一瞬見える
+        this.mesh.visible = false;
         scene.add(this.mesh);
 
         // 初期配置
-        this.setFromDOM();
-
+        const rect = this.setFromDOM();
+        this.prevLeft = rect.left;
       }
 
       setFromDOM() {
         const rect = this.img.getBoundingClientRect();
-        this.mesh.scale.set(rect.width, rect.height, 1);
 
+        // <img> は object-fit: contain なので、箱いっぱいに引き伸ばすと DOM と
+        // 見た目がズレる（画像とカードのアスペクト比は一致していない）。
+        // 実際に表示される領域と同じ大きさに合わせる
+        let w = rect.width;
+        let h = rect.height;
+        const nw = this.img.naturalWidth;
+        const nh = this.img.naturalHeight;
+        if (nw > 0 && nh > 0 && rect.width > 0 && rect.height > 0) {
+          const boxAspect = rect.width / rect.height;
+          const imgAspect = nw / nh;
+          if (boxAspect > imgAspect) w = rect.height * imgAspect; // 左右に余白
+          else h = rect.width / imgAspect;                        // 上下に余白
+        }
+        this.mesh.scale.set(w, h, 1);
+
+        // contain は箱の中央に収まるので、中心は箱の中心のまま。
         // 画面中央原点座標へ変換
         const x = rect.left - window.innerWidth / 2 + rect.width / 2;
         const y = -rect.top  + window.innerHeight / 2 - rect.height / 2;
@@ -156,6 +179,7 @@ export default function DistortOverlay({
       }
 
       dispose() {
+        this.img.style.transition = "";
         this.img.style.opacity = "";
         (this.mesh.material as THREE.Material).dispose();
         (this.mesh.geometry as THREE.BufferGeometry).dispose();

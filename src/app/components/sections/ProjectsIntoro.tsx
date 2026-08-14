@@ -120,6 +120,11 @@ export default function ProjectsIntro() {
               <div
                 key={i}
                 className={styles.card}
+                // 最初から画面外に逃がしておく。.card は opacity: 0 だが、
+                // DistortOverlay は <img> の矩形に WebGL の面を貼るだけで CSS の
+                // opacity を見ないため、中央に置いたままだと GSAP が動かし始める
+                // 前（heart:complete 待ちの間）に画像が見えてしまう
+                style={{ transform: "translate(-50%, -50%) translateX(100vw)" }}
                 ref={(el) => {
                   if (i === 0) cardRefs.current = []; // 先頭で初期化
                   if (el) cardRefs.current[i] = el;
