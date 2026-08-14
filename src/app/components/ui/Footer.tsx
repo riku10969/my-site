@@ -3,7 +3,8 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import GlitchText from "./GlitchText";   
+import { useWatermarkParallax } from "../gsap/WatermarkParallax";
+import GlitchText from "./GlitchText";
 import FadeInText from "./FadeInText";   // 例: components/FadeInText.tsx
 
 function LogoStack() {
@@ -57,35 +58,8 @@ export default function Footer() {
     };
   }, []);
 
-  // ② ほんのりパララックス（ウォーターマーク）
-  useEffect(() => {
-    const wrap = hostRef.current;
-    if (!wrap) return;
-
-    let raf = 0;
-    const onFrame = () => {
-      // reduce-motion ならスキップ
-      if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
-
-      const rect = wrap.getBoundingClientRect();
-      const vh = window.innerHeight || 1;
-      const pRaw = (vh - rect.top) / Math.max(rect.height, 1);
-      const p = Math.max(0, Math.min(1, pRaw)); // clamp 0..1
-
-      const y = 24 + (-30 * p);   // 24px → -6px
-      const o = 0 + (0.28 * p);   // 0   → 0.28
-      wrap.style.setProperty("--wm-y", `${y}px`);
-      wrap.style.setProperty("--wm-o", `${o}`);
-
-      raf = requestAnimationFrame(onFrame);
-    };
-    raf = requestAnimationFrame(onFrame);
-    return () => cancelAnimationFrame(raf);
-  }, []);
-
-  const neonClass =
-    neonStage === "off" ? "" :
-    neonStage === "once" ? "footer-neon-once" : "footer-neon-idle";
+  // ② ほんのりパララックス（ウォーターマーク）。実装は gsap/ に委譲
+  useWatermarkParallax(hostRef);
 
   return (
     <footer
