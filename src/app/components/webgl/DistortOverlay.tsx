@@ -3,6 +3,16 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 
+/**
+ * 同じ URL のテクスチャを読み直さない。
+ *
+ * イントロと Swiper は同じ画像を使うので、切り替えのたびに読み込みと
+ * デコードが走っていた。1 回目だけ画像が一瞬抜けて見えるのはこれが原因
+ * （2 回目以降はブラウザのキャッシュが効いて速いので気づきにくい）。
+ * 有効にすると 2 枚目以降は次のティックで解決する。
+ */
+THREE.Cache.enabled = true;
+
 type ImagePlaneHandle = {
   update(): boolean;
   dispose(): void;
@@ -225,11 +235,27 @@ export default function DistortOverlay({
     };
     window.addEventListener("resize", onResize);
 
+    /**
+     * DOM が変わったら次のフレームで拾う。
+     *
+     * 定期リスキャンだけだと 20 フレーム（60fps で約 333ms）待つことがあり、
+     * プレースホルダ → Swiper の切り替え（280ms でプレースホルダを外す）に
+     * 間に合わない。面が消えてから次の面ができるまで画像が抜けて見える。
+     * 監視で拾えば Swiper が載った次のフレームには面ができるので、
+     * 同じ絵が同じ位置に重なったまま入れ替わる。
+     */
+    let needsRescan = false;
+    const observer = new MutationObserver(() => {
+      needsRescan = true;
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+
     // --- loop ---
     const loop = () => {
-      // 定期リスキャン（プレースホルダ→Swiper切替に追従）
+      // 定期リスキャンは取りこぼしの保険として残す
       frameRef.current++;
-      if (frameRef.current % rescanIntervalFrames === 0) {
+      if (needsRescan || frameRef.current % rescanIntervalFrames === 0) {
+        needsRescan = false;
         mountExisting();
       }
 
@@ -256,6 +282,7 @@ export default function DistortOverlay({
     // --- cleanup ---
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      observer.disconnect();
       window.removeEventListener("resize", onResize);
 
       for (const [, plane] of planes) plane.dispose();
