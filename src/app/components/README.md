@@ -30,7 +30,8 @@ components/
 
 | ファイル | 役割 | 呼び出し元 |
 |---|---|---|
-| `TileTransition.tsx` | タイル分割のページ遷移（フック） | `ui/PageTransition.tsx` |
+| `TileTransition.tsx` | ページを覆う遷移の骨組み。色・遷移タイミング・LOADING（フック） | `ui/PageTransition.tsx` |
+| `curtains/` | その「どう動くか」の差し替え可能な定義 | `TileTransition.tsx` |
 | `NeonPanelTransition.tsx` | ネオンパネルのページ遷移（フック） | `ui/PageTransition.tsx` |
 | `ProjectsIntroReel.tsx` | Projects イントロのカードリール + Swiper へのクロスフェード（フック） | `sections/ProjectsIntoro.tsx` |
 | `MarqueeLoop.tsx` | 横方向の無限ループ + タッチドラッグ。ScrollTrigger で画面外は停止（フック） | `ui/InfiniteMarquee.tsx` |
@@ -40,6 +41,29 @@ components/
 
 マークアップが呼び出し側にあるものはフック、マークアップとタイムラインが不可分な
 `StrengthParallax` はコンポーネントを export している。
+
+### gsap/curtains/ — 覆う遷移の見せ方
+
+`TileTransition` は格子状の div を並べるだけで、実際の動きは以下から選ぶ。
+どれも同じ DOM を使い回すので、増やしても DOM は増えない。
+
+| ファイル | 見せ方 | |
+|---|---|---|
+| `grid.ts` | 正方形タイルが右上から左下へ不規則に出現。剥がれるときは左下から | **採用中** |
+| `louver.ts` | 縦のルーバーが右端から順に閉じ、左端から開く | 保留 |
+| `glitch.ts` | 横帯が乱れながら `steps()` でスナップ。RGB ずれ付き | 保留 |
+
+採用しなかった 2 つも動く状態で残してある。見比べるときは URL に `?pt=` を付ける。
+
+```
+/?pt=louver    /?pt=glitch    /?pt=grid    /?pt=off （既定に戻す）
+```
+
+指定は `localStorage` に残るので、一度開けばあとは普通にリンクを辿るだけでよい。
+`/skills` へのリンクだけは `NeonPanelTransition` なので対象外。
+
+見せ方を増やすときは `curtains/types.ts` の `Curtain` を実装して
+`curtains/index.ts` の `CURTAINS` に足す。
 
 `gsap` 3.13 は全プラグイン同梱なので、`Flip` / `Observer` / `Draggable` /
 `ScrollToPlugin` / `SplitText` なども追加インストールなしで `gsap/<Name>` から import できる。
