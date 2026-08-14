@@ -21,7 +21,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ja" className={jaro.variable}>
-      <body className="min-h-dvh bg-[#0b0b0b] text-white antialiased">
+      {/* 背景色は globals.css の :root（--background）で一元管理する。
+          ここで bg-* を当てると詳細度で勝ってしまい、globals.css 側が
+          !important を使わないと効かなくなる */}
+      <body className="min-h-dvh text-white antialiased">
         {/* ★ ここで全体をラップ */}
         <PageTransitionProvider>
           <Header />

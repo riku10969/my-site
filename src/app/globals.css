@@ -1,28 +1,68 @@
-@import "tailwindcss";
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* =============================================================================
+   globals.css
 
+   コンポーネント固有のスタイルは CSS Modules（src/app/styles/）か Tailwind の
+   ユーティリティで書く。ここに置くのは次のどちらかに限る。
+
+     - 複数のコンポーネントから使う演出（.glitch / .neon-* / .reveal など）
+     - ライブラリが吐く DOM に当てるもの（Swiper）
+
+   目次
+     1. Tailwind
+     2. テーマ変数とページの土台
+     3. フォント
+     4. テキスト・画像の演出
+     5. パーツ別（Footer / Swiper）
+     6. アクセシビリティ（動きを減らす設定）
+   ============================================================================= */
+
+/* -----------------------------------------------------------------------------
+   1. Tailwind
+   v4 は @import 一行だけでよい（v3 の @tailwind base/components/utilities は不要）
+   -------------------------------------------------------------------------- */
+@import "tailwindcss";
+
+/* -----------------------------------------------------------------------------
+   2. テーマ変数とページの土台
+   -------------------------------------------------------------------------- */
+
+/* 背景はライト・ダークとも同じ。About の pin-spacer が透けても黒く落ちないよう、
+   ここで 1 か所に固定する */
+:root {
+  --background: #121316;
+  --foreground: #ededed;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+}
+
+html,
+body {
+  background: var(--background);
+}
+body {
+  color: var(--foreground);
+}
+
+/* -----------------------------------------------------------------------------
+   3. フォント
+   Jaro は layout.tsx で --font-jaro として読み込んでいる
+   -------------------------------------------------------------------------- */
 .font-display {
   font-family: var(--font-jaro), ui-sans-serif, system-ui;
 }
 
-/* ---- bulbs: soft glow ---- */
-@keyframes bulb-glow {
-  0%   { box-shadow: 0 0 6px rgba(255,255,255,.9), 0 0 18px rgba(255,255,255,.65); }
-  50%  { box-shadow: 0 0 10px rgba(255,255,255,1), 0 0 26px rgba(255,255,255,.9); }
-  100% { box-shadow: 0 0 6px rgba(255,255,255,.9), 0 0 18px rgba(255,255,255,.65); }
-}
-.bulb-glow {
-  animation: bulb-glow 1.8s ease-in-out infinite;
-  filter: drop-shadow(0 0 2px rgba(255,255,255,.8));
-}
+/* -----------------------------------------------------------------------------
+   4. テキスト・画像の演出
+   -------------------------------------------------------------------------- */
 
-/* --- scroll-in (左右から) --- */
+/* === Reveal（ui/FadeInText）: 左右から滑り込む =========================== */
 .reveal {
   opacity: 0;
   transform: translateX(var(--reveal-x, 0));
-  transition: transform .7s cubic-bezier(.22,.8,.32,1), opacity .7s ease;
+  transition: opacity 0.5s ease, transform 0.5s ease;
   will-change: transform, opacity;
 }
 .reveal.in {
@@ -30,216 +70,95 @@
   transform: translateX(0);
 }
 
-.yarl__slide_image {
-  object-fit: contain;  /* 余白ありで揃える */
-  max-height: 80vh;     /* 高さを統一 */
-  max-width: 100vh;
+/* === Glitch（ui/GlitchText） ============================================= */
+.glitch {
+  position: relative;
+  display: inline-block;
+}
+.glitch::before,
+.glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  opacity: 0;
+  mix-blend-mode: screen;
+  pointer-events: none;
 }
 
+/* 本体の軽い揺れ */
+@keyframes glitch-shake {
+  0%   { transform: translate(0, 0) }
+  25%  { transform: translate(1px, -1px) }
+  50%  { transform: translate(-1px, 1px) }
+  75%  { transform: translate(1px, 0) }
+  100% { transform: none }
+}
+/* ダブり文字：横スライス */
+@keyframes g-slice {
+  0%   { clip-path: inset(0 0 80% 0) }
+  20%  { clip-path: inset(10% 0 40% 0) }
+  40%  { clip-path: inset(35% 0 20% 0) }
+  60%  { clip-path: inset(60% 0 10% 0) }
+  80%  { clip-path: inset(75% 0 0 0) }
+  100% { clip-path: inset(0 0 0 0) }
+}
+/* ダブり文字：色ズレ */
+@keyframes g-shift {
+  0%   { transform: translate(0, 0) }
+  20%  { transform: translate(2px, -1px) }
+  40%  { transform: translate(-2px, 1px) }
+  60%  { transform: translate(1px, -2px) }
+  80%  { transform: translate(-1px, 2px) }
+  100% { transform: none }
+}
+/* 最後に消える。これが無いとダブり文字が残る */
+@keyframes g-fade {
+  0%, 80% { opacity: 1 }
+  100%    { opacity: 0 }
+}
+
+.glitch.on {
+  animation: glitch-shake 0.45s ease both;
+}
+.glitch.on::before {
+  color: #ff4; /* 黄 */
+  opacity: 1;
+  animation:
+    g-slice 0.55s steps(10) both,
+    g-shift 0.55s steps(10) both,
+    g-fade 0.55s linear both;
+}
+.glitch.on::after {
+  color: #3df; /* シアン */
+  opacity: 1;
+  animation:
+    g-slice 0.55s steps(10) reverse both,
+    g-shift 0.55s steps(10) reverse both,
+    g-fade 0.55s linear both;
+}
+
+/* mono バリアント：色ズレを消して currentColor のまま光らせる */
 .glitch--mono,
 .glitch--mono::before,
 .glitch--mono::after {
-  color: inherit !important;        /* ← currentColor をそのまま使う */
-  text-shadow: none !important;     /* 影で色が変わらないように */
-  background: none !important;      /* 背景グラデ不要 */
+  color: inherit !important;
+  text-shadow: none !important;
+  background: none !important;
   -webkit-text-stroke: 0 !important;
   mix-blend-mode: normal !important;
 }
 
-/* ===== ネオン管ヘッダー用 ===== */
-.contact-section .neon-tube-wrap {
-  display: inline-block;
-  line-height: 1;
-}
-.contact-section .neon-tube {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-.contact-section .neon-tube .tube {
-  fill: none;
-  paint-order: stroke fill;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  /* SVG でも効く */
-  font-family: inherit;
-  font-weight: 800;
-  letter-spacing: .02em;
-  font-size: clamp(36px, 6vw, 72px);
-  transition: opacity .28s ease, filter .28s ease, stroke .28s ease;
-}
-
-/* 後ろのカラー管（OFF時はうっすら） */
-.contact-section .tube-back {
-  stroke: hsl(var(--tube-hue) 95% 60%);
-  stroke-width: 16;
-  opacity: .35;
-}
-
-/* 近距離グロー（点灯で現れる） */
-.contact-section .tube-glow1 {
-  stroke: hsl(var(--tube-hue) 100% 60%);
-  stroke-width: 16;
-  filter: none;
-  opacity: 0;
-}
-
-/* 遠距離グロー（点灯でふわっと） */
-.contact-section .tube-glow2 {
-  stroke: hsl(var(--tube-hue) 100% 55%);
-  stroke-width: 16;
-  filter: none;
-  opacity: 0;
-}
-
-/* 中央の白い管（芯） */
-.contact-section .tube-core {
-  stroke: #eaffff;
-  stroke-width: 6;
-  opacity: .8;
-  /* 線の輪郭をシャープに */
-  filter: saturate(1.05);
-}
-
-/* ARMED：見えてから待機中（ほんのり） */
-.contact-section .is-armed .tube-back   { opacity: .75; }
-.contact-section .is-armed .tube-core   { opacity: .9;  }
-
-/* ON：本点灯（“パッ”） */
-.contact-section .is-on .tube-back    { opacity: 1; }
-.contact-section .is-on .tube-glow1   { opacity: .85; filter: url(#glow-strong); }
-.contact-section .is-on .tube-glow2   { opacity: .45; filter: url(#glow-wide);  }
-.contact-section .is-on .tube-core    { opacity: 1; }
-
-/* 追加のギラッ（任意）：ホバーで少し強く */
-@media (hover:hover) {
-  .contact-section .is-on .neon-tube-wrap:hover .tube-glow1 { opacity: .95; }
-  .contact-section .is-on .neon-tube-wrap:hover .tube-glow2 { opacity: .55; }
-}
-
-/* === Swiper global fixes === */
-.swiper{ width:100%; }
-.swiper-slide{
-  display:flex; justify-content:center; align-items:center;
-}
-
-/* Swiper 本体（グローバル） */
-.swiper{ width:100%; }
-.swiper-slide{
-  display:flex; justify-content:center; align-items:center;
-  transform: scale(.8) translateZ(-100px);
-  z-index:1; opacity:.5; filter: blur(.5px) brightness(.7);
-  transition: transform .4s ease, z-index .4s ease, filter .4s ease, opacity .4s ease;
-}
-.swiper-slide-active{
-  transform: scale(1) translateZ(0);
-  z-index:10; opacity:1; filter: none;
-}
-.swiper-slide-prev,
-.swiper-slide-next{
-  transform: scale(.7) rotateY(15deg) translateZ(-200px);
-  z-index:0; filter: brightness(.4) blur(1.5px);
-}
-/* Swiper切替直後のリセット（CSS Modules対応） */
-.swiper-slide.gsap-init {
-  transform: none !important;
-  opacity: 1 !important;
-  filter: none !important;
-}
-
-/* === Glitch (強化版) === */
-.glitch{ position:relative; display:inline-block; }
-.glitch::before,
-.glitch::after{
-  content:attr(data-text);
-  position:absolute; inset:0;
-  font:inherit; letter-spacing:inherit;
-  opacity:0; mix-blend-mode:screen; pointer-events:none;
-}
-
-/* 本体の軽い揺れ（要らなければ削除可） */
-@keyframes glitch-shake {
-  0%{ transform:translate(0,0) } 25%{ transform:translate(1px,-1px) }
-  50%{ transform:translate(-1px,1px) } 75%{ transform:translate(1px,0) }
-  100%{ transform:none }
-}
-.glitch.on{ animation:glitch-shake .45s ease both; }
-
-/* ダブり文字：色ズレ＋スライス */
-@keyframes g-slice {
-  0%{ clip-path:inset(0 0 80% 0) }
-  20%{ clip-path:inset(10% 0 40% 0) }
-  40%{ clip-path:inset(35% 0 20% 0) }
-  60%{ clip-path:inset(60% 0 10% 0) }
-  80%{ clip-path:inset(75% 0 0 0) }
-  100%{ clip-path:inset(0 0 0 0) }
-}
-@keyframes g-shift {
-  0%{ transform:translate(0,0) }
-  20%{ transform:translate(2px,-1px) }
-  40%{ transform:translate(-2px,1px) }
-  60%{ transform:translate(1px,-2px) }
-  80%{ transform:translate(-1px,2px) }
-  100%{ transform:none }
-}
-
-/* ← これが無いと“揺れるだけ”になります */
-.glitch.on::before,
-.glitch.on::after { opacity:1; }
-
-.glitch.on::before{
-  color:#ff4;  /* 赤みのある黄：ブランド色に合わせてOK */
-  animation: g-slice .55s steps(10) both, g-shift .55s steps(10) both;
-}
-.glitch.on::after{
-  color:#3df;  /* シアン */
-  animation: g-slice .55s steps(10) reverse both, g-shift .55s steps(10) reverse both;
-}
-
-
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-/* ===== Theme: Teal x Purple ===== */
-/* Purple(#662f8f) base + Green link(#09943b) */
-.footer--purpleGreen{
-  --base:#662f8f;          /* フッター背景 */
-  --ink:#F3F6F8;           /* テキスト（明るめに変更） */
-  --a1:#09943b;            /* リンク色 */
-  --a2:#b98ae9;            /* フォーカスリング/補助（薄い紫） */
-  --glow-a:0 0 12px rgba(9,148,59,.55),0 0 24px rgba(185,138,233,.25);
-}
-
-/* ウォーターマークは白寄りで薄く */
-.footer--purpleGreen .watermark{
-  color: rgba(255,255,255,.26);
-}
-
-.footer-theme-a{ color:var(--ink); background:var(--base); }
-
-/* 下線が伸びる＋薄いグロー */
-.link-glow{
-  background:linear-gradient(currentColor,currentColor) 0 100%/0% 2px no-repeat;
-  transition:background-size .35s ease, filter .25s ease, color .25s ease;
-}
-.link-glow:hover{
-  background-size:100% 2px;
-  filter:drop-shadow(var(--glow-a));
-  color:var(--a1);
-}
-
-/* === Neon text utilities (共通) === */
+/* === ネオン文字（共通） ================================================== */
 .neon-cyan {
   --c-main: #2ccdb9;
   color: var(--c-main);
   text-shadow:
     0 0 6px var(--c-main),
     0 0 14px var(--c-main),
-    0 0 28px rgba(44,205,185,.8),
-    0 0 56px rgba(44,205,185,.6);
+    0 0 28px rgba(44, 205, 185, 0.8),
+    0 0 56px rgba(44, 205, 185, 0.6);
 }
 .neon-purple {
   --c-main: #8a5cff;
@@ -247,8 +166,8 @@
   text-shadow:
     0 0 6px var(--c-main),
     0 0 14px var(--c-main),
-    0 0 28px rgba(138,92,255,.8),
-    0 0 56px rgba(138,92,255,.6);
+    0 0 28px rgba(138, 92, 255, 0.8),
+    0 0 56px rgba(138, 92, 255, 0.6);
 }
 .neon-amber {
   --c-main: #ffb34d;
@@ -256,17 +175,34 @@
   text-shadow:
     0 0 6px var(--c-main),
     0 0 14px var(--c-main),
-    0 0 28px rgba(255,179,77,.85),
-    0 0 56px rgba(255,179,77,.6);
+    0 0 28px rgba(255, 179, 77, 0.85),
+    0 0 56px rgba(255, 179, 77, 0.6);
 }
-.neon-white{
-  color:#fff;
+.neon-white {
+  color: #fff;
   text-shadow:
-    0 0 6px rgba(255,255,255,.95),
-    0 0 14px rgba(255,255,255,.85),
-    0 0 28px rgba(255,255,255,.7),
-    0 0 52px rgba(255,255,255,.55);
+    0 0 6px rgba(255, 255, 255, 0.95),
+    0 0 14px rgba(255, 255, 255, 0.85),
+    0 0 28px rgba(255, 255, 255, 0.7),
+    0 0 52px rgba(255, 255, 255, 0.55);
 }
+
+/* 点灯中のゆらぎ。Contact の順次点灯と Projects のタイトルで使う */
+@keyframes flicker {
+  0%   { opacity: 1 }
+  8%   { opacity: 0.85 }
+  10%  { opacity: 1 }
+  22%  { opacity: 0.92 }
+  30%  { opacity: 1 }
+  45%  { opacity: 0.88 }
+  55%  { opacity: 1 }
+  70%  { opacity: 0.93 }
+  100% { opacity: 1 }
+}
+.flicker {
+  animation: flicker 2.8s ease-in-out infinite;
+}
+
 /* === 404 の最後の「4」用：切れかけの電球 ===
    グリッチ演出（約0.55秒）が終わってから接触不良のようにチカチカする。
      ・color       … シアン → くすんだ灰色（消えた電球の色）
@@ -289,8 +225,8 @@
     text-shadow:
       0 0 6px #2ccdb9,
       0 0 14px #2ccdb9,
-      0 0 28px rgba(44, 205, 185, .8),
-      0 0 56px rgba(44, 205, 185, .6);
+      0 0 28px rgba(44, 205, 185, 0.8),
+      0 0 56px rgba(44, 205, 185, 0.6);
     opacity: 1;
   }
 
@@ -298,22 +234,22 @@
   6%, 34%, 48%, 60%, 78%, 92% {
     color: #8a9fa1;
     text-shadow:
-      0 0 4px rgba(44, 205, 185, .45),
-      0 0 9px rgba(44, 205, 185, .25),
-      0 0 16px rgba(44, 205, 185, .12),
-      0 0 28px rgba(44, 205, 185, .06);
-    opacity: .78;
+      0 0 4px rgba(44, 205, 185, 0.45),
+      0 0 9px rgba(44, 205, 185, 0.25),
+      0 0 16px rgba(44, 205, 185, 0.12),
+      0 0 28px rgba(44, 205, 185, 0.06);
+    opacity: 0.78;
   }
 
   /* 消灯：完全に灰色・グローほぼ無し */
   4%, 8%, 12%, 32%, 36%, 54%, 58%, 62%, 76%, 80%, 85%, 94%, 98%, 100% {
     color: #5a6265;
     text-shadow:
-      0 0 2px rgba(150, 160, 165, .25),
-      0 0 4px rgba(150, 160, 165, .12),
+      0 0 2px rgba(150, 160, 165, 0.25),
+      0 0 4px rgba(150, 160, 165, 0.12),
       0 0 6px rgba(150, 160, 165, 0),
       0 0 8px rgba(150, 160, 165, 0);
-    opacity: .32;
+    opacity: 0.32;
   }
 }
 
@@ -331,111 +267,8 @@
   animation: neon-dying 5s 0.95s steps(1, end) infinite;
 }
 
-/* 動きを減らす設定では点滅させず、消灯した灰色で固定（元気のなさは維持） */
-@media (prefers-reduced-motion: reduce) {
-  .neon-dying {
-    animation: none;
-    color: #5a6265;
-    text-shadow:
-      0 0 2px rgba(150, 160, 165, .25),
-      0 0 4px rgba(150, 160, 165, .12);
-    opacity: .5;
-  }
-}
-
-.flicker {
-  animation: flicker 2.8s ease-in-out infinite;
-}
-/* 無限に明滅し続けるので、動きを減らす設定では止める（点灯した見た目は保つ） */
-@media (prefers-reduced-motion: reduce) {
-  .flicker { animation: none; }
-}
-@keyframes flicker {
-  0% { opacity: 1; }
-  8% { opacity: .85; }
-  10% { opacity: 1; }
-  22% { opacity: .92; }
-  30% { opacity: 1; }
-  45% { opacity: .88; }
-  55% { opacity: 1; }
-  70% { opacity: .93; }
-  100% { opacity: 1; }
-}
-
-
-/* ロゴの“呼吸” */
-@keyframes breathe{ 0%,100%{transform:scale(1)} 50%{transform:scale(1.015)} }
-.logo-breathe{ animation:breathe 6s ease-in-out infinite }
-
-/* 面全体に超弱シマー */
-@keyframes shine{ from{background-position:-200% 0} to{background-position:200% 0} }
-.footer-shine{
-  background-image:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);
-  background-size:200% 100%;
-  animation:shine 8s linear infinite;
-  pointer-events:none;
-}
-
-/* 初期状態：左(または右)へオフセット & 透明 */
-.reveal { 
-  opacity: 0;
-  transform: translateX(var(--reveal-x, 0));
-  transition: opacity .5s ease, transform .5s ease;
-}
-
-/* 発火後：不透明 & 位置リセット */
-.reveal.in {
-  opacity: 1;
-  transform: translateX(0);
-}
-
-
-/* スクロール連動アニメのベース */
-[data-scroll-animation] {
-  will-change: transform, opacity;
-}
-
-/* IntersectionObserverで .scroll-animated が付いたら発火 */
-.scroll-animated {
-  opacity: 1 !important;
-  transform: translateY(0) !important;
-}
-
-/* パララックス用のCSS変数（JSで更新） */
-.watermark{
-  transform:translateY(var(--wm-y,24px));
-  opacity:var(--wm-o,0);
-  transition:opacity .25s ease;
-}
-
-@media (prefers-reduced-motion: reduce){
-  .logo-breathe,.footer-shine{ animation:none }
-  .watermark{ transform:none!important }
-}
-
-@keyframes g-fade {
-  0%, 80% { opacity: 1; }
-  100% { opacity: 0; }
-}
-
-.glitch.on::before{
-  color:#ff4;
-  animation:
-    g-slice .55s steps(10) both,
-    g-shift .55s steps(10) both,
-    g-fade  .55s linear both;
-}
-
-.glitch.on::after{
-  color:#3df;
-  animation:
-    g-slice .55s steps(10) reverse both,
-    g-shift .55s steps(10) reverse both,
-    g-fade  .55s linear both;
-}
-
-/* ===== Warp (one-shot on scroll) ===== */
-.warp-image{
+/* === Warp（sections/AboutSection のヒーロー画像）: 一度だけ歪む ========= */
+.warp-image {
   position: relative;
   background-image: var(--img);
   background-position: center;
@@ -443,97 +276,180 @@
   background-repeat: no-repeat;
   filter: saturate(1.05) contrast(1.06);
 }
-
+/* 同じ画像を 2 枚重ね、別々のタイミングでずらして歪みを作る */
 .warp-image::before,
-.warp-image::after{
-  content:"";
-  position:absolute;
-  inset:0;
+.warp-image::after {
+  content: "";
+  position: absolute;
+  inset: 0;
   background-image: var(--img);
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
-  opacity:0;
-  pointer-events:none;
+  opacity: 0;
+  pointer-events: none;
 }
 
-@keyframes warp-a{
-  0%   { opacity:0; transform:none; filter:none; clip-path: inset(0 0 0 0); }
-  10%  { opacity:.95; transform: translate(2px,-1px) skewX(-10deg) scaleX(1.02);
+@keyframes warp-a {
+  0%   { opacity: 0; transform: none; filter: none; clip-path: inset(0 0 0 0); }
+  10%  { opacity: .95; transform: translate(2px,-1px) skewX(-10deg) scaleX(1.02);
          filter: blur(.6px) contrast(1.2); clip-path: inset(8% 0 62% 0); }
-  26%  { opacity:.9;  transform: translate(-3px,1px) skewX(14deg) scaleY(1.01);
+  26%  { opacity: .9;  transform: translate(-3px,1px) skewX(14deg) scaleY(1.01);
          filter: blur(.9px) saturate(1.2); clip-path: inset(34% 0 40% 0); }
-
-  /* ✅ ここで“歪みをキープ” */
-  60%  { opacity:.8;  transform: translate(1px,0) skewY(-6deg) scaleX(.99);
+  /* ここで歪みをキープ */
+  60%  { opacity: .8;  transform: translate(1px,0) skewY(-6deg) scaleX(.99);
          filter: blur(.6px) saturate(1.1); clip-path: inset(62% 0 12% 0); }
-
-  /* ✅ ゆっくりフェードアウト */
-  85%  { opacity:.25; transform: translate(.5px,0) skewY(-2deg) scaleX(1.0);
+  /* ゆっくりフェードアウト */
+  85%  { opacity: .25; transform: translate(.5px,0) skewY(-2deg) scaleX(1.0);
          filter: blur(.2px); clip-path: inset(0 0 0 0); }
-
-  100% { opacity:0; transform:none; filter:none; clip-path: inset(0 0 0 0); }
+  100% { opacity: 0; transform: none; filter: none; clip-path: inset(0 0 0 0); }
 }
-
-@keyframes warp-b{
-  0%   { opacity:0; transform:none; filter:none; clip-path: inset(0 0 0 0); }
-  12%  { opacity:.9; transform: translate(-2px,1px) skewX(12deg) scale(1.01);
+@keyframes warp-b {
+  0%   { opacity: 0; transform: none; filter: none; clip-path: inset(0 0 0 0); }
+  12%  { opacity: .9; transform: translate(-2px,1px) skewX(12deg) scale(1.01);
          filter: blur(.7px) contrast(1.15); clip-path: inset(0 0 78% 0); }
-  30%  { opacity:.85; transform: translate(3px,-2px) skewY(9deg) scaleX(1.03);
+  30%  { opacity: .85; transform: translate(3px,-2px) skewY(9deg) scaleX(1.03);
          filter: blur(1px) saturate(1.15); clip-path: inset(46% 0 28% 0); }
-
-  /* ✅ ここで“歪みをキープ” */
-  62%  { opacity:.75; transform: translate(-1px,2px) skewX(-8deg) scaleY(.99);
+  /* ここで歪みをキープ */
+  62%  { opacity: .75; transform: translate(-1px,2px) skewX(-8deg) scaleY(.99);
          filter: blur(.7px) saturate(1.08); clip-path: inset(76% 0 0 0); }
-
-  88%  { opacity:.2; transform: translate(-.5px,1px) skewX(-2deg) scaleY(1);
+  88%  { opacity: .2; transform: translate(-.5px,1px) skewX(-2deg) scaleY(1);
          filter: blur(.2px); clip-path: inset(0 0 0 0); }
-
-  100% { opacity:0; transform:none; filter:none; clip-path: inset(0 0 0 0); }
+  100% { opacity: 0; transform: none; filter: none; clip-path: inset(0 0 0 0); }
 }
 
-html, body { background: #121316; }
-
-/* ✅ 長めに */
-.warp-on::before{
+.warp-on::before {
   mix-blend-mode: screen;
   animation: warp-a 2.2s steps(12) both;
 }
-.warp-on::after{
+.warp-on::after {
   mix-blend-mode: screen;
   animation: warp-b 2.2s steps(12) both;
 }
 
+/* -----------------------------------------------------------------------------
+   5. パーツ別
+   -------------------------------------------------------------------------- */
 
-/* アクセシビリティ */
-@media (prefers-reduced-motion: reduce){
-  .warp-on::before,
-  .warp-on::after{ animation: none !important; opacity:0 !important; }
+/* === Footer ============================================================= */
+.footer--purpleGreen {
+  --base: #662f8f;  /* 背景 */
+  --ink: #f3f6f8;   /* テキスト */
+  --a1: #09943b;    /* リンク */
+  --a2: #b98ae9;    /* フォーカスリング・補助 */
+  --glow-a: 0 0 12px rgba(9, 148, 59, 0.55), 0 0 24px rgba(185, 138, 233, 0.25);
+}
+.footer-theme-a {
+  color: var(--ink);
+  background: var(--base);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* 下線が伸びる＋薄いグロー */
+.link-glow {
+  background: linear-gradient(currentColor, currentColor) 0 100% / 0% 2px no-repeat;
+  transition: background-size 0.35s ease, filter 0.25s ease, color 0.25s ease;
+}
+.link-glow:hover {
+  background-size: 100% 2px;
+  filter: drop-shadow(var(--glow-a));
+  color: var(--a1);
 }
 
-/* ✅ 背景は常にこれで固定（pin-spacer が透けても黒くならない） */
-:root {
-  --background: #121316;
-  --foreground: #ededed;
+/* 透かし文字。--wm-y / --wm-o は gsap/WatermarkParallax が scrub で動かす */
+.watermark {
+  transform: translateY(var(--wm-y, 24px));
+  opacity: var(--wm-o, 0);
+  transition: opacity 0.25s ease;
+}
+.footer--purpleGreen .watermark {
+  color: rgba(255, 255, 255, 0.26);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #121316; /* ← #0a0a0a にしない */
-    --foreground: #ededed;
+/* ロゴの“呼吸” */
+@keyframes breathe {
+  0%, 100% { transform: scale(1) }
+  50%      { transform: scale(1.015) }
+}
+.logo-breathe {
+  animation: breathe 6s ease-in-out infinite;
+}
+
+/* 面全体に超弱シマー */
+@keyframes shine {
+  from { background-position: -200% 0 }
+  to   { background-position: 200% 0 }
+}
+.footer-shine {
+  background-image: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+  background-size: 200% 100%;
+  animation: shine 8s linear infinite;
+  pointer-events: none;
+}
+
+/* === Swiper（Projects イントロだけで使用。DOM はライブラリが吐く） ====== */
+.swiper {
+  width: 100%;
+}
+/*
+  素の状態は「等倍・そのまま」にしておくこと。
+  ここに scale(.8) や opacity:.5 を書くと、Swiper が swiper-slide-active を
+  付けるまでの一瞬その見た目になり、イントロから切り替わった直後に
+  「小さくなってから戻る」動きが見える（画像には DistortOverlay の面が
+  貼り付いていて矩形に追従するので、余計に目立つ）。
+  奥に引っ込む演出は前後のスライドにだけ当てる。
+*/
+.swiper-slide {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1;
+  transition: transform 0.4s ease, z-index 0.4s ease, filter 0.4s ease, opacity 0.4s ease;
+}
+.swiper-slide-active {
+  transform: scale(1) translateZ(0);
+  z-index: 10;
+  opacity: 1;
+  filter: none;
+}
+.swiper-slide-prev,
+.swiper-slide-next {
+  transform: scale(0.7) rotateY(15deg) translateZ(-200px);
+  z-index: 0;
+  opacity: 0.5;
+  filter: brightness(0.4) blur(1.5px);
+}
+
+/* -----------------------------------------------------------------------------
+   6. アクセシビリティ（動きを減らす設定）
+
+   ずっと動き続けるものは止める。一度きりの演出は残す。
+   GSAP 側の演出は各フックが gsap.matchMedia で同じ条件を見ている。
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  /* 無限ループ系は停止 */
+  .flicker,
+  .logo-breathe,
+  .footer-shine {
+    animation: none;
   }
-}
 
-html, body { background: #121316; }
+  /* 404 は点滅させず、消灯した灰色で固定（元気のなさは維持） */
+  .neon-dying {
+    animation: none;
+    color: #5a6265;
+    text-shadow:
+      0 0 2px rgba(150, 160, 165, 0.25),
+      0 0 4px rgba(150, 160, 165, 0.12);
+    opacity: 0.5;
+  }
 
-body {
-  background: #121316 !important; /* ← 最終勝ち */
-  color: var(--foreground);
+  /* 歪みと浮き上がりは無し */
+  .warp-on::before,
+  .warp-on::after {
+    animation: none !important;
+    opacity: 0 !important;
+  }
+  .watermark {
+    transform: none !important;
+  }
 }
