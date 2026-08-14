@@ -34,13 +34,15 @@ components/
 | `curtains/` | その「どう動くか」の差し替え可能な定義 | `TileTransition.tsx` |
 | `NeonPanelTransition.tsx` | ネオンパネルのページ遷移（フック） | `ui/PageTransition.tsx` |
 | `ProjectsIntroReel.tsx` | Projects イントロのカードリール + Swiper へのクロスフェード（フック） | `sections/ProjectsIntoro.tsx` |
+| `CharReveal.tsx` | 文字を 1 つずつ回転させながらスライドイン（コンポーネント） | `sections/AboutSection.tsx` |
+| `HeroBandParallax.tsx` | 全幅の帯に敷いた写真をゆっくり持ち上げる（フック） | `sections/AboutSection.tsx` |
 | `MarqueeLoop.tsx` | 横方向の無限ループ + タッチドラッグ。ScrollTrigger で画面外は停止（フック） | `ui/InfiniteMarquee.tsx` |
 | `WatermarkParallax.tsx` | フッター透かしの `--wm-y` / `--wm-o` を `scrub`（フック） | `ui/Footer.tsx` |
 | `ZoomFlip.tsx` | タイル → 拡大表示のモーフィング。`Flip` プラグイン（フック） | `sections/HobbySection.tsx` |
-| `StrengthParallax.tsx` | Strength の全画面パララックス。ScrollTrigger の `pin` + `scrub` | `sections/AboutSection.tsx` |
+| `StrengthParallax.tsx` | Strength の全画面パララックス。ScrollTrigger の `pin` + `scrub`。進入中は `SCROLL ↓↓↓` を出し、pin と同時に回転で `Strength` に入れ替える | `sections/AboutSection.tsx` |
 
 マークアップが呼び出し側にあるものはフック、マークアップとタイムラインが不可分な
-`StrengthParallax` はコンポーネントを export している。
+`StrengthParallax` と `CharReveal` はコンポーネントを export している。
 
 ### gsap/curtains/ — 覆う遷移の見せ方
 
@@ -82,6 +84,13 @@ components/
   ルート遷移で `pin-spacer` や inline style が residue として残らないようにする。
 - **スクロール量で位置を決めるものは `pin` / `scrub` を使い、自前 rAF ループを書かない。**
   毎フレームの `getBoundingClientRect()` は強制レイアウトになる。
+- **1 つのプロパティを複数の ScrollTrigger で触らない。** スクラブしているトリガーは
+  範囲を過ぎたあとも終端の値を保持し続けるので、別のトリガーが同じプロパティを
+  書いても打ち消される。持ち主を 1 つに決め、必要なら同じ timeline にまとめる。
+- **要素を隠しておく初期状態は JSX の inline style で書く。** `gsap.set` だけに任せると、
+  それが走るまでの間は素の状態（= 見えている）で描かれてしまう。
+- **静的なずらしと GSAP のアニメーションを両方 transform で書かない。** GSAP が
+  transform を専有するので打ち消される。静的なほうは `top` / `left` で書く。
 
 ## sections/ — ページ構成単位
 
@@ -91,7 +100,7 @@ components/
 |---|---|
 | `TopSection.tsx` | `webgl/WebGLScene` を呼ぶ |
 | `ProjectsIntoro.tsx` | Swiper + `webgl/DistortOverlay`。イントロ演出は `gsap/ProjectsIntroReel` に委譲 |
-| `AboutSection.tsx` | GSAP ScrollTrigger + IntersectionObserver。Strength は `gsap/StrengthParallax` に委譲 |
+| `AboutSection.tsx` | IntersectionObserver（歪み演出のみ）。動きは `gsap/HeroBandParallax` / `gsap/CharReveal` / `gsap/StrengthParallax` に委譲 |
 | `HobbySection.tsx` | CSS チルト + `ui/CurtainModal` 風のズームモーダル。開閉は `gsap/ZoomFlip` に委譲 |
 | `SkillBarsAbout.tsx` | CSS transition + IntersectionObserver |
 | `ContactSection.tsx` | GSAP ScrollTrigger（順次点灯）+ `webgl/NeonParticleStars` |
