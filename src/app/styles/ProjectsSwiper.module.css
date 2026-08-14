@@ -30,10 +30,35 @@
   overflow: hidden;
 }
 
+/*
+  カードの箱を写真の比率そのものにする。
+
+  箱を固定して object-fit: contain で収めると、写真と箱の比率が違うぶん箱が
+  はみ出し、その余白にホバーのオーバーレイと box-shadow が描かれて枠に見える
+  （クリック範囲も箱のまま広い）。
+
+  逆に「画像に上限だけ与えて箱を縮ませる」やり方も駄目で、flex の中では
+  画像の固有幅（1088〜1536px）が箱の最小サイズとして効いてしまい縮まない。
+
+  そこで比率そのものを --ar でカードに渡す（値は ProjectsIntoro の projects）。
+  幅は「横の上限」と「縦の上限 × 比率」の小さいほうにするので、縦横どちらで
+  頭打ちになっても比率が崩れず、箱と写真が必ず一致する。
+*/
+.card,
+.cardInitial {
+  --ar: 1.5; /* projects 側から上書きされる。ここは保険 */
+  --max-w: min(80vw, 640px);
+  --max-h: 50vh;
+  width: min(var(--max-w), calc(var(--max-h) * var(--ar)));
+  aspect-ratio: var(--ar);
+}
 .card img,
 .cardInitial img {
+  display: block;
   width: 100%;
   height: 100%;
+  /* 箱と比率が一致しているので contain でも cover でも同じ。
+     万一 --ar が実際の比率とずれても写真が歪まないよう contain にしておく */
   object-fit: contain;
 }
 
@@ -44,18 +69,13 @@
   top: 50%;
   transform: translate(-50%, -50%); /* これを残す */
   transform-origin: 50% 50%; /* アニメ中も中央基準 */
-  width: min(80%, 640px);
-  height: 50vh;
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 8px 24px rgba(0,0,0,.25);
-  /* background: #000; */
   opacity: 0; /* GSAPが上書き */
 }
 /* Swiper切替後のカード */
 .cardInitial {
-  width: min(80%, 640px);
-  height: 50vh;
   margin: 0 auto;
   border-radius: 16px;
   overflow: hidden;
@@ -99,12 +119,25 @@
   font-weight:600; color:#fff; pointer-events:none;
 }
 
-/* レスポンシブ */
-@media (max-width: 768px){
-  .card, .cardInitial{ width:78vw; height:42vh; border-radius:12px; }
+/* レスポンシブ。
+   カードは画像に合わせて縮むので、指定するのは画像の上限だけでよい。
+
+   モバイル：80vw だと Swiper 既定の矢印（左右 10px の位置に約 27px 幅）との
+   隙間が 360〜430px の端末で 3〜10px しか残らず、写真に矢印がめり込んで見える。
+   68vw まで下げて 21〜32px 確保する。高さも同じ比率で下げる。 */
+@media (max-width: 768px) {
+  .card,
+  .cardInitial {
+    --max-w: 68vw;
+    --max-h: 37vh;
+    border-radius: 12px;
+  }
 }
-@media (min-width: 1200px){
-  .card, .cardInitial{ max-width:720px; height:56vh; }
+@media (min-width: 1200px) {
+  .card,
+  .cardInitial {
+    --max-h: 56vh;
+  }
 }
 
 /* Swiperのフェードイン用シェル */

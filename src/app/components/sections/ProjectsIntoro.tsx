@@ -11,14 +11,28 @@ import { useProjectsIntroReel } from "../gsap/ProjectsIntroReel";
 import Loader from "../ui/Loader";
 import DistortOverlay from "../webgl/DistortOverlay";
 
-type Project = { title: string; image: string; path: string };
+type Project = {
+  title: string;
+  image: string;
+  path: string;
+  /**
+   * 画像の縦横比（幅 ÷ 高さ）。カードの箱をこの比率にして写真と一致させる。
+   * ずれるとホバーのオーバーレイと影が写真からはみ出して枠に見えるので、
+   * 画像を差し替えたらここも更新すること。
+   */
+  aspect: number;
+};
 
 // 流れ順: Contact → Works → About（最後に About が中央で止まる）
 const projects: Project[] = [
-  { title: "Contact", image: "/projects/project3.webp", path: "/project/contact" },
-  { title: "Works",   image: "/projects/project2.webp", path: "/project/works" },
-  { title: "About",   image: "/projects/project1.webp", path: "/project/about" },
+  { title: "Contact", image: "/projects/project3.webp", path: "/project/contact", aspect: 1536 / 1024 },
+  { title: "Works",   image: "/projects/project2.webp", path: "/project/works",   aspect: 1420 / 860 },
+  { title: "About",   image: "/projects/project1.webp", path: "/project/about",   aspect: 1088 / 854 },
 ];
+
+/** カードに比率を渡すための style */
+const cardStyle = (p: Project) =>
+  ({ ["--ar" as string]: String(p.aspect) }) as React.CSSProperties;
 
 export default function ProjectsIntro() {
   const [loaded, setLoaded] = useState(false);
@@ -124,7 +138,10 @@ export default function ProjectsIntro() {
                 // DistortOverlay は <img> の矩形に WebGL の面を貼るだけで CSS の
                 // opacity を見ないため、中央に置いたままだと GSAP が動かし始める
                 // 前（heart:complete 待ちの間）に画像が見えてしまう
-                style={{ transform: "translate(-50%, -50%) translateX(100vw)" }}
+                style={{
+                  ...cardStyle(p),
+                  transform: "translate(-50%, -50%) translateX(100vw)",
+                }}
                 ref={(el) => {
                   if (i === 0) cardRefs.current = []; // 先頭で初期化
                   if (el) cardRefs.current[i] = el;
@@ -161,7 +178,7 @@ export default function ProjectsIntro() {
                   <div
                     className={styles.cardInitial}
                     onClick={() => push(p.path)}
-                    style={{ cursor: "pointer" }}
+                    style={{ ...cardStyle(p), cursor: "pointer" }}
                   >
                     {/* Swiper側の画像にも適用 */}
                     <img src={p.image} alt={p.title} data-distort />
