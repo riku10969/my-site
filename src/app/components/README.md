@@ -26,13 +26,38 @@ components/
 
 ## gsap/ — GSAP
 
-`gsap` のタイムラインでページ遷移演出を組むもの。
-両方とも `ui/PageTransition.tsx` から呼ばれ、直接 import することはない。
+`gsap` のタイムラインが主役のもの。
 
-| ファイル | 役割 |
-|---|---|
-| `TileTransition.tsx` | タイル分割のページ遷移 |
-| `NeonPanelTransition.tsx` | ネオンパネルのページ遷移 |
+| ファイル | 役割 | 呼び出し元 |
+|---|---|---|
+| `TileTransition.tsx` | タイル分割のページ遷移（フック） | `ui/PageTransition.tsx` |
+| `NeonPanelTransition.tsx` | ネオンパネルのページ遷移（フック） | `ui/PageTransition.tsx` |
+| `ProjectsIntroReel.tsx` | Projects イントロのカードリール + Swiper へのクロスフェード（フック） | `sections/ProjectsIntoro.tsx` |
+| `MarqueeLoop.tsx` | 横方向の無限ループ + タッチドラッグ。ScrollTrigger で画面外は停止（フック） | `ui/InfiniteMarquee.tsx` |
+| `WatermarkParallax.tsx` | フッター透かしの `--wm-y` / `--wm-o` を `scrub`（フック） | `ui/Footer.tsx` |
+| `ZoomFlip.tsx` | タイル → 拡大表示のモーフィング。`Flip` プラグイン（フック） | `sections/HobbySection.tsx` |
+| `StrengthParallax.tsx` | Strength の全画面パララックス。ScrollTrigger の `pin` + `scrub` | `sections/AboutSection.tsx` |
+
+マークアップが呼び出し側にあるものはフック、マークアップとタイムラインが不可分な
+`StrengthParallax` はコンポーネントを export している。
+
+`gsap` 3.13 は全プラグイン同梱なので、`Flip` / `Observer` / `Draggable` /
+`ScrollToPlugin` / `SplitText` なども追加インストールなしで `gsap/<Name>` から import できる。
+
+### 書くときの決まりごと
+
+- **動きを減らす設定に必ず対応する。** `gsap.matchMedia()` の
+  `(prefers-reduced-motion: no-preference)` で包み、その設定ではアニメーションを作らない。
+  自動で動き続けるもの（マーキー等）は、止めた結果コンテンツに到達できなくならないか確認する。
+- **`matchMedia` はどの条件も match しないとコールバックを呼ばない。** ブレークポイントで
+  出し分けるときは排他な2本（`isMobile` / `isDesktop`）を必ず書く。片方だけ書くと
+  もう片方の画面幅で丸ごと動かなくなる。
+- **`ScrollTrigger` は `timeline` の vars に混ぜず、後から `ScrollTrigger.create()` で作る。**
+  vars に書くと、生成時の refresh で `onLeave` 等が呼ばれたときに timeline が未初期化になりうる。
+- **後片付けは `gsap.context()` + `ctx.revert()` か `matchMedia` の `mm.revert()` で行う。**
+  ルート遷移で `pin-spacer` や inline style が residue として残らないようにする。
+- **スクロール量で位置を決めるものは `pin` / `scrub` を使い、自前 rAF ループを書かない。**
+  毎フレームの `getBoundingClientRect()` は強制レイアウトになる。
 
 ## sections/ — ページ構成単位
 
@@ -41,26 +66,27 @@ components/
 | ファイル | 使用技術 |
 |---|---|
 | `TopSection.tsx` | `webgl/WebGLScene` を呼ぶ |
-| `ProjectsIntoro.tsx` | GSAP + Swiper + `webgl/DistortOverlay` |
-| `AboutSection.tsx` | 自前 rAF + IntersectionObserver（パララックス） |
-| `HobbySection.tsx` | 自前 rAF |
-| `SkillBarsAbout.tsx` | 自前 rAF + IntersectionObserver |
-| `ContactSection.tsx` | IntersectionObserver + `webgl/NeonParticleStars` |
-| `WorksSection.tsx` | CSS のみ |
+| `ProjectsIntoro.tsx` | Swiper + `webgl/DistortOverlay`。イントロ演出は `gsap/ProjectsIntroReel` に委譲 |
+| `AboutSection.tsx` | GSAP ScrollTrigger + IntersectionObserver。Strength は `gsap/StrengthParallax` に委譲 |
+| `HobbySection.tsx` | CSS チルト + `ui/CurtainModal` 風のズームモーダル。開閉は `gsap/ZoomFlip` に委譲 |
+| `SkillBarsAbout.tsx` | CSS transition + IntersectionObserver |
+| `ContactSection.tsx` | GSAP ScrollTrigger（順次点灯）+ `webgl/NeonParticleStars` |
+| `WorksSection.tsx` | CSS のみ。`ui/InfiniteMarquee` を使う |
 
 `HobbySection` / `SkillBarsAbout` は `AboutSection` の内部パーツ。
 
 ## ui/ — 汎用パーツ
 
-ライブラリに依存せず、CSS・自前 rAF・IntersectionObserver だけで動くもの。
+ページ構成に依存しない汎用パーツ。基本は CSS・IntersectionObserver で動く。
 
 | ファイル | 役割 |
 |---|---|
-| `header.tsx` / `Footer.tsx` | 共通レイアウト |
+| `header.tsx` | 共通レイアウト |
+| `Footer.tsx` | 共通レイアウト。透かしのパララックスは `gsap/WatermarkParallax` に委譲 |
 | `PageTransition.tsx` | 遷移演出の Context。実装は `gsap/` に委譲 |
 | `Loader.tsx` | タイプ演出付きローダー |
 | `GlitchText.tsx` / `FadeInText.tsx` | テキスト演出 |
-| `InfiniteMarquee.tsx` | 無限スクロール |
+| `InfiniteMarquee.tsx` | 無限スクロール。レイアウト計算のみ担当し、動きは `gsap/MarqueeLoop` に委譲 |
 | `CurtainModal.tsx` | Works の詳細モーダル |
 
 ## 注意
@@ -68,3 +94,28 @@ components/
 - `public/` は原本の保管場所ではない（[scripts/optimize-images.mjs](../../../scripts/optimize-images.mjs) 参照）。
   画像を追加したら `npm run images` で確認し、`npm run images:apply` で WebP に変換する。
 - `@/*` → `src/*` のパスエイリアスが tsconfig に設定済み（現状は未使用）。
+- CSS カスタムプロパティを `style` に渡すときは、オブジェクト全体を
+  `as React.CSSProperties` でアサーションする（`["--x" as any]` は書かない）。
+  `React.CSSProperties` に `--*` のキーが無いための回避なので、キーごとではなく
+  一度だけキャストするのが読みやすい。
+
+## TODO
+
+### `<img>` を `next/image` に置き換える
+
+`eslint` の `@next/next/no-img-element` が 4 箇所残っている。どれも素直に差し替えられない
+事情があるので、対応するときは個別に判断すること。
+
+| 箇所 | 事情 |
+|---|---|
+| [`sections/ProjectsIntoro.tsx:129`](sections/ProjectsIntoro.tsx) | イントロのカード。`gsap` が transform を当てる対象で、かつ `webgl/DistortOverlay` が `img[data-distort]` で拾っている。読み込みも `new Image()` + `decode()` で自前に待っている |
+| [`sections/ProjectsIntoro.tsx:162`](sections/ProjectsIntoro.tsx) | Swiper のスライド。上と同じく `data-distort` の対象 |
+| [`sections/WorksSection.tsx:306`](sections/WorksSection.tsx) | 親が `width` / `height` を inline style で持ち、`object-contain` で中央寄せしている。`fill` に置き換えるなら親の positioning を整理する必要がある |
+| [`ui/CurtainModal.tsx:169`](ui/CurtainModal.tsx) | ギャラリー。1 枚目と 2 枚目以降で幅が変わり、高さは `max-h` 任せなので寸法が事前に決まらない |
+
+### アクセシビリティ
+
+- `ui/InfiniteMarquee.tsx` は 5 秒以上自動で流れ続けるが、キーボードから止める手段が無い
+  （WCAG 2.2.2）。ホバー停止はポインタがある環境にしか効かない。
+- `sections/HobbySection.tsx` のモーダルは `inert` でフォーカストラップしているが、
+  `inert` 非対応の古いブラウザでは効かない。
