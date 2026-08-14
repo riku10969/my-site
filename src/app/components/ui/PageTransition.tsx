@@ -10,7 +10,12 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
-import { useTileTransition } from "../gsap/TileTransition";
+import { useTileTransition, type TransitionTheme } from "../gsap/TileTransition";
+import {
+  DEFAULT_CURTAIN,
+  isCurtainName,
+  type CurtainName,
+} from "../gsap/curtains";
 import { useNeonPanelTransition } from "../gsap/NeonPanelTransition";
 
 const PageTransitionCtx = createContext<{
@@ -26,32 +31,52 @@ export function usePageTransition() {
 
 const SKILLS_PAGE_PATH = "/skills";
 
-function isSkillsPage(href: string): boolean {
+function pathOf(href: string): string {
   try {
-    const u = new URL(href, "http://localhost");
-    return u.pathname === SKILLS_PAGE_PATH;
+    return new URL(href, "http://localhost").pathname;
   } catch {
-    return href === SKILLS_PAGE_PATH || href.startsWith(`${SKILLS_PAGE_PATH}?`);
+    return href.split("?")[0];
   }
 }
 
+function isSkillsPage(href: string): boolean {
+  return pathOf(href) === SKILLS_PAGE_PATH;
+}
+
+/**
+ * 遷移先ごとのタイルの色。サイト内で既に使っているアクセント3色
+ * （Contact の順次点灯や Projects のタイトルと同じ）に対応させている。
+ *
+ * tile   … タイルの地色。色として認識できる濃さで塗る
+ * accent … 縁の発光と LOADING のグローに使う明るいほう
+ *
+ * LOADING の文字色は白固定。地色を濃くしたぶん、同系色のアクセントを文字に使うと
+ * コントラストが足りなくなるため。
+ */
+const THEMES: Record<string, TransitionTheme> = {
+  "/project/about": { tile: "#1f9082", accent: "#2ccdb9" }, // シアン
+  "/project/works": { tile: "#6140b3", accent: "#8a5cff" }, // パープル
+  "/project/contact": { tile: "#b37d36", accent: "#ffb34d" }, // アンバー
+  "/": { tile: "#2b313a", accent: "#c9d1d9" }, // トップは無彩色
+};
+const FALLBACK_THEME: TransitionTheme = { tile: "#2b313a", accent: "#c9d1d9" };
+
+const themeFor = (href: string): TransitionTheme =>
+  THEMES[pathOf(href)] ?? FALLBACK_THEME;
+
 export function PageTransitionProvider({
   children,
-  tileColor = "#0f1214",
   tileGap = 0,
-  accentColor = "#11a98b",
   accentMint = "#11a98b",
   accentPurple = "#5a37a6",
   panelDuration = 0.9,
   panelPushAt = 0.4,
 }: {
   children: React.ReactNode;
-  tileColor?: string;
   tileGap?: number;
-  accentColor?: string;
   accentMint?: string;
   accentPurple?: string;
-  // タイル遷移の尺は TileTransition 側の定数で固定（外から変える口は無い）
+  // タイルの色は遷移先ごとに THEMES から決まる。尺は TileTransition 側の定数で固定
   panelDuration?: number;
   panelPushAt?: number;
 }) {
@@ -59,15 +84,36 @@ export function PageTransitionProvider({
   const pathname = usePathname();
   const [playing, setPlaying] = useState(false);
   const [mounted, setMounted] = useState(false);
+  // 採用しているのは grid。louver / glitch は残してあるので、
+  // ?pt=louver のように URL で切り替えて見比べられる
+  const [curtain, setCurtain] = useState<CurtainName>(DEFAULT_CURTAIN);
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+
+    // URL の ?pt=louver が最優先。一度指定したら localStorage に残るので、
+    // 以降は普通にリンクを辿るだけで同じ見せ方が続く。?pt=off で解除
+    const fromUrl = new URLSearchParams(window.location.search).get("pt");
+    if (fromUrl === "off") {
+      localStorage.removeItem("pt:style");
+      setCurtain(DEFAULT_CURTAIN);
+      return;
+    }
+    if (isCurtainName(fromUrl)) {
+      localStorage.setItem("pt:style", fromUrl);
+      setCurtain(fromUrl);
+      return;
+    }
+
+    const saved = localStorage.getItem("pt:style");
+    if (isCurtainName(saved)) setCurtain(saved);
+  }, []);
 
   const tile = useTileTransition({
     router,
     setPlaying,
-    tileColor,
+    curtain,
     tileGap,
-    accentColor,
   });
 
   const neon = useNeonPanelTransition({
@@ -84,7 +130,9 @@ export function PageTransitionProvider({
     if (isSkillsPage(href)) {
       await neon.runOut(href);
     } else {
-      await tile.runOut(href);
+      // 戻り側でも同じ色で剥がすため、遷移先のパスを覚えておく
+      sessionStorage.setItem("pt:theme", pathOf(href));
+      await tile.runOut(href, themeFor(href));
     }
   };
 
@@ -100,14 +148,16 @@ export function PageTransitionProvider({
     if (!mounted || sessionStorage.getItem("pt:pending") !== "1") return;
 
     const variant = sessionStorage.getItem("pt:variant");
+    const themePath = sessionStorage.getItem("pt:theme");
     sessionStorage.removeItem("pt:pending");
     sessionStorage.removeItem("pt:pushed");
     sessionStorage.removeItem("pt:variant");
+    sessionStorage.removeItem("pt:theme");
 
     if (variant === "neon") {
       transitionsRef.current.neon.runIn();
     } else if (variant === "tile") {
-      transitionsRef.current.tile.runIn();
+      transitionsRef.current.tile.runIn(themeFor(themePath ?? ""));
     } else {
       setPlaying(false);
     }
@@ -131,19 +181,24 @@ export function PageTransitionProvider({
           gridTemplateColumns: `repeat(${tile.cols}, 1fr)`,
           gridTemplateRows: `repeat(${tile.rows}, 1fr)`,
           gap: tile.tileGap,
+          // louver の rotateY に奥行きを出す。他の見せ方では効かない
+          perspective: 1200,
         }}
       >
         {Array.from({ length: tile.totalTiles }, (_, i) => (
           <div
-            key={i}
+            key={`${tile.curtain}-${i}`}
             ref={(el) => {
               if (el) tile.tilesRef.current[i] = el;
             }}
             className="w-full h-full"
+            // 実際の色は runOut / runIn が遷移先のテーマで塗り直す。
+            // ここは初回描画までの保険なので既定色を置いておく
             style={{
-              backgroundColor: tile.tileColor,
-              border: "1px solid rgba(255,255,255,0.06)",
-              transform: "translateY(-100%)",
+              backgroundColor: tile.defaultTheme.tile,
+              borderWidth: 1,
+              borderStyle: "solid",
+              borderColor: "rgba(255,255,255,0.06)",
               opacity: 0,
             }}
             aria-hidden
@@ -159,7 +214,7 @@ export function PageTransitionProvider({
           className="tracking-[0.2em] select-none font-semibold"
           style={{
             fontSize: "min(8vw, 36px)",
-            color: tile.accentColor,
+            color: tile.defaultTheme.accent,
             letterSpacing: "0.2em",
           }}
         >
