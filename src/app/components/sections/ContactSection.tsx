@@ -1,44 +1,54 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { FaInstagram } from "react-icons/fa";
 import { SiGmail } from "react-icons/si";
 import NeonParticleStars from "../webgl/NeonParticleStars";
 
+gsap.registerPlugin(ScrollTrigger);
+
+/** 点灯の開始待ちと1段ごとの間隔（秒） */
+const LIT_INITIAL_DELAY = 0.45;
+const LIT_STEP = 0.55;
+const LIT_STEPS = 3;
+
 export default function ContactSection() {
   const ref = useRef<HTMLDivElement | null>(null);
+  // -1 = 全消灯。0,1,2 と進むごとに Contact Me → Instagram → Gmail が点く
   const [litIndex, setLitIndex] = useState(-1);
-  const timeoutIdsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
+  // 表示されるたびに順番に点灯させる。タイマー配列を自前で持つ代わりに
+  // 1本の timeline にまとめ、画面外に出たら 0 に巻き戻す
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        const e = entries[0];
-        if (e.isIntersecting) {
-          // 表示されるたびに光るシーケンスを実行（始まりを少し遅らせる）
-          const initialDelay = 450;
-          const stepDelay = 550;
-          setLitIndex(-1);
-          timeoutIdsRef.current.forEach((id) => clearTimeout(id));
-          timeoutIdsRef.current = [0, 1, 2].map((i) =>
-            setTimeout(() => setLitIndex(i), initialDelay + i * stepDelay)
-          );
-        } else {
-          // 画面外に出たらリセット（次回スクロールでまた光る）
-          timeoutIdsRef.current.forEach((id) => clearTimeout(id));
-          timeoutIdsRef.current = [];
-          setLitIndex(-1);
-        }
-      },
-      { threshold: 0.35 }
-    );
-    io.observe(el);
-    return () => {
-      io.disconnect();
-      timeoutIdsRef.current.forEach((id) => clearTimeout(id));
-    };
+
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({ paused: true });
+      for (let i = 0; i < LIT_STEPS; i++) {
+        tl.call(() => setLitIndex(i), undefined, LIT_INITIAL_DELAY + i * LIT_STEP);
+      }
+
+      // ScrollTrigger は timeline の後に作る。vars に混ぜて書くと、生成時の
+      // refresh で onLeave が呼ばれたときに tl がまだ未初期化になりうる
+      const reset = () => {
+        tl.pause(0);
+        setLitIndex(-1);
+      };
+      ScrollTrigger.create({
+        trigger: el,
+        start: "top 70%",
+        end: "bottom 30%",
+        onEnter: () => tl.restart(),
+        onEnterBack: () => tl.restart(),
+        onLeave: reset,
+        onLeaveBack: reset,
+      });
+    }, ref);
+
+    return () => ctx.revert();
   }, []);
 
   return (
@@ -117,40 +127,6 @@ export default function ContactSection() {
           </div>
       </div>
 
-      <style jsx>{`
-        :global(.neon-cyan) {
-          --c-main: #2ccdb9;
-          color: var(--c-main);
-          text-shadow: 0 0 6px var(--c-main), 0 0 14px var(--c-main),
-            0 0 28px rgba(44, 205, 185, 0.8), 0 0 56px rgba(44, 205, 185, 0.6);
-        }
-        :global(.neon-purple) {
-          --c-main: #8a5cff;
-          color: var(--c-main);
-          text-shadow: 0 0 6px var(--c-main), 0 0 14px var(--c-main),
-            0 0 28px rgba(138, 92, 255, 0.8), 0 0 56px rgba(138, 92, 255, 0.6);
-        }
-        :global(.neon-amber) {
-          --c-main: #ffb34d;
-          color: var(--c-main);
-          text-shadow: 0 0 6px var(--c-main), 0 0 14px var(--c-main),
-            0 0 28px rgba(255, 179, 77, 0.85), 0 0 56px rgba(255, 179, 77, 0.6);
-        }
-        :global(.flicker) {
-          animation: flicker 2.8s ease-in-out infinite;
-        }
-        @keyframes flicker {
-          0% { opacity: 1; }
-          8% { opacity: 0.85; }
-          10% { opacity: 1; }
-          22% { opacity: 0.92; }
-          30% { opacity: 1; }
-          45% { opacity: 0.88; }
-          55% { opacity: 1; }
-          70% { opacity: 0.93; }
-          100% { opacity: 1; }
-        }
-      `}</style>
     </section>
   );
 }
