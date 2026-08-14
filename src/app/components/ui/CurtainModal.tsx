@@ -110,7 +110,7 @@ export default function CurtainModal({
           ${phase === "enter" ? "curtain-in" : ""}
           ${phase === "exit" ? "curtain-out" : ""}
         `}
-        style={{ ["--t" as any]: `${duration}ms` } as React.CSSProperties}
+        style={{ "--t": `${duration}ms` } as React.CSSProperties}
       >
         {/* ヘッダー */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-white/10 shrink-0">
@@ -131,7 +131,7 @@ export default function CurtainModal({
             ${phase === "enter" ? "content-in" : ""}
             ${phase === "exit" ? "content-out" : ""}
           `}
-          style={{ ["--t" as any]: `${Math.max(240, duration * 0.45)}ms` } as React.CSSProperties}
+          style={{ "--t": `${Math.max(240, duration * 0.45)}ms` } as React.CSSProperties}
         >
           <section className="p-4 md:p-6 text-white">
             {/* タイトル + 外部リンク */}

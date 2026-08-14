@@ -6,13 +6,7 @@
  */
 "use client";
 
-import React, {
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useCallback,
-} from "react";
-import { createPortal } from "react-dom";
+import { useLayoutEffect, useMemo, useRef, useCallback } from "react";
 import gsap from "gsap";
 
 const COLS = 8;
@@ -23,9 +17,10 @@ const STAGGER_IN = 0.018;
 const STAGGER_OUT = 0.012;
 const LOADING_MIN_MS = 400;
 
+// NeonPanelTransition と違い mounted は不要（マウント後にしか呼ばれない
+// runOut / runIn の中でしか DOM を触らないため）
 export function useTileTransition({
   router,
-  mounted,
   setPlaying,
   cols = COLS,
   rows = ROWS,
@@ -34,7 +29,6 @@ export function useTileTransition({
   accentColor = "#5a37a6",
 }: {
   router: ReturnType<typeof import("next/navigation").useRouter>;
-  mounted: boolean;
   setPlaying: (v: boolean) => void;
   cols?: number;
   rows?: number;

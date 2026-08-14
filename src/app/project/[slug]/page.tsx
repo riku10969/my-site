@@ -69,7 +69,8 @@ export default async function Page(
 
   const ordered = orderBySlugFirst(slug);
 
-const SectionMap: Record<SectionSlug, ComponentType<any>> = {
+  // どのセクションも props 無しで描画するので ComponentType（= props {}）でよい
+  const SectionMap: Record<SectionSlug, ComponentType> = {
     about: AboutSection,
     works: WorksSection,
     contact: ContactSection,

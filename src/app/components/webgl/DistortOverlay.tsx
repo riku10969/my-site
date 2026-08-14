@@ -54,6 +54,11 @@ export default function DistortOverlay({
   paramsRef.current = { strength, speed, maxAmpPx, deadZonePx, damping };
   
   useEffect(() => {
+    // Map の実体はこの effect の間ずっと同じ（中身を出し入れするだけで再代入しない）。
+    // cleanup で planesMapRef.current を読むと「その時点の値」になってしまうので、
+    // ここで掴んでおく
+    const planes = planesMapRef.current;
+
     // --- renderer / camera / scene ---
     const canvas = canvasRef.current!;
     const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
@@ -168,7 +173,7 @@ export default function DistortOverlay({
         if (!map.has(img)) {
           try {
             map.set(img, new ImagePlane(img));
-          } catch (_) {}
+          } catch {}
         }
       });
 
@@ -228,8 +233,8 @@ export default function DistortOverlay({
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       window.removeEventListener("resize", onResize);
 
-      for (const [, plane] of planesMapRef.current) plane.dispose();
-      planesMapRef.current.clear();
+      for (const [, plane] of planes) plane.dispose();
+      planes.clear();
 
       rendererRef.current?.dispose();
       rendererRef.current = null;

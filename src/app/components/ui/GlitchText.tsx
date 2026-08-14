@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 // 変更点: Propsに armed を追加
 type Props = {
@@ -30,21 +30,32 @@ export default function GlitchText({
   const [on, setOn] = useState(false);
   const ref = useRef<HTMLElement | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const Tag: React.ElementType = as || "span";
+  // as で渡されたタグに ref と data-text を通すため、受け付ける props を明示する。
+  // 素の React.ElementType だと props が解決できず ref の代入が型エラーになる
+  const Tag = (as || "span") as React.ElementType<
+    React.HTMLAttributes<HTMLElement> & {
+      ref?: React.Ref<HTMLElement>;
+      "data-text"?: string;
+    }
+  >;
   const extra = variant === "mono" ? "glitch--mono" : "glitch--screen";
 
-  // 共通の再生関数
-  const play = (withDelay = delaySec) => {
-    const run = () => {
-      setOn(false);
-      requestAnimationFrame(() => setOn(true));
-    };
-    if (withDelay) {
-      timer.current = setTimeout(run, withDelay * 1000);
-    } else {
-      run();
-    }
-  };
+  // 共通の再生関数。delaySec が変わらない限り同一性を保つので、
+  // 下の useEffect の依存に入れても再実行が増えない
+  const play = useCallback(
+    (withDelay = delaySec) => {
+      const run = () => {
+        setOn(false);
+        requestAnimationFrame(() => setOn(true));
+      };
+      if (withDelay) {
+        timer.current = setTimeout(run, withDelay * 1000);
+      } else {
+        run();
+      }
+    },
+    [delaySec]
+  );
 
   // mount / scroll / scroll-once / manual
   useEffect(() => {
@@ -75,7 +86,7 @@ export default function GlitchText({
       io.disconnect();
       if (timer.current) clearTimeout(timer.current);
     };
-  }, [trigger, threshold, rootMargin, delaySec]);
+  }, [trigger, threshold, rootMargin, play]);
 
   // 🔑 追加：armed が true になった瞬間、要素が画面内なら即再生
   useEffect(() => {
@@ -92,7 +103,7 @@ export default function GlitchText({
       // delaySec は尊重して良いが、即走らせたいなら 0 にする
       play(delaySec);
     }
-  }, [armed]); // armed の立ち上がりで発火
+  }, [armed, delaySec, play]); // armed の立ち上がりで発火
 
   // ホバー時に毎回 Glitch を再生（off → on を短い間隔で行いアニメをリスタート）
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -108,7 +119,7 @@ export default function GlitchText({
 
   return (
     <Tag
-      ref={ref as any}
+      ref={ref}
       data-text={text}
       className={`glitch ${extra} ${on ? "on" : ""} ${className}`}
       onMouseEnter={replayOnHover ? handleReplayHover : undefined}

@@ -36,7 +36,8 @@ const RASTER = /\.(png|jpe?g)$/i;
 function walk(dir, hit) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, e.name);
-    e.isDirectory() ? walk(p, hit) : hit(p);
+    if (e.isDirectory()) walk(p, hit);
+    else hit(p);
   }
 }
 

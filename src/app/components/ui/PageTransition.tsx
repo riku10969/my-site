@@ -7,7 +7,7 @@
  */
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
 import { useTileTransition } from "../gsap/TileTransition";
@@ -42,7 +42,6 @@ export function PageTransitionProvider({
   accentColor = "#11a98b",
   accentMint = "#11a98b",
   accentPurple = "#5a37a6",
-  tileDuration = 0.6,
   panelDuration = 0.9,
   panelPushAt = 0.4,
 }: {
@@ -52,7 +51,7 @@ export function PageTransitionProvider({
   accentColor?: string;
   accentMint?: string;
   accentPurple?: string;
-  tileDuration?: number;
+  // タイル遷移の尺は TileTransition 側の定数で固定（外から変える口は無い）
   panelDuration?: number;
   panelPushAt?: number;
 }) {
@@ -65,7 +64,6 @@ export function PageTransitionProvider({
 
   const tile = useTileTransition({
     router,
-    mounted,
     setPlaying,
     tileColor,
     tileGap,
@@ -90,6 +88,14 @@ export function PageTransitionProvider({
     }
   };
 
+  // tile / neon はフックが毎レンダー新しいオブジェクトを返すので、依存配列に
+  // 入れるとレンダーのたびに再実行されて runIn が二重に走りうる。
+  // 「遷移直後に1回だけ」を保つため、最新値は ref から読む
+  const transitionsRef = useRef({ tile, neon });
+  useEffect(() => {
+    transitionsRef.current = { tile, neon };
+  });
+
   useEffect(() => {
     if (!mounted || sessionStorage.getItem("pt:pending") !== "1") return;
 
@@ -99,9 +105,9 @@ export function PageTransitionProvider({
     sessionStorage.removeItem("pt:variant");
 
     if (variant === "neon") {
-      neon.runIn();
+      transitionsRef.current.neon.runIn();
     } else if (variant === "tile") {
-      tile.runIn();
+      transitionsRef.current.tile.runIn();
     } else {
       setPlaying(false);
     }

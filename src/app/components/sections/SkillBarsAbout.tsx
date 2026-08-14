@@ -135,13 +135,15 @@ export default function SkillBarsAbout({
   }, [active]);
 
   const theme = GROUPS[active];
-  const cssVars: React.CSSProperties = {
-    ["--panel" as any]: theme.panelColor,
-    ["--panelEdge" as any]: theme.edgeColor,
-    ["--bar" as any]: theme.barColor,
-    ["--textColor" as any]: theme.textColor,
-    ["--valueColor" as any]: theme.valueColor,
-  };
+  // CSS カスタムプロパティは React.CSSProperties のキーに無いので、
+  // オブジェクト全体を一度だけアサーションして渡す
+  const cssVars = {
+    "--panel": theme.panelColor,
+    "--panelEdge": theme.edgeColor,
+    "--bar": theme.barColor,
+    "--textColor": theme.textColor,
+    "--valueColor": theme.valueColor,
+  } as React.CSSProperties;
 
   const rows = useMemo(
   () =>

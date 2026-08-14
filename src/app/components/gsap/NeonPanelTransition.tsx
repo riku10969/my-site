@@ -6,14 +6,7 @@
  */
 "use client";
 
-import React, {
-  useRef,
-  useState,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useCallback,
-} from "react";
+import { useRef, useLayoutEffect, useMemo, useCallback } from "react";
 import gsap from "gsap";
 
 export function useNeonPanelTransition({

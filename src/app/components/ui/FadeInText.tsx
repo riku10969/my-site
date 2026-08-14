@@ -40,12 +40,14 @@ export default function FadeInText({
         <span
           key={i}
           className={`inline-block reveal ${visible ? "in" : ""}`}
-          style={{
-            // CSS 変数で方向を渡す
-            // @see globals.css
-            ["--reveal-x" as any]: dir,
-            transitionDelay: `${baseDelay + i * stagger}s`,
-          }}
+          style={
+            {
+              // CSS 変数で方向を渡す
+              // @see globals.css
+              "--reveal-x": dir,
+              transitionDelay: `${baseDelay + i * stagger}s`,
+            } as React.CSSProperties
+          }
         >
           {ch === " " ? "\u00A0" : ch}
         </span>
