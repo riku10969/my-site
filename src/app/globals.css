@@ -346,6 +346,10 @@
 .flicker {
   animation: flicker 2.8s ease-in-out infinite;
 }
+/* 無限に明滅し続けるので、動きを減らす設定では止める（点灯した見た目は保つ） */
+@media (prefers-reduced-motion: reduce) {
+  .flicker { animation: none; }
+}
 @keyframes flicker {
   0% { opacity: 1; }
   8% { opacity: .85; }
@@ -358,21 +362,6 @@
   100% { opacity: 1; }
 }
 
-
-/* 到達時に1回だけ強め→穏やかにゆらぐ */
-@keyframes neon-once{
-  0%{filter:brightness(1)}
-  8%{filter:brightness(2.1)}
-  14%{filter:brightness(.85)}
-  24%{filter:brightness(2.6)}
-  100%{filter:brightness(1.18)}
-}
-@keyframes neon-idle{
-  0%,100%{opacity:1}
-  50%{opacity:.96}
-}
-.footer-neon-once{ animation:neon-once .9s ease-out both }
-.footer-neon-idle{ animation:neon-idle 3.8s ease-in-out infinite }
 
 /* ロゴの“呼吸” */
 @keyframes breathe{ 0%,100%{transform:scale(1)} 50%{transform:scale(1.015)} }
@@ -420,22 +409,13 @@
 }
 
 @media (prefers-reduced-motion: reduce){
-  .footer-neon-once,.footer-neon-idle,.logo-breathe,.footer-shine{ animation:none }
+  .logo-breathe,.footer-shine{ animation:none }
   .watermark{ transform:none!important }
 }
 
 @keyframes g-fade {
   0%, 80% { opacity: 1; }
   100% { opacity: 0; }
-}
-
-/* モバイル：アコーディオン閉じたときのオーバーレイ（約1秒でフェードアウト） */
-@keyframes mobile-accordion-overlay {
-  0%, 60% { opacity: 1; }
-  100% { opacity: 0; }
-}
-.animate-mobile-accordion-overlay {
-  animation: mobile-accordion-overlay 1s ease-out forwards;
 }
 
 .glitch.on::before{
