@@ -1,8 +1,9 @@
 "use client";
 
 import NextImage from "next/image";
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { useZoomFlip } from "../gsap/ZoomFlip";
 import GlitchText from "../ui/GlitchText";
 
 /* =====================
@@ -63,12 +64,33 @@ function useTilt<T extends HTMLElement>({
    ZoomImageModal（タイルと同じサイズ・スムーズな開閉）
    ================== */
 
-const EASE_SMOOTH = "cubic-bezier(0.33, 1, 0.68, 1)";
-const DURATION_OPEN_MS = 420;
-const DURATION_CLOSE_MS = 380;
-const DURATION_BACKDROP_MS = 280;
 const MODAL_MAX_SIZE = 520;
 const MODAL_VIEWPORT_RATIO = 0.82;
+/** 画像の角丸（拡大表示時）。縮小中は Flip の scale と一緒に見た目も縮む */
+const MODAL_RADIUS = 20;
+
+type ZoomItem = {
+  src: string;
+  alt: string;
+  label?: string;
+  description?: string;
+  category?: string;
+  meta?: string[];
+};
+
+/** 中央に置く正方形の画像エリアの座標とサイズ */
+function measureModalBox() {
+  const { innerWidth: vw, innerHeight: vh } = window;
+  const size = Math.round(
+    Math.min(MODAL_MAX_SIZE, vw * MODAL_VIEWPORT_RATIO, vh * MODAL_VIEWPORT_RATIO)
+  );
+  return {
+    w: size,
+    h: size,
+    x: Math.round((vw - size) / 2),
+    y: Math.round((vh - size) / 2),
+  };
+}
 
 function ZoomImageModal({
   open,
@@ -77,273 +99,171 @@ function ZoomImageModal({
   onRequestClose,
 }: {
   open: boolean;
-  item: { src: string; alt: string; label?: string; description?: string; category?: string; meta?: string[] } | null;
+  item: ZoomItem | null;
   originEl: HTMLElement | null;
   onRequestClose: () => void;
 }) {
   const [mounted, setMounted] = useState(false);
-  const [animating, setAnimating] = useState(false);
-  const [visible, setVisible] = useState(false);
-  const [originSize, setOriginSize] = useState<{ w: number; h: number } | null>(null);
-  const [modalSize, setModalSize] = useState<{ w: number; h: number; x: number; y: number } | null>(null);
-  const cloneRef = useRef<HTMLImageElement | null>(null);
-  const backdropRef = useRef<HTMLDivElement | null>(null);
+  const [box, setBox] = useState<ReturnType<typeof measureModalBox> | null>(null);
+  const closeBtnRef = useRef<HTMLButtonElement | null>(null);
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
 
-  const prefersNoMotion =
-    typeof window !== "undefined" &&
-    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  // 開閉アニメーションは gsap/ZoomFlip に委譲。ここは ref を配るだけ
+  const { backdropRef, imageRef, chromeRef, playOpen, playClose, isAnimating, dispose } =
+    useZoomFlip(originEl);
 
   useEffect(() => setMounted(true), []);
+  useEffect(() => dispose, [dispose]);
 
-  // clone / backdrop は body 直下へ直接 appendChild しており React の管理外なので、
-  // playClose() を通らずにアンマウントされると（開いたままページ遷移した場合など）
-  // position:fixed のまま次のページに残り続ける。ここで確実に後片付けする。
-  useEffect(() => {
-    return () => {
-      cloneRef.current?.remove();
-      cloneRef.current = null;
-      backdropRef.current?.remove();
-      backdropRef.current = null;
-      document.documentElement.style.overflow = "";
-    };
-  }, []);
-
-  const playOpen = useCallback(() => {
-    if (!item || !originEl) return;
-    const rect = originEl.getBoundingClientRect();
-    const { innerWidth: vw, innerHeight: vh } = window;
-    const size = Math.min(MODAL_MAX_SIZE, vw * MODAL_VIEWPORT_RATIO, vh * MODAL_VIEWPORT_RATIO);
-    const modalW = Math.round(size);
-    const modalH = Math.round(size);
-    const targetX = Math.round((vw - modalW) / 2);
-    const targetY = Math.round((vh - modalH) / 2);
-
-    setOriginSize({ w: rect.width, h: rect.height });
-    setModalSize({ w: modalW, h: modalH, x: targetX, y: targetY });
-
-    const clone = document.createElement("img");
-    clone.src = item.src;
-    clone.alt = item.alt;
-    Object.assign(clone.style, {
-      position: "fixed",
-      left: rect.left + "px",
-      top: rect.top + "px",
-      width: rect.width + "px",
-      height: rect.height + "px",
-      objectFit: "cover",
-      borderRadius: getComputedStyle(originEl).borderRadius || "16px",
-      boxShadow: "0 20px 60px rgba(0,0,0,.45)",
-      willChange: "transform, width, height, left, top, opacity, border-radius",
-      zIndex: "1000",
-    } as CSSStyleDeclaration);
-    cloneRef.current = clone;
-
-    const backdrop = document.createElement("div");
-    Object.assign(backdrop.style, {
-      position: "fixed",
-      inset: "0",
-      background: "rgba(0,0,0,0)",
-      backdropFilter: "blur(0px)",
-      transition: prefersNoMotion ? "none" : `background ${DURATION_BACKDROP_MS}ms ${EASE_SMOOTH}, backdrop-filter ${DURATION_BACKDROP_MS}ms ${EASE_SMOOTH}`,
-      zIndex: "900",
-    } as CSSStyleDeclaration);
-    backdropRef.current = backdrop;
-
-    document.body.appendChild(backdrop);
-    document.body.appendChild(clone);
-
-    setAnimating(true);
-    requestAnimationFrame(() => {
-      if (!prefersNoMotion) {
-        backdrop.style.background = "rgba(0,0,0,.72)";
-        backdrop.style.backdropFilter = "blur(4px)";
-      } else {
-        backdrop.style.background = "rgba(0,0,0,.72)";
-      }
-      clone
-        .animate(
-          [
-            {
-              left: rect.left + "px",
-              top: rect.top + "px",
-              width: rect.width + "px",
-              height: rect.height + "px",
-              borderRadius: getComputedStyle(originEl).borderRadius || "16px",
-            },
-            {
-              left: targetX + "px",
-              top: targetY + "px",
-              width: modalW + "px",
-              height: modalH + "px",
-              borderRadius: "20px",
-            },
-          ],
-          prefersNoMotion ? 0 : { duration: DURATION_OPEN_MS, easing: EASE_SMOOTH, fill: "forwards" }
-        )
-        .finished.then(() => {
-          setAnimating(false);
-          setVisible(true);
-          // クローンは削除せず、useEffect でモーダル内に移して継続表示（チラつき防止）
-        });
-    });
-  }, [item, originEl, prefersNoMotion]);
-
-  const playClose = useCallback(async () => {
-    if (!item || !originEl || !originSize || !modalSize) return;
-    const rect = originEl.getBoundingClientRect();
-    const { innerWidth: vw, innerHeight: vh } = window;
-    const startX = Math.round((vw - modalSize.w) / 2);
-    const startY = Math.round((vh - modalSize.h) / 2);
-
-    let clone = cloneRef.current;
-    if (!clone) {
-      clone = document.createElement("img");
-      clone.src = item.src;
-      cloneRef.current = clone;
-      document.body.appendChild(clone);
+  // 開くときにサイズを測る。ここで state を持つので、次のレンダーで
+  // 画像とパネルが「開いた状態の座標」で DOM に載る。
+  // useEffect にすると測るまでに1フレーム余計に待つことになる
+  useLayoutEffect(() => {
+    if (!open) {
+      setBox(null);
+      return;
     }
-    Object.assign(clone.style, {
-      position: "fixed",
-      left: startX + "px",
-      top: startY + "px",
-      width: modalSize.w + "px",
-      height: modalSize.h + "px",
-      objectFit: "cover",
-      borderRadius: "20px",
-      boxShadow: "0 20px 60px rgba(0,0,0,.45)",
-      zIndex: "1000",
-    } as CSSStyleDeclaration);
-    if (clone.parentElement !== document.body) document.body.appendChild(clone);
+    setBox(measureModalBox());
+  }, [open]);
 
-    setVisible(false);
-
-    const backdrop = backdropRef.current;
-    setAnimating(true);
-
-    await Promise.all([
-      clone.animate(
-        [
-          { left: startX + "px", top: startY + "px", width: modalSize.w + "px", height: modalSize.h + "px", borderRadius: "20px" },
-          {
-            left: rect.left + "px",
-            top: rect.top + "px",
-            width: rect.width + "px",
-            height: rect.height + "px",
-            borderRadius: getComputedStyle(originEl).borderRadius || "16px",
-          },
-        ],
-        prefersNoMotion ? 0 : { duration: DURATION_CLOSE_MS, easing: EASE_SMOOTH, fill: "forwards" }
-      ).finished,
-      new Promise<void>((resolve) => {
-        if (!backdrop) return resolve();
-        if (prefersNoMotion) {
-          backdrop.style.background = "rgba(0,0,0,0)";
-          backdrop.style.backdropFilter = "blur(0px)";
-          resolve();
-        } else {
-          backdrop.animate(
-            [
-              { background: "rgba(0,0,0,.72)", backdropFilter: "blur(4px)" },
-              { background: "rgba(0,0,0,0)", backdropFilter: "blur(0px)" },
-            ],
-            { duration: DURATION_BACKDROP_MS, easing: EASE_SMOOTH, fill: "forwards" }
-          ).finished.then(() => resolve());
-        }
-      }),
-    ]);
-
-    clone.remove();
-    cloneRef.current = null;
-    if (backdrop) {
-      backdrop.remove();
-      backdropRef.current = null;
-    }
-    setAnimating(false);
-    setOriginSize(null);
-    setModalSize(null);
-    onRequestClose();
-  }, [item, originEl, originSize, modalSize, onRequestClose, prefersNoMotion]);
+  // 画像が最終位置に載った直後にタイルへ引き戻してから開く。
+  // paint 前に走らせないと拡大状態が1フレーム見えてしまうので useLayoutEffect。
+  // 開ききったら閉じるボタンへフォーカスを移す
+  useLayoutEffect(() => {
+    if (!open || !box) return;
+    playOpen(() => closeBtnRef.current?.focus());
+  }, [open, box, playOpen]);
 
   const close = useCallback(() => {
-    if (animating) return;
-    playClose();
-  }, [animating, playClose]);
+    if (isAnimating()) return;
+    playClose(onRequestClose);
+  }, [isAnimating, playClose, onRequestClose]);
 
-  // Esc で閉じる + 背面スクロール固定。
-  // close より後ろに置くことで依存配列に入れられる（前に置くと TDZ で
-  // "Cannot access 'close' before initialization" になる）。
-  // close を deps に入れないと、open が true になった瞬間の close が
-  // リスナーに焼き付き、originSize/modalSize が null のままなので
-  // playClose() が即 return して Esc が効かなくなる。
+  // close は親が再レンダーされると同一性が変わる。依存に入れると
+  // 開いている最中に後片付けが走ってフォーカスを奪われるので ref 経由で読む
+  const closeRef = useRef(close);
+  useEffect(() => {
+    closeRef.current = close;
+  });
+
+  // フォーカストラップ。モーダル以外の body 直下の要素を inert にして、
+  // Tab / Shift+Tab が背後のページ（ヘッダーのリンクや Hobby のタイル）へ
+  // 抜けないようにする。aria-modal は読み上げ範囲にしか効かないので別途必要。
+  useEffect(() => {
+    if (!open || !box) return;
+
+    const own = [backdropRef.current, imageRef.current, chromeRef.current].filter(
+      Boolean
+    ) as Element[];
+    const inerted: Element[] = [];
+
+    Array.from(document.body.children).forEach((child) => {
+      // モーダル自身（portal で body 直下に入る）は対象外
+      if (own.some((node) => child.contains(node))) return;
+      // 元から inert なものは触らない（戻すときに他の機能を壊さないため）
+      if (child.hasAttribute("inert")) return;
+      child.setAttribute("inert", "");
+      inerted.push(child);
+    });
+
+    return () => inerted.forEach((el) => el.removeAttribute("inert"));
+  }, [open, box, backdropRef, imageRef, chromeRef]);
+
+  // Esc で閉じる + 背面スクロール固定 + フォーカスの復帰
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
+
+    restoreFocusRef.current = document.activeElement as HTMLElement | null;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeRef.current();
+    };
     document.addEventListener("keydown", onKey);
     document.documentElement.style.overflow = "hidden";
+
     return () => {
       document.removeEventListener("keydown", onKey);
       document.documentElement.style.overflow = "";
+      // inert が付いたままの要素はフォーカスできないので、上の effect の
+      // 後片付け（inert 解除）が終わってから戻す。1フレーム遅らせることで
+      // effect の定義順に依存しないようにしている
+      const el = restoreFocusRef.current;
+      requestAnimationFrame(() => el?.focus?.());
     };
-  }, [open, close]);
+  }, [open]);
 
-  useEffect(() => {
-    if (open && item && originEl && mounted) playOpen();
-  }, [open, item, originEl, mounted, playOpen]);
-
-  if (!mounted || !open || !item) return null;
+  if (!mounted || !open || !item || !box) return null;
 
   const category = item.category ?? item.alt.toUpperCase().replace(/\s+/g, " ");
   const hasMeta = item.meta && item.meta.length > 0;
 
   return createPortal(
     <>
-      <div className="fixed inset-0 z-[950]" aria-modal="true" role="dialog" onClick={close} />
-      {visible && modalSize && (
-        <div className="fixed inset-0 z-[1001] pointer-events-none" aria-hidden>
-          <div
-            className="absolute rounded-2xl overflow-hidden ring-1 ring-white/15 shadow-2xl pointer-events-auto flex flex-col max-w-[90vw]"
-            style={{
-              width: modalSize.w,
-              left: modalSize.x,
-              top: modalSize.y,
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* 画像エリア: 背景なしでクローンがそのまま明るく見える */}
-            <div
-              className="relative shrink-0 rounded-t-2xl pointer-events-none"
-              style={{ width: modalSize.w, height: modalSize.h }}
-            />
+      {/* 背景。クリックで閉じる */}
+      <div
+        ref={backdropRef}
+        className="fixed inset-0 z-[950] bg-black/70 backdrop-blur-[4px] opacity-0"
+        onClick={close}
+        aria-hidden
+      />
 
-            {/* 文言エリア: 写真と重ならない独立パネル（暗めの背景で可読性確保） */}
-            <div className="shrink-0 px-6 py-5 text-center space-y-3 min-w-0 bg-[#0d0d0d]">
-              <div className="text-xl md:text-2xl uppercase tracking-[0.15em] text-white/50 font-medium">
-                {category}
-              </div>
-              {item.description && (
-                <p className="text-lg md:text-xl leading-relaxed text-white/85">
-                  {item.description}
-                </p>
-              )}
-              {hasMeta && (
-                <div className="text-base text-white/40 font-mono space-y-0.5 pt-0.5">
-                  {item.meta!.map((line, i) => (
-                    <div key={i}>{line}</div>
-                  ))}
-                </div>
-              )}
+      {/* 画像。パネルの中に入れると overflow: hidden で縮小中が切られるので
+          独立したレイヤーに置く（旧実装のクローンと同じ重なり順） */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        ref={imageRef}
+        src={item.src}
+        alt={item.alt}
+        className="fixed z-[1000] object-cover shadow-[0_20px_60px_rgba(0,0,0,.45)]"
+        style={{
+          left: box.x,
+          top: box.y,
+          width: box.w,
+          height: box.h,
+          borderRadius: MODAL_RADIUS,
+        }}
+      />
+
+      {/* 文言と閉じるボタン */}
+      <div ref={chromeRef} className="fixed inset-0 z-[1001] pointer-events-none opacity-0">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={item.label ?? item.alt}
+          className="absolute rounded-2xl overflow-hidden ring-1 ring-white/15 shadow-2xl pointer-events-auto flex flex-col max-w-[90vw]"
+          style={{ width: box.w, left: box.x, top: box.y }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* 画像エリアぶんの余白。実際の画像は上のレイヤーが描いている */}
+          <div className="shrink-0 pointer-events-none" style={{ width: box.w, height: box.h }} />
+
+          <div className="shrink-0 px-6 py-5 text-center space-y-3 min-w-0 bg-[#0d0d0d]">
+            <div className="text-xl md:text-2xl uppercase tracking-[0.15em] text-white/50 font-medium">
+              {category}
             </div>
-
-            <button
-              aria-label="Close"
-              onClick={close}
-              className="absolute top-2 right-2 rounded-full bg-white/90 text-black w-10 h-10 flex items-center justify-center text-lg hover:bg-white transition-colors shadow-lg"
-            >
-              ✕
-            </button>
+            {item.description && (
+              <p className="text-lg md:text-xl leading-relaxed text-white/85">
+                {item.description}
+              </p>
+            )}
+            {hasMeta && (
+              <div className="text-base text-white/40 font-mono space-y-0.5 pt-0.5">
+                {item.meta!.map((line, i) => (
+                  <div key={i}>{line}</div>
+                ))}
+              </div>
+            )}
           </div>
+
+          <button
+            ref={closeBtnRef}
+            aria-label="Close"
+            onClick={close}
+            className="absolute top-2 right-2 rounded-full bg-white/90 text-black w-10 h-10 flex items-center justify-center text-lg hover:bg-white transition-colors shadow-lg"
+          >
+            ✕
+          </button>
         </div>
-      )}
+      </div>
     </>,
     document.body
   );
@@ -386,9 +306,10 @@ function HobbyTile({
                  transition-transform duration-300 ease-out"
     >
       <div
+        // チルト用と originEl 用で同じ要素を2つの ref に配る
         ref={(el) => {
           wrapperRef.current = el;
-          if (tiltRef && "current" in tiltRef) (tiltRef as any).current = el;
+          tiltRef.current = el;
         }}
         className="h-full w-full cursor-pointer"
         onClick={handleOpen}
