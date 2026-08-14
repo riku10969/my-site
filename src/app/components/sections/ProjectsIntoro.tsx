@@ -157,7 +157,7 @@ export default function ProjectsIntro() {
               onSlideChange={(s) => setActiveIndex(s.realIndex)}
             >
               {projects.map((p, i) => (
-                <SwiperSlide key={i} className={styles["gsap-init"]}>
+                <SwiperSlide key={i}>
                   <div
                     className={styles.cardInitial}
                     onClick={() => push(p.path)}

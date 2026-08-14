@@ -101,7 +101,8 @@ export default function DistortOverlay({
           this.prevLeft = this.img.getBoundingClientRect().left;
           this.setFromDOM();
           this.mesh.visible = true;
-          this.img.style.transition = "opacity .25s ease";
+          // 面と同じ絵が同じ位置に出るので、フェードさせると 0.25 秒のあいだ
+          // 二重に描かれて明るくなる。ここは即座に入れ替える
           this.img.style.opacity = "0";
         }
       );
