@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { useMarqueeLoop } from "../gsap/MarqueeLoop";
 
 function useIsMobile() {
   const [mobile, setMobile] = useState(false);
@@ -46,76 +47,25 @@ export default function InfiniteMarquee({
   renderItem,
 }: Props) {
   const hostRef = useRef<HTMLDivElement | null>(null);
-  const trackRef = useRef<HTMLDivElement | null>(null);
   const isMobile = useIsMobile();
   const [repeat, setRepeat] = useState(1);
   const [maxAspect, setMaxAspect] = useState(1); // height / width
-
-  // モバイル：タッチでアニメーション停止＋ドラッグで左右スクロール
-  const posRef = useRef(0);
-  const touchStartXRef = useRef(0);
-  const touchStartPosRef = useRef(0);
-  const isTouchingRef = useRef(false);
 
   const baseSetForLoop = Array.from({ length: repeat }).flatMap(() => images);
   const unitLocal = itemWidth + gap;
   const baseLenLocal = baseSetForLoop.length;
   const loopWLocal = baseLenLocal * unitLocal;
-  const pxPerSec = loopWLocal / speed;
 
-  const handleTouchStart = useCallback(
-    (e: React.TouchEvent) => {
-      if (!isMobile) return;
-      isTouchingRef.current = true;
-      touchStartXRef.current = e.touches[0].clientX;
-      touchStartPosRef.current = posRef.current;
-    },
-    [isMobile]
-  );
-
-
-  const handleTouchEnd = useCallback(() => {
-    if (!isMobile) return;
-    isTouchingRef.current = false;
-  }, [isMobile]);
-
-  // モバイル：touchmove を passive: false で登録（preventDefault を有効にする）
-  useEffect(() => {
-    if (!isMobile || !trackRef.current) return;
-    const track = trackRef.current;
-    const onMove = (e: TouchEvent) => {
-      if (!isTouchingRef.current) return;
-      e.preventDefault();
-      const dx = touchStartXRef.current - e.touches[0].clientX;
-      const raw = touchStartPosRef.current + dx;
-      const wrapped = ((raw % loopWLocal) + loopWLocal) % loopWLocal;
-      // タッチ時はどちらの方向でも指の動きに追従するよう統一
-      posRef.current = -wrapped;
-      track.style.transform = `translateX(${posRef.current}px)`;
-    };
-    track.addEventListener("touchmove", onMove, { passive: false });
-    return () => track.removeEventListener("touchmove", onMove);
-  }, [isMobile, loopWLocal, direction]);
-
-  // モバイル：JSでアニメーション＋タッチ中は一時停止
-  useEffect(() => {
-    if (!isMobile) return;
-    const track = trackRef.current;
-    if (!track) return;
-    let raf = 0;
-    const loop = () => {
-      raf = requestAnimationFrame(loop);
-      if (isTouchingRef.current) return;
-      posRef.current -= (direction === "left" ? 1 : -1) * (pxPerSec / 60);
-      if (direction === "left" && posRef.current < -loopWLocal) posRef.current += loopWLocal;
-      if (direction === "left" && posRef.current > 0) posRef.current -= loopWLocal;
-      if (direction === "right" && posRef.current > 0) posRef.current -= loopWLocal;
-      if (direction === "right" && posRef.current < -loopWLocal) posRef.current += loopWLocal;
-      track.style.transform = `translateX(${posRef.current}px)`;
-    };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
-  }, [isMobile, loopWLocal, direction, pxPerSec]);
+  // ループ本体は gsap/ に委譲。ホバー停止はポインタがある環境だけ、
+  // ドラッグはモバイルだけ（旧実装の出し分けをそのまま踏襲）
+  const { trackRef, reducedMotion } = useMarqueeLoop({
+    hostRef,
+    loopWidth: loopWLocal,
+    duration: speed,
+    direction,
+    pauseOnHover: pauseOnHover && !isMobile,
+    draggable: isMobile,
+  });
 
   // ─────────────────────────────
   // 画像の縦横比を計算して最大値を取得
@@ -178,33 +128,21 @@ export default function InfiniteMarquee({
     };
   }, [images.length, itemWidth, gap]);
 
-  // ─────────────────────────────
-  // ループ距離を px で固定
-  // ─────────────────────────────
   return (
     <div
       ref={hostRef}
-      className="relative w-full overflow-hidden"
-      style={{ ["--gap" as any]: `${gap}px` }}
+      // 動きを減らす設定では自動スクロールしないので、代わりに横スクロールで
+      // 全部見られるようにする（overflow-hidden のままだと最初の数枚しか届かない）
+      className={`relative w-full ${reducedMotion ? "overflow-x-auto" : "overflow-hidden"}`}
+      style={{ ["--gap" as string]: `${gap}px` } as React.CSSProperties}
     >
       <div
         ref={trackRef}
-        className={`flex items-center will-change-transform whitespace-nowrap ${
-          isMobile
-            ? "touch-pan-y cursor-grab active:cursor-grabbing"
-            : `${direction === "left" ? "animate-marquee-left" : "animate-marquee-right"} ${pauseOnHover ? "hover:[animation-play-state:paused]" : ""}`
+        className={`flex items-center whitespace-nowrap ${
+          reducedMotion ? "" : "will-change-transform"
+        } ${
+          isMobile && !reducedMotion ? "touch-pan-y cursor-grab active:cursor-grabbing" : ""
         }`}
-        style={
-          isMobile
-            ? undefined
-            : ({
-                ["--duration" as any]: `${speed}s`,
-                ["--loopW" as any]: `${loopWLocal}px`,
-              } as React.CSSProperties)
-        }
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        onTouchCancel={handleTouchEnd}
       >
         {doubled.map((src, i) => {
           const origLen = images.length;
@@ -260,31 +198,6 @@ export default function InfiniteMarquee({
           );
         })}
       </div>
-
-      <style jsx global>{`
-        @keyframes marquee-left {
-          0% {
-            transform: translateX(0);
-          }
-          100% {
-            transform: translateX(calc(var(--loopW) * -1));
-          }
-        }
-        @keyframes marquee-right {
-          0% {
-            transform: translateX(calc(var(--loopW) * -1));
-          }
-          100% {
-            transform: translateX(0);
-          }
-        }
-        .animate-marquee-left {
-          animation: marquee-left var(--duration, 22s) linear infinite;
-        }
-        .animate-marquee-right {
-          animation: marquee-right var(--duration, 22s) linear infinite;
-        }
-      `}</style>
     </div>
   );
 }
