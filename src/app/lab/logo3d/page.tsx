@@ -11,6 +11,7 @@ import Logo3DPreview from "../../components/webgl/Logo3DPreview";
 const SOURCES = [
   { label: "RikuLogo", src: "/projects/RikuLogo.svg" },
   { label: "ContactLogo", src: "/projects/ContactLogo.svg" },
+  { label: "WorksLogo", src: "/projects/WorksLogo.svg" },
 ];
 
 const BACKGROUNDS = ["#0b0b0c", "#f4f4f5", "#1b1030"];
