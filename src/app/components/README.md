@@ -17,12 +17,40 @@ components/
 
 | ファイル | 役割 |
 |---|---|
-| `WebGLScene.ts` | Top ページのシーン本体（React 非依存の純関数として切り出し） |
 | `BackgroundStage.tsx` | トップ全体の背景。`shaders/` のノイズシェーダーを平面に適用 |
 | `SkillScene3D.tsx` | Skills ページの 3D シーン |
 | `NeonParticleStars.tsx` | Contact セクションのパーティクル |
 | `DistortOverlay.tsx` | Projects イントロの歪みオーバーレイ |
+| `ExtrudedSvg.ts` | SVG のパスを押し出して 3D の塊にする（React 非依存） |
+| `Logo3DPreview.tsx` | `ExtrudedSvg` の見た目を確かめる確認用ビュー |
 | `shaders/` | GLSL を文字列でエクスポート（vertex / fragment） |
+
+### SVG を押し出す（`ExtrudedSvg.ts`）
+
+`public/projects/*.svg` を `SVGLoader` → `ExtrudeGeometry` で 3D にする。
+見た目を詰めるための作業台が [`/lab/logo3d`](../../lab/logo3d/page.tsx) にある。
+サイトの導線からは外してあるので URL 直打ちで開く。厚み・丸み・背景を
+その場で変えられ、メッシュ数と三角形数が左下に出る。
+
+Illustrator の画像トレースから書き出した SVG を足すときの注意。
+
+- **色は `<style>` のクラス指定で入る。** `SVGLoader` はこれを `<style>` 要素の
+  CSSOM（`node.sheet.cssRules`）からしか読まない。`DOMParser` が作った文書に
+  CSSOM が生えるかは環境依存で、生えなければ**全パスが黒**になる。読み込む前に
+  `inlineClassFills()` で `fill` 属性へ展開しているので、この関数を通さずに
+  `SVGLoader` を直接呼ばないこと。
+- **書き出しは全て自己終了タグ（`<path ... />`）。** 属性を足すときは末尾の `/`
+  を必ず取り分けて書き戻す。`/` の後ろに置くと入れ子が崩れ、`transform` を持つ
+  SVG（`ContactLogo.svg` は 10 個持つ）は図形が明後日の位置に飛ぶ。
+- **1 パス = 1 Mesh にしない。** トレースは同じ色のパスが何十枚もある
+  （`RikuLogo` で 118、`ContactLogo` で 644）。色ごとに `mergeGeometries` で
+  まとめてからメッシュにする。
+- **厚み・丸みは最大辺に対する比率で渡す。** SVG の座標は viewBox 依存で桁が
+  揃わないため（`RikuLogo` は 862、`ContactLogo` は 1218）、生の値で渡すと
+  ファイルごとに数字を調整し直すことになる。
+- **三角形数はファイルによって桁が違う。** 同じ設定でも `RikuLogo` は約 8 万、
+  `WorksLogo` は約 51 万、`ContactLogo` は約 68 万。複数枚を同時に出すときは
+  `bevel: 0` や `curveSegments` を下げて削る。
 
 ## gsap/ — GSAP
 
@@ -98,7 +126,7 @@ components/
 
 | ファイル | 使用技術 |
 |---|---|
-| `TopSection.tsx` | `webgl/WebGLScene` を呼ぶ |
+| `TopSection.tsx` | なし。100vh の場所取りのみ（描画は `webgl/BackgroundStage` が担当） |
 | `ProjectsIntoro.tsx` | Swiper + `webgl/DistortOverlay`。イントロ演出は `gsap/ProjectsIntroReel` に委譲 |
 | `AboutSection.tsx` | IntersectionObserver（歪み演出のみ）。動きは `gsap/HeroBandParallax` / `gsap/CharReveal` / `gsap/StrengthParallax` に委譲 |
 | `HobbySection.tsx` | CSS チルト + `ui/CurtainModal` 風のズームモーダル。開閉は `gsap/ZoomFlip` に委譲 |
