@@ -11,7 +11,19 @@ import { noiseBackgroundFragment } from "./shaders/noiseBackgroundFragment";
  * - タブが非表示（document.hidden）の間は rAF を止める
  * - prefers-reduced-motion: reduce のときはループを回さず 1 枚だけ描く
  */
-export default function BackgroundStage() {
+
+type BackgroundStageProps = {
+  /**
+   * 中央のハートを出すか。false にするとノイズだけの背景になる。
+   *
+   * 注意: ハートを出さないと `heart:complete` が飛ばない。これを待って
+   * 動き出す作りにしている `sections/ProjectsIntoro` と組み合わせると、
+   * 何も始まらないまま止まる。false にするページは別の合図で進めること。
+   */
+  heart?: boolean;
+};
+
+export default function BackgroundStage({ heart = true }: BackgroundStageProps = {}) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -109,8 +121,9 @@ export default function BackgroundStage() {
       );
     };
 
-    // Loader からの起動イベント
+    // Loader からの起動イベント。heart={false} のページでは無視する
     const onShowLogo = () => {
+      if (!heart) return;
       loadLogo();
     };
     window.addEventListener("bg:showLogo", onShowLogo);
@@ -253,7 +266,7 @@ export default function BackgroundStage() {
       }
       renderer.dispose();
     };
-  }, []);
+  }, [heart]);
 
   return (
     <canvas
