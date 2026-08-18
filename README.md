@@ -85,6 +85,7 @@ src/app/
 ├── page.tsx            トップページ
 ├── skills/             Skills ページ
 ├── project/[slug]/     about / works / contact（SSG。未定義 slug は 404）
+├── lab/                確認用の作業台（導線には出さず URL 直打ちで開く）
 ├── components/         ← 構成の詳細は components/README.md
 ├── lib/site.ts         canonical / OG の絶対URLの起点
 └── styles/             CSS Modules
