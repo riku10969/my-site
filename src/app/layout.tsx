@@ -3,6 +3,7 @@ import "./globals.css";
 import Header from "./components/ui/header";
 import { PageTransitionProvider } from "./components/ui/PageTransition";
 import { Jaro } from "next/font/google"; // ← これ
+import { SITE_URL } from "./lib/site";
 
 const jaro = Jaro({
   subsets: ["latin"],
@@ -12,8 +13,20 @@ const jaro = Jaro({
 });
 
 export const metadata: Metadata = {
+  // 相対パスで書いた canonical / OG 画像を絶対URLへ解決させる起点。
+  // 未設定だと Next がビルド時に localhost へフォールバックする警告を出す。
+  metadataBase: new URL(SITE_URL),
   title: "Riku Ohashi Portfolio",
   description: "Next.js + TypeScript + Tailwind + Gsap + Three.js",
+  alternates: { canonical: "/" },
+  openGraph: {
+    title: "Riku Ohashi Portfolio",
+    description: "Next.js + TypeScript + Tailwind + Gsap + Three.js",
+    url: "/",
+    type: "website",
+    locale: "ja_JP",
+  },
+  twitter: { card: "summary_large_image", title: "Riku Ohashi Portfolio" },
   // ファビコンは src/app/icon.png（192x192 / 12KB）を Next の規約で自動認識させる。
   // 以前はヘッダー用の 1.5MB のロゴをそのまま指定していた。
 };
