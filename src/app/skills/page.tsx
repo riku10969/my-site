@@ -1,14 +1,40 @@
+/**
+ * /skills
+ *
+ * 重ね積みのページ。全画面のレイヤーが張り付いたまま、次のレイヤーが下から
+ * 乗り上げて前のレイヤーを覆う。ここが持つのはデータと並べる順序だけで、
+ *
+ *   器（張り付き・重なりの量） … ui/StackSection + styles/SkillStack.module.css（CSS のみ）
+ *   レイヤーごとの動き         … gsap/SkillLayerTimeline（レイヤー 1 枚 = timeline 1 本）
+ *   マークアップ               … sections/SkillHero, sections/SkillLayer
+ *
+ * に分けている。
+ *
+ * ---------------------------------------------------------------------------
+ * 写真について
+ *
+ * 04〜06 は専用の写真が無いので既存のものを使い回している。差し替えるときは
+ * `public/` に置いて `npm run images` → `npm run images:apply` を通すこと
+ * （scripts/optimize-images.mjs 参照）。
+ *
+ *   04 BackEnd     parallax/coding（コード）, parallax/site（動いているサイト）
+ *   05 FrontCreate skill/frontend2, works/web4, skill/frontend1（いずれもサイトの画面）
+ *   06 subSkill    RikuLogo3（押し出した 3D ロゴ）, skill/subskill1（Excel / VBA）,
+ *                  skill/subskill2（Git）
+ *
+ * 03 と 05 は同じ画面を使い回している（隣り合っていないので並べて見えることはない）。
+ * `parallax/07` `parallax/emo` `parallax/noise` は人物写真なのでスキルには使わない。
+ *
+ * variant は隣り合うセクションで重複しない順に並べてある
+ * （flip → loop → depth → split → loop → depth）。
+ */
 "use client";
 
-import Image from "next/image";
-import React, { useEffect, useState, useRef } from "react";
 import Footer from "../components/ui/Footer";
-import SkillScene3D from "../components/webgl/SkillScene3D";
+import SkillHero from "../components/sections/SkillHero";
+import SkillLayer, { type Skill } from "../components/sections/SkillLayer";
 
-/* ----------------------------------------------------
-   SKILL データ
----------------------------------------------------- */
-const SKILLS = [
+const SKILLS: Skill[] = [
   {
     id: "branding",
     num: "01",
@@ -17,6 +43,14 @@ const SKILLS = [
     body:
       "ヒアリングからコンセプト設計、配色・タイポ・ビジュアルデザインまで、Web・ロゴ制作をトータルに対応。企画書やモックアップで具体的な提案が可能です。",
     imgs: ["/skill/branding1.webp", "/skill/branding2.webp", "/skill/branding3.webp"],
+    variant: "flip",
+    accent: "#2ccdb9",
+    points: [
+      "ヒアリングから言葉にしてコンセプトへ落とす",
+      "配色・タイポを決めてトーンを揃える",
+      "企画書とモックアップで着地点を見せる",
+    ],
+    tools: ["Illustrator", "Figma", "Photoshop"],
   },
   {
     id: "design",
@@ -26,6 +60,14 @@ const SKILLS = [
     body:
       "Illustrator・Photoshop・Figmaなどのデザインツールを活用し、ロゴやポスター制作、写真加工、Web UIデザインまで幅広く対応可能です。",
     imgs: ["/skill/design1.webp", "/skill/design2.webp", "/skill/design3.webp"],
+    variant: "loop",
+    accent: "#8a5cff",
+    points: [
+      "ロゴ・ポスターなどグラフィック全般",
+      "写真の加工とレタッチ",
+      "Web UI をコンポーネント単位で設計",
+    ],
+    tools: ["Figma", "Illustrator", "Photoshop", "Lightroom"],
   },
   {
     id: "frontend",
@@ -33,160 +75,88 @@ const SKILLS = [
     title: "FrontEnd",
     tagJa: "フロントエンド開発",
     body:
-      "GSAPやThree.jsを用いたWebGLアニメーションの実装、ローダーやテキストへの動きを取り入れたUI／UX演出を設計。FigmaデザインをReactコンポーネントとして忠実に再現できます。",
+      "Next.js（App Router）と TypeScript で、Figma のデザインをコンポーネントに落とし込みます。レスポンシブ、キーボード操作、動きを減らす設定への対応まで含めて実装します。",
     imgs: ["/skill/frontend1.webp", "/skill/frontend2.webp"],
+    variant: "depth",
+    accent: "#38bdf8",
+    points: [
+      "Figma のデザインを React コンポーネントへ忠実に再現",
+      "App Router とサーバー / クライアントの切り分け",
+      "Tailwind でトークンを揃えて組む",
+    ],
+    tools: ["Next.js", "TypeScript", "React", "Tailwind"],
+  },
+  {
+    // TODO: 実績に合わせて書き換える。ここは他のセクションと違って
+    // このリポジトリに裏付けとなるコードが無い（API ルートも DB も無い）
+    id: "backend",
+    num: "04",
+    title: "BackEnd",
+    tagJa: "バックエンド開発",
+    body:
+      "フォームの受け口やデータの受け渡しなど、画面の裏側の処理。Next.js の Route Handler を起点に、外部 API との連携や環境変数の扱いを含めて組み立てます。",
+    imgs: ["/parallax/coding.webp", "/parallax/site.webp"],
+    variant: "split",
+    accent: "#4ade80",
+    points: [
+      "Route Handler で API の受け口を作る",
+      "外部 API との連携とエラー時の分岐",
+      "環境変数と秘密情報を扱いごとに分ける",
+    ],
+    tools: ["Node.js", "Route Handler", "REST"],
+  },
+  {
+    id: "frontcreate",
+    num: "05",
+    title: "FrontCreate",
+    tagJa: "スクロール演出・ページ遷移（GSAP）",
+    body:
+      "GSAP の ScrollTrigger と timeline で、スクロールに紐づいた演出とページ遷移を組みます。動きの持ち主を 1 本の timeline に寄せ、後片付けまで含めて設計します。",
+    imgs: ["/skill/frontend2.webp", "/works/web4.webp", "/skill/frontend1.webp"],
+    variant: "loop",
+    accent: "#ffb34d",
+    points: [
+      "pin / scrub でスクロール量に紐づける",
+      "ページ遷移の幕（格子・ルーバー・グリッチ）を差し替え可能に作る",
+      "動きを減らす設定に必ず対応する",
+    ],
+    tools: ["GSAP", "ScrollTrigger", "Flip", "Observer"],
   },
   {
     id: "subskill",
-    num: "04",
+    num: "06",
     title: "SubSkill",
-    tagJa: "補助スキル",
+    tagJa: "WebGL・補助スキル（Three.js）",
     body:
-      "VBAを活用した業務効率化ツールの開発経験があり、Gitを用いたバージョン管理にも対応できます。",
-    imgs: ["/skill/subskill1.webp", "/skill/subskill2.webp"],
+      "Three.js で WebGL の背景や 3D のロゴを作ります。SVG を押し出して立体にしたり、GLSL のノイズシェーダーを平面に敷いたり。あわせて VBA での業務効率化や Git でのバージョン管理にも対応できます。",
+    imgs: ["/RikuLogo3.webp", "/skill/subskill1.webp", "/skill/subskill2.webp"],
+    variant: "depth",
+    accent: "#f472b6",
+    points: [
+      "SVG を押し出して 3D のロゴにする",
+      "GLSL のノイズシェーダーを書いて背景に敷く",
+      "VBA での自動化と Git でのバージョン管理",
+    ],
+    tools: ["Three.js", "GLSL", "Git", "VBA"],
   },
 ];
 
-/* ----------------------------------------------------
-   SlideShow（シンプルな opacity 切り替えのみ）
----------------------------------------------------- */
-function SlideShow({ imgs }: { imgs: string[] }) {
-  const [index, setIndex] = useState(0);
-
-  useEffect(() => {
-    if (imgs.length <= 1) return;
-    const timer = setInterval(() => {
-      setIndex((prev) => (prev + 1) % imgs.length);
-    }, 4000);
-    return () => clearInterval(timer);
-  }, [imgs.length]);
-
+export default function SkillsPage() {
   return (
-    <div
-      className="
-        relative w-full
-        h-[220px] md:h-[280px] lg:h-[340px]
-        overflow-hidden rounded-2xl
-        bg-black/50
-        ring-1 ring-white/15 shadow-2xl
-      "
-    >
-      {imgs.map((src, i) => (
-        <Image
-          key={src}
-          src={src}
-          alt="skill image"
-          fill
-          sizes="(min-width:1024px) 50vw, 100vw"
-          className={`
-            object-cover object-center
-            transition-opacity duration-700
-            ${i === index ? "opacity-100" : "opacity-0"}
-          `}
+    <main className="relative w-full font-sans text-white">
+      <SkillHero skills={SKILLS} />
+
+      {SKILLS.map((skill, i) => (
+        <SkillLayer
+          key={skill.id}
+          skill={skill}
+          index={i}
+          total={SKILLS.length}
+          isLast={i === SKILLS.length - 1}
         />
       ))}
-    </div>
-  );
-}
-
-/** スクロール進行 0..1 にイージング（easeOutCubic） */
-function easeOutCubic(t: number): number {
-  return 1 - Math.pow(1 - Math.max(0, Math.min(1, t)), 3);
-}
-
-export default function SkillSection() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const [scrollProgress, setScrollProgress] = useState(0);
-  const progressRef = useRef(0);
-  const rafRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    const section = sectionRef.current;
-    if (!section) return;
-
-    const onScroll = () => {
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-      rafRef.current = requestAnimationFrame(() => {
-        rafRef.current = null;
-        const rect = section.getBoundingClientRect();
-        const vh = window.innerHeight;
-        const sectionHeight = section.offsetHeight;
-        // セクションがビューポートを「通過」する割合で 0..1（上端が画面下端を超えた分 / セクション高さ）
-        const raw =
-          sectionHeight <= 0 ? 0 : Math.max(0, Math.min(1, (vh - rect.top) / (sectionHeight + vh)));
-        const eased = easeOutCubic(raw);
-        progressRef.current = eased;
-        setScrollProgress(eased);
-      });
-    };
-
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-    };
-  }, []);
-
-  return (
-    <section
-      ref={sectionRef}
-      id="skill"
-      className="relative w-full min-h-screen bg-[#0b0b0c] text-white font-sans"
-    >
-      {/* Three.js 背景（スクロール連動カメラ） */}
-      <SkillScene3D scrollProgress={scrollProgress} />
-
-      {/* DOM コンテンツ：常に前面・可読性優先 */}
-      <div className="relative z-10 mx-auto max-w-6xl px-5 py-20 md:px-8 lg:px-10 lg:py-28">
-        <header className="mb-16 md:mb-24">
-          <p className="mb-2 text-xs font-medium tracking-[0.2em] text-white/50 uppercase">
-            Skill Detail
-          </p>
-          <h2 className="font-serif text-5xl font-semibold tracking-wide md:text-6xl lg:text-7xl">
-            <span className="text-white [text-shadow:_0_0_24px_rgba(44,205,185,.2)]">Skill</span>
-          </h2>
-        </header>
-
-        <div className="space-y-24 md:space-y-32">
-          {SKILLS.map((item, index) => {
-            const isEven = index % 2 === 1;
-
-            return (
-              <article
-                key={item.id}
-                className="grid items-center gap-12 md:grid-cols-2 md:gap-16"
-              >
-                <div className={isEven ? "md:order-2" : ""}>
-                  <SlideShow imgs={item.imgs} />
-                </div>
-
-                <div className={isEven ? "md:order-1" : ""}>
-                  <div className="mb-6 flex items-baseline gap-4">
-                    <span className="font-[100] tracking-widest text-gray-300/90">
-                      <span className="neon-cyan text-4xl md:text-5xl">{item.num}</span>
-                    </span>
-                    <h3 className="font-serif text-3xl font-semibold tracking-wide md:text-4xl lg:text-5xl">
-                      {item.title}
-                    </h3>
-                  </div>
-                  <p className="mb-5 text-sm font-medium tracking-wider text-[#A855F7]/90 md:text-base">
-                    {item.tagJa}
-                  </p>
-                  <p className="max-w-[58ch] font-serif text-sm leading-relaxed text-white/90 md:text-base md:leading-9 lg:text-lg">
-                    {item.body}
-                  </p>
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      </div>
 
       <Footer />
-    </section>
+    </main>
   );
 }

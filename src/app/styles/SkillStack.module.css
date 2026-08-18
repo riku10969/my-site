@@ -1,0 +1,96 @@
+/* =============================================================================
+   SkillStack.module.css
+
+   /skills の「セクションが張り付いたまま、次のセクションが下から乗り上げてくる」
+   骨組み。follow.art の `.section` プリミティブを写したもの。
+
+   ---------------------------------------------------------------------------
+   単位
+
+     ui/header は fixed / h-16 なので、素の 100svh で組むと各セクションの上 4rem が
+     ヘッダーに隠れる。そこで「実際に見える高さ」
+
+       H = 100svh - --s-head
+
+     を単位にする（--s-visible）。以下 H と書いたらこれ。
+
+   ---------------------------------------------------------------------------
+   仕組み（JS は一切要らない）
+
+     箱を縦に伸ばし、そのうち「次に覆わせたいぶん」だけを負の margin-bottom で
+     文書から引く。伸ばしたぶんは中の .stage（position: sticky）の張り付き区間に
+     なり、引いたぶんに次のセクションが乗り上げる。
+
+       箱 = --s-min + --s-hold + --s-under
+       margin-bottom = -(--s-under)
+
+     --s-hold が要る理由。本家と同じく --s-hold を 0 にすると、次のセクションは
+     張り付きが始まった瞬間から上がり始め、**そのセクションが完全に見えているのは
+     一瞬だけ**になる（流れる演出としては成立するが、読ませる文章があると読めない）。
+     --s-hold は「誰にも覆われず、ただ張り付いて待つ」区間で、ここが読ませる時間。
+
+       張り付き = 箱 - H = --s-hold + --s-under
+         前半 --s-hold … 完全に見えている（読ませる）
+         後半 --s-under … 次が下から上がってきて覆っていく
+
+   ---------------------------------------------------------------------------
+   progress との対応
+
+     ScrollTrigger 側（gsap/SkillLayerTimeline）は
+     start "top bottom" → end "bottom bottom" を見る。--s-hold / --s-under を
+     H の倍率 hold / 1 で置くと区間は (2 + hold) * H になり、
+
+       張り付き開始 = 1 / (2 + hold)
+       覆われ始め   = (1 + hold) / (2 + hold)
+
+     最後のセクションは --s-under が 0 なので区間が (1 + hold) * H、
+     張り付き開始が 1 / (1 + hold) で、そこから先は覆われずに終わる。
+
+     この式は `SkillLayerTimeline` の `stopsFor()` に写してある。hold の値は
+     そちらの `HOLD_RATIO` が持っていて、`StackSection` が --s-hold として
+     inline style で流し込む。**CSS と JS で二重に持たないこと。**
+
+   ---------------------------------------------------------------------------
+   GSAP の pin を使わない理由
+
+     - pin-spacer が作られないので、ルート遷移で residue が残らない
+     - 重なりの量が CSS の宣言だけで決まるので、ScrollTrigger の refresh 順に
+       依存しない
+     - 単位が svh なので、モバイルの URL バー伸縮で 100vh が食い違わない
+
+   重なりの上下は DOM 順で決まる。.section は position: relative なので、
+   後ろの兄弟が前の兄弟の上に描かれる（z-index を振る必要がない）。
+
+   本家は .section を 1 セルの grid にして sticky 層と非 sticky 層を同じセルに
+   重ねられるようにしているが、ここは 1 層しか使わないので素のブロックにしている。
+   ============================================================================= */
+
+.section {
+  /* fixed ヘッダーの高さ。ui/header の h-16 と揃える */
+  --s-head: 4rem;
+  /* 実際に見える高さ H */
+  --s-visible: calc(100svh - var(--s-head));
+
+  /* 次のセクションが乗り上げてくる量。最後のセクションだけ 0 のまま */
+  --s-under: 0px;
+  /* 覆われずに張り付いて待つ量（読ませる区間）。StackSection が流し込む */
+  --s-hold: 0px;
+  /* 中身（.stage）の高さ */
+  --s-min: var(--s-visible);
+
+  position: relative;
+  min-height: calc(var(--s-min) + var(--s-hold) + var(--s-under));
+  margin-bottom: calc(var(--s-under) * -1);
+}
+
+.underNext {
+  --s-under: var(--s-visible);
+}
+
+.stage {
+  position: sticky;
+  top: var(--s-head);
+  min-height: var(--s-min);
+  /* 中身の幅で押し広げられないように */
+  min-width: 0;
+}
