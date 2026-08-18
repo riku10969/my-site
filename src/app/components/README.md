@@ -18,7 +18,6 @@ components/
 | ファイル | 役割 |
 |---|---|
 | `BackgroundStage.tsx` | トップ全体の背景。`shaders/` のノイズシェーダーを平面に適用 |
-| `SkillScene3D.tsx` | Skills ページの 3D シーン |
 | `NeonParticleStars.tsx` | Contact セクションのパーティクル |
 | `DistortOverlay.tsx` | Projects イントロの歪みオーバーレイ |
 | `ExtrudedSvg.ts` | SVG のパスを押し出して 3D の塊にする（React 非依存） |
@@ -68,6 +67,7 @@ Illustrator の画像トレースから書き出した SVG を足すときの注
 | `WatermarkParallax.tsx` | フッター透かしの `--wm-y` / `--wm-o` を `scrub`（フック） | `ui/Footer.tsx` |
 | `ZoomFlip.tsx` | タイル → 拡大表示のモーフィング。`Flip` プラグイン（フック） | `sections/HobbySection.tsx` |
 | `StrengthParallax.tsx` | Strength の全画面パララックス。ScrollTrigger の `pin` + `scrub`。進入中は `SCROLL ↓↓↓` を出し、pin と同時に回転で `Strength` に入れ替える | `sections/AboutSection.tsx` |
+| `SkillLayerTimeline.tsx` | Skills の重ね積みレイヤー 1 枚ぶんの動き。1 レイヤー = 1 timeline。見出しの退場（`useSkillHeroTimeline`）も同居（フック） | `sections/SkillLayer.tsx` / `sections/SkillHero.tsx` |
 
 マークアップが呼び出し側にあるものはフック、マークアップとタイムラインが不可分な
 `StrengthParallax` と `CharReveal` はコンポーネントを export している。
@@ -97,6 +97,92 @@ Illustrator の画像トレースから書き出した SVG を足すときの注
 
 `gsap` 3.13 は全プラグイン同梱なので、`Flip` / `Observer` / `Draggable` /
 `ScrollToPlugin` / `SplitText` なども追加インストールなしで `gsap/<Name>` から import できる。
+
+### Skills の重ね積み（`/skills`）
+
+セクションが張り付いたまま、次のセクションが下から乗り上げてくる作り。
+[follow.art](https://follow.art) の `.section` プリミティブを写したもの。
+
+**張り付きと重なりは CSS だけで作っている**（[`styles/SkillStack.module.css`](../styles/SkillStack.module.css)）。
+箱を縦に伸ばし、そのうち「次に覆わせたいぶん」だけを負の `margin-bottom` で文書から
+引く。伸ばしたぶんが `position: sticky` の張り付き区間になり、引いたぶんに次の
+セクションが乗り上げる。`svh` なのでモバイルの URL バー伸縮でも食い違わない。
+ヘッダー（`ui/header` の `h-16`）ぶんは `--s-head` で補正するので、「実際に見える
+高さ」H = `100svh - --s-head` が単位になる。
+
+GSAP の `pin` を使わないので `pin-spacer` が作られず、ルート遷移で residue が
+残らない。重なりの上下は DOM 順（`.section` が `position: relative` なので後ろの
+兄弟が上）で決まるので、z-index を振る必要もない。
+
+**`--s-hold`（読ませる区間）が要る理由。** 本家と同じく箱を「H + 覆われる H」だけに
+すると、次のセクションは張り付きが始まった瞬間から上がり始めるので、**そのセクションが
+完全に見えているのは一瞬だけ**になる。流れる演出としては成立するが、読ませる文章が
+あると読めない。そこで「誰にも覆われず、ただ張り付いて待つ」区間を挟む。
+
+| 箱の内訳 | 画面で起きていること |
+|---|---|
+| H | 下から上がってきて前のレイヤーを覆っていく |
+| `hold` × H | 完全に見えている（**読ませる区間**） |
+| H | 次のレイヤーが上がってきて覆っていく |
+
+GSAP が持つのは「そのどこで何を見せるか」だけ。
+[`gsap/SkillLayerTimeline.tsx`](gsap/SkillLayerTimeline.tsx) が **1 レイヤー = 1 timeline** で
+作り、trigger は `start "top bottom"` → `end "bottom bottom"`。区間は
+`(2 + hold) × H` になるので、区切りの progress は
+
+```
+張り付き開始 = 1 / (2 + hold)
+覆われ始め   = (1 + hold) / (2 + hold)
+```
+
+で出る（`stopsFor()`）。最後のレイヤーは覆われるぶんが無いので区間が
+`(1 + hold) × H`、張り付き開始が `1 / (1 + hold)` で、そこから先は覆われずに終わる
+（`isLast`。後退も作らない）。
+
+`hold` の値は **`SkillLayerTimeline` の `HOLD_RATIO` が唯一の持ち主**で、
+`StackSection` の `hold` prop 経由で CSS の `--s-hold` に流し込む。CSS 側に数値を
+書いて二重に持たないこと（式が噛み合わなくなると、読ませる区間と timeline の
+区切りがずれる）。
+
+スキルごとの見せ方（`variant`）は**同じ timeline に載せる**。README の
+「1 つのプロパティを複数の ScrollTrigger で触らない」を守るため、レイヤー内で
+transform を持つ要素の持ち主を timeline 1 本に寄せている。
+
+| variant | 見せ方 | 尺 |
+|---|---|---|
+| `flip` | 写真を重ね、backface を隠して順にめくる（下の写真が現れる） | 読ませる区間の `VARIANT_SPAN` |
+| `split` | 写真を順に立ち上げ、見出しは `CharReveal` で 1 文字ずつ | 同上 |
+| `loop` | 写真を横一列に並べ、スクロール量で横へ流す（自動では流れない） | timeline 全体 |
+| `depth` | 写真を段違いに置き、奥のものほど大きく動かす | timeline 全体 |
+
+`flip` / `split` のように**順番に見せるものは読ませる区間の `VARIANT_SPAN`（7 割）で
+終わらせる**。区間いっぱいまで使うと、最後の 1 枚が出た直後に次のレイヤーが覆い
+始めてしまい、出しただけで見えない。`loop` / `depth` は区切りではなく timeline 全体に
+紐づく連続したパララックスなので対象外。
+
+`depth` は**ずらし幅を固定してタイルの大きさを枚数から決める**。逆にすると枚数が
+増えたときにずらし幅が足りず、手前の 1 枚が奥を覆い隠す。
+
+セクションの色は `Skill.accent`（6 桁 hex）の 1 か所が持ち、番号のネオンは
+`neonStyle()` がそこから組む。`globals.css` の `.neon-*` を 6 色ぶん足すこともできたが、
+そうすると「番号の色」と「ヘアライン・発光・背景の数字の色」を別々に持つことになり、
+片方だけ変えると食い違う。
+
+レイヤーは**全画面・不透明**。半透明にすると乗り上げるときに前のレイヤーの本文が
+透けて二重写しになり、どちらも読めなくなる。上端のヘアラインだけをアクセント色に
+していて、それが「前縁」として見える。
+
+**面は transform しない。** 全画面なので縮めると端に隙間が空いて下のレイヤーが
+覗いてしまう。GSAP が動かすのは中身（`[data-inner]`）だけで、面（`StackSection` の
+stage）は不透明なまま置いておく。
+
+見出しのレイヤー（`sections/SkillHero`）も重ね積みに参加する。最初から見えているので
+立ち上がりも `hold` も要らず、`useSkillHeroTimeline` が退場だけを持つ。これが無いと
+1 枚目が覆いきるまでの間、見出しが residue のように残って見える。
+
+以前はここに `webgl/SkillScene3D`（スクロールでロゴへ寄っていく 3D 背景）を敷いて
+いたが、レイヤーを全画面・不透明にした時点でほぼ見えなくなったので外した。
+戻すなら git 履歴から。
 
 ### 書くときの決まりごと
 
@@ -133,6 +219,8 @@ Illustrator の画像トレースから書き出した SVG を足すときの注
 | `SkillBarsAbout.tsx` | CSS transition + IntersectionObserver |
 | `ContactSection.tsx` | GSAP ScrollTrigger（順次点灯）+ `webgl/NeonParticleStars` |
 | `WorksSection.tsx` | CSS のみ。`ui/InfiniteMarquee` を使う |
+| `SkillLayer.tsx` | Skills の重ね積みレイヤー 1 枚。器は `ui/StackSection`、動きは `gsap/SkillLayerTimeline` に委譲 |
+| `SkillHero.tsx` | Skills の先頭の見出しレイヤー。1 枚目が乗り上げる間に引いていく |
 
 `HobbySection` / `SkillBarsAbout` は `AboutSection` の内部パーツ。
 
@@ -149,6 +237,7 @@ Illustrator の画像トレースから書き出した SVG を足すときの注
 | `GlitchText.tsx` / `FadeInText.tsx` | テキスト演出 |
 | `InfiniteMarquee.tsx` | 無限スクロール。レイアウト計算のみ担当し、動きは `gsap/MarqueeLoop` に委譲 |
 | `CurtainModal.tsx` | Works の詳細モーダル |
+| `StackSection.tsx` | 張り付いたまま次が乗り上げてくる重ね積みセクションの器。動きは CSS のみ（`styles/SkillStack.module.css`） |
 
 ## 注意
 
