@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import type { ComponentType } from "react";
 import { notFound } from "next/navigation";
 import Footer from "../../components/ui/Footer";
+import { absoluteUrl } from "../../lib/site";
 
 import AboutSection from "../../components/sections/AboutSection";
 import WorksSection from "../../components/sections/WorksSection";
@@ -19,9 +20,6 @@ const orderBySlugFirst = (first: SectionSlug): SectionSlug[] => [
   first,
   ...ALL_SECTIONS.filter((s) => s !== first),
 ];
-
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "") ?? "https://example.com";
 
 /** /project/about, /project/works, /project/contact を事前生成 */
 export async function generateStaticParams() {
@@ -47,7 +45,7 @@ export async function generateMetadata(
   }
 
   const title = slug.charAt(0).toUpperCase() + slug.slice(1);
-  const canonical = `${SITE_URL}/project/${slug}`;
+  const canonical = absoluteUrl(`/project/${slug}`);
 
   return {
     title,
