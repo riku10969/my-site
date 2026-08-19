@@ -11,14 +11,17 @@
 
 import React, { useRef } from "react";
 import StackSection from "../ui/StackSection";
-import { useSkillHeroTimeline } from "../gsap/SkillLayerTimeline";
+import { useSkillHeroTimeline, useSkillIntroEntrance } from "../gsap/SkillLayerTimeline";
+import SkillIntroStage from "../webgl/SkillIntroStage";
 import { neonStyle, type Skill } from "./SkillLayer";
 
 export default function SkillHero({ skills }: { skills: Skill[] }) {
   const sectionRef = useRef<HTMLElement | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
+  const introRef = useRef<HTMLDivElement | null>(null);
 
   useSkillHeroTimeline({ sectionRef, stageRef });
+  useSkillIntroEntrance(introRef);
 
   return (
     <StackSection
@@ -28,6 +31,24 @@ export default function SkillHero({ skills }: { skills: Skill[] }) {
       stageRef={stageRef}
       stageClassName="relative flex items-center overflow-hidden bg-[#0b0b0c] px-5 py-8 sm:px-8 md:px-10 lg:px-14"
     >
+      {/* 斜めの面（WebGL）。動かすのはこのラッパーで、canvas 側は静的な rotate を持つ。
+          data-inner より前に置くことで文字の後ろに描かれる（どちらも z-index は auto なので
+          描画順は DOM 順で決まる） */}
+      <div ref={introRef} className="pointer-events-none absolute inset-0">
+        <SkillIntroStage />
+      </div>
+
+      {/* 文字側を沈めるスクリム。面の上・文字の下に敷く。
+          写真は右へ抜けていくので、左を濃くして見出しのコントラストを確保する */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(100deg, #0b0b0c 0%, rgba(11,11,12,.9) 20%, rgba(11,11,12,.42) 38%, rgba(11,11,12,.08) 60%, transparent 76%)",
+        }}
+      />
+
       {/* 淡い発光 */}
       <div
         aria-hidden
