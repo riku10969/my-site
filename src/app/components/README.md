@@ -18,6 +18,7 @@ components/
 | ファイル | 役割 |
 |---|---|
 | `BackgroundStage.tsx` | トップ全体の背景。`shaders/` のノイズシェーダーを平面に適用 |
+| `SkillIntroStage.tsx` | Skills の見出しに敷く、枠なしの写真 6 枚が円柱状に並んで回る面 |
 | `NeonParticleStars.tsx` | Contact セクションのパーティクル |
 | `DistortOverlay.tsx` | Projects イントロの歪みオーバーレイ |
 | `ExtrudedSvg.ts` | SVG のパスを押し出して 3D の塊にする（React 非依存） |
@@ -67,7 +68,7 @@ Illustrator の画像トレースから書き出した SVG を足すときの注
 | `WatermarkParallax.tsx` | フッター透かしの `--wm-y` / `--wm-o` を `scrub`（フック） | `ui/Footer.tsx` |
 | `ZoomFlip.tsx` | タイル → 拡大表示のモーフィング。`Flip` プラグイン（フック） | `sections/HobbySection.tsx` |
 | `StrengthParallax.tsx` | Strength の全画面パララックス。ScrollTrigger の `pin` + `scrub`。進入中は `SCROLL ↓↓↓` を出し、pin と同時に回転で `Strength` に入れ替える | `sections/AboutSection.tsx` |
-| `SkillLayerTimeline.tsx` | Skills の重ね積みレイヤー 1 枚ぶんの動き。1 レイヤー = 1 timeline。見出しの退場（`useSkillHeroTimeline`）も同居（フック） | `sections/SkillLayer.tsx` / `sections/SkillHero.tsx` |
+| `SkillLayerTimeline.tsx` | Skills の重ね積みレイヤー 1 枚ぶんの動き。1 レイヤー = 1 timeline。見出しの退場（`useSkillHeroTimeline`）と斜めの面の登場（`useSkillIntroEntrance`）も同居（フック） | `sections/SkillLayer.tsx` / `sections/SkillHero.tsx` |
 
 マークアップが呼び出し側にあるものはフック、マークアップとタイムラインが不可分な
 `StrengthParallax` と `CharReveal` はコンポーネントを export している。
@@ -183,6 +184,67 @@ stage）は不透明なまま置いておく。
 以前はここに `webgl/SkillScene3D`（スクロールでロゴへ寄っていく 3D 背景）を敷いて
 いたが、レイヤーを全画面・不透明にした時点でほぼ見えなくなったので外した。
 戻すなら git 履歴から。
+
+### 回る円柱（`webgl/SkillIntroStage`）
+
+Skills の見出しに敷いている、枠なしの写真 6 枚が円柱状に並んで回る面。
+follow.art のヒーローと同じ組み方で、**「回転」と「斜め」を別々の層で作る**。
+
+| | どこで |
+|---|---|
+| 回転 | WebGL。6 枚を Y 軸まわりの円周に置き、Group ごと Y 軸で回す |
+| 斜め | canvas を包むラッパーに CSS で `rotate(35deg)`。3D 側は一切傾けない |
+| 登場 | さらに外側のラッパーを GSAP が `yPercent: 100 → 0`（`useSkillIntroEntrance`） |
+
+円柱の軸は 3D では真っ直ぐ縦。それを画面ごと 35deg 回すので、結果として
+「斜めに倒れた円柱が回っている」ように見える。斜め軸まわりの回転
+（`rotate3d(1,1,0,…)`）で作ろうとすると角度の制御が難しい。**3 層に分けているのは、
+静的な `rotate` と GSAP の transform を同じ要素に書かないため**（下の決まりごと参照）。
+
+**CSS 3D ではなく WebGL を選んだ理由。** `perspective` + `transform-style: preserve-3d`
+でも円柱は作れるが、祖先の `overflow` / `filter` / `opacity` が preserve-3d を潰す。
+`SkillHero` の stage は `overflow-hidden` を持っているので CSS だと平面に潰れる。
+WebGL は preserve-3d を使わないのでこの衝突が無く、`overflow-hidden` は「回して画面より
+大きくした canvas を切り取る」役に回る。
+
+書くときに引っかかった点。
+
+- **ワールドの +X は画面の右ではない。** ラッパーを 35deg 回しているので +X は右下を
+  向く。画面上で真横に寄せるには逆回転を掛けた成分で置く
+  （`x = r·cosθ − u·sinθ`, `y = r·sinθ + u·cosθ`）。符号を落とすと右ではなく下へ逃げる。
+- **カメラを近づけると手前の 1 枚だけ極端に大きくなる。** 距離 7 では手前 577px /
+  奥 260px で、手前が画面上端で切れた。引くと遠近差が緩んで輪が収まる。
+- **奥に回った写真を出すには、1 か所に背中合わせで 2 枚置く。** 素の 1 枚だけだと
+  法線がカメラの逆を向くので `FrontSide` のカリングで消える。`DoubleSide` にすれば
+  見えるが、それは裏面＝左右反転で、今の 6 枚（サイトのスクリーンショットや
+  サイトマップ）は文字が鏡文字になって崩れる。外向きと内向きの 2 枚を置けば、
+  手前でも奥でも「表」を見せられる。カメラを向いていない側はカリングで捨てられるので
+  同じ位置に 2 枚あっても z ファイティングは起きない。
+- **奥向きの面は `opacity` を落とす。** 手前と同じ濃さだと重なって絵が混み、
+  目次の文字まで読みにくくなる。落とすと「奥にある」ことが濃さで分かる。
+  material は写真 1 枚につき 2 つになるので、dispose は作った側で集めた配列を回す
+  （メッシュを回すと共有ぶんを二重に捨てる）。
+- **canvas に直接 `inset` を当てても箱は広がらない。** canvas は置換要素なので
+  `width`/`height` が `auto` だと inset ではなく固有サイズ（300x150）で解決される。
+  ラッパーを広げて canvas は `%` で埋める。
+- **`renderer.setSize(w, h, false)`。** 第 3 引数を省くと three が canvas に inline style を
+  書き、CSS で決めた箱（負の inset）を上書きしてしまう。
+- **`new THREE.WebGLRenderer` は WebGL が無いと例外を投げる。** try/catch していないと
+  Next のエラー画面でページごと落ちる。落としても見出しは文字と目次だけで読める。
+- **material を dispose しても `map` は解放されない。** テクスチャは別に `dispose()` する。
+- **テクスチャの読み込みは非同期。** `disposed` フラグで見張らないと unmount 後に
+  `scene.add` してしまう。
+- 写真は原点に置くと `SkillHero` のスクリムに食われて見えない。画面の右へ逃がし、
+  `opacity` を落として敷く。1.0 で出すと見出しと目次が写真に負けて読めない。
+
+回り続けるので rAF を持つ。止める理由は同時に複数立ちうるので、`gsap/MarqueeLoop` と
+同じく理由を Set で持ち、ひとつでも残っている間は止め続ける。
+
+| 止める条件 | 手段 |
+|---|---|
+| タブが非表示 | `visibilitychange`（`BackgroundStage` と同じ） |
+| 見出しが画面外 | `IntersectionObserver`。ページは 10 画面ぶんあり、覆われた後も回ってしまう |
+| 動きを減らす設定 | ループを作らず 1 枚だけ描く |
 
 ### 書くときの決まりごと
 

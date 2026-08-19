@@ -28,8 +28,9 @@
 import { useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { CustomEase } from "gsap/CustomEase";
 
-gsap.registerPlugin(ScrollTrigger);
+gsap.registerPlugin(ScrollTrigger, CustomEase);
 
 export type SkillVariant = "flip" | "loop" | "depth" | "split";
 
@@ -89,6 +90,18 @@ const VARIANT_SPAN = 0.7;
 /** 見出しレイヤーが退場するときの量 */
 const HERO_TO_SCALE = 0.94;
 const HERO_TO_Y = "-8svh";
+
+/**
+ * 斜めの面が下から入ってくるときの尺と曲線。follow.art の実測値
+ * （transition: transform 1.5s cubic-bezier(.55,0,.1,1) / transition-delay: 1s）。
+ *
+ * この曲線は中盤で一気に詰める非対称なもので、組み込みの power*.inOut では出ない
+ * （t=0.25 で 0.136 / t=0.5 で 0.796 に対し、power3.inOut は 0.031 / 0.500）。
+ * gsap 3.13 は CustomEase を同梱しているので追加インストールは要らない。
+ */
+const INTRO_DURATION = 1.5;
+const INTRO_DELAY = 1;
+const INTRO_EASE = CustomEase.create("skillIntro", "0.55, 0, 0.1, 1");
 
 /* ----------------------------------------------------------------------------
    スキルのレイヤー
@@ -326,4 +339,44 @@ export function useSkillHeroTimeline({
 
     return () => mm.revert();
   }, [sectionRef, stageRef]);
+}
+
+/**
+ * 見出しの斜めの面（`webgl/SkillIntroStage`）を下から入れる。
+ *
+ * 動かすのは**このラッパーだけ**。canvas 自身は静的な rotate(35deg) を持っていて、
+ * そこに GSAP が transform を書くと打ち消し合う（README の「静的なずらしと GSAP の
+ * アニメーションを両方 transform で書かない」）。だから 2 要素に分けている。
+ *
+ * 退場のフェードは持たせていない。次のレイヤーが不透明な全画面で下から覆うので、
+ * 面は「隠れる」だけでよく、本家もフェードさせていない。
+ */
+export function useSkillIntroEntrance(ref: React.RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const mm = gsap.matchMedia();
+
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+      const tween = gsap.fromTo(
+        el,
+        { yPercent: 100 },
+        {
+          yPercent: 0,
+          duration: INTRO_DURATION,
+          delay: INTRO_DELAY,
+          ease: INTRO_EASE,
+        }
+      );
+      return () => tween.kill();
+    });
+
+    // 動きを減らす設定では最初から所定の位置に置く
+    mm.add("(prefers-reduced-motion: reduce)", () => {
+      gsap.set(el, { yPercent: 0 });
+    });
+
+    return () => mm.revert();
+  }, [ref]);
 }
