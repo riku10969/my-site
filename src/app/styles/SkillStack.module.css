@@ -47,8 +47,24 @@
      張り付き開始が 1 / (1 + hold) で、そこから先は覆われずに終わる。
 
      この式は `SkillLayerTimeline` の `stopsFor()` に写してある。hold の値は
-     そちらの `HOLD_RATIO` が持っていて、`StackSection` が --s-hold として
-     inline style で流し込む。**CSS と JS で二重に持たないこと。**
+     そちらの `HOLD_RATIO` が持っていて、`StackSection` が --s-hold-sm /
+     --s-hold-md（単位なしの倍率）として inline style で流し込む。
+     **CSS と JS で二重に持たないこと。**
+
+   ---------------------------------------------------------------------------
+   hold をビューポート幅で変える
+
+     モバイルは指の一振りで大きく動くので、同じ倍率だと写真の切り替えも次の
+     セクションへの移行も速すぎる。そこで幅ごとに違う倍率を使う。
+
+     inline style の中ではメディアクエリが書けないので、**倍率 2 つを inline で
+     受け取り、どちらを使うかはこちらのメディアクエリが選ぶ**。数値の持ち主が
+     JS 側 1 か所であることは変わらない。
+
+     境界の 768px は `SkillLayerTimeline` の `HOLD_BREAKPOINT` と揃えること
+     （CSS の @media の値を JS から参照する手段が無いので、ここだけ二重に持つ）。
+     JS 側は max-width: 767.98px / min-width: 768px の排他な 2 本で、
+     小数幅でも穴が空かないようにしてある。
 
    ---------------------------------------------------------------------------
    GSAP の pin を使わない理由
@@ -73,14 +89,28 @@
 
   /* 次のセクションが乗り上げてくる量。最後のセクションだけ 0 のまま */
   --s-under: 0px;
-  /* 覆われずに張り付いて待つ量（読ませる区間）。StackSection が流し込む */
-  --s-hold: 0px;
+
+  /* 覆われずに張り付いて待つ量（読ませる区間）の倍率。StackSection が流し込む。
+     既定は 0 = 張り付き開始と同時に次が上がってくる */
+  --s-hold-sm: 0;
+  --s-hold-md: 0;
+  /* 幅で選んだ倍率。下のメディアクエリが md 用に差し替える */
+  --s-hold-ratio: var(--s-hold-sm);
+  --s-hold: calc(var(--s-visible) * var(--s-hold-ratio));
+
   /* 中身（.stage）の高さ */
   --s-min: var(--s-visible);
 
   position: relative;
   min-height: calc(var(--s-min) + var(--s-hold) + var(--s-under));
   margin-bottom: calc(var(--s-under) * -1);
+}
+
+/* 境界は SkillLayerTimeline の HOLD_BREAKPOINT と揃える */
+@media (min-width: 768px) {
+  .section {
+    --s-hold-ratio: var(--s-hold-md);
+  }
 }
 
 .underNext {

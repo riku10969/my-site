@@ -18,7 +18,8 @@ components/
 | ファイル | 役割 |
 |---|---|
 | `BackgroundStage.tsx` | トップ全体の背景。`shaders/` のノイズシェーダーを平面に適用 |
-| `SkillIntroStage.tsx` | Skills の見出しに敷く、枠なしの写真 6 枚が円柱状に並んで回る面 |
+| `splitStage.ts` | 1 つのシーンを**2 枚の canvas に前後で振り分けて描く**土台。あいだに DOM を挟める（React 非依存） |
+| `SkillIntroStage.tsx` | Skills の見出しに敷く、枠なしの写真 6 枚が円柱状に並んで回る面（フック） |
 | `NeonParticleStars.tsx` | Contact セクションのパーティクル |
 | `DistortOverlay.tsx` | Projects イントロの歪みオーバーレイ |
 | `ExtrudedSvg.ts` | SVG のパスを押し出して 3D の塊にする（React 非依存） |
@@ -68,7 +69,7 @@ Illustrator の画像トレースから書き出した SVG を足すときの注
 | `WatermarkParallax.tsx` | フッター透かしの `--wm-y` / `--wm-o` を `scrub`（フック） | `ui/Footer.tsx` |
 | `ZoomFlip.tsx` | タイル → 拡大表示のモーフィング。`Flip` プラグイン（フック） | `sections/HobbySection.tsx` |
 | `StrengthParallax.tsx` | Strength の全画面パララックス。ScrollTrigger の `pin` + `scrub`。進入中は `SCROLL ↓↓↓` を出し、pin と同時に回転で `Strength` に入れ替える | `sections/AboutSection.tsx` |
-| `SkillLayerTimeline.tsx` | Skills の重ね積みレイヤー 1 枚ぶんの動き。1 レイヤー = 1 timeline。見出しの退場（`useSkillHeroTimeline`）と斜めの面の登場（`useSkillIntroEntrance`）も同居（フック） | `sections/SkillLayer.tsx` / `sections/SkillHero.tsx` |
+| `SkillLayerTimeline.tsx` | Skills の重ね積みレイヤー 1 枚ぶんの動き。1 レイヤー = 1 timeline。見出しの退場（`useSkillHeroTimeline`）も同居（フック） | `sections/SkillLayer.tsx` / `sections/SkillHero.tsx` |
 
 マークアップが呼び出し側にあるものはフック、マークアップとタイムラインが不可分な
 `StrengthParallax` と `CharReveal` はコンポーネントを export している。
@@ -141,9 +142,24 @@ GSAP が持つのは「そのどこで何を見せるか」だけ。
 （`isLast`。後退も作らない）。
 
 `hold` の値は **`SkillLayerTimeline` の `HOLD_RATIO` が唯一の持ち主**で、
-`StackSection` の `hold` prop 経由で CSS の `--s-hold` に流し込む。CSS 側に数値を
-書いて二重に持たないこと（式が噛み合わなくなると、読ませる区間と timeline の
-区切りがずれる）。
+`StackSection` の `hold` prop 経由で CSS に流し込む。CSS 側に数値を書いて二重に
+持たないこと（式が噛み合わなくなると、読ませる区間と timeline の区切りがずれる）。
+
+**`hold` はビューポート幅で 2 つ持つ**（`HOLD_RATIO = { sm: 1.8, md: 1.2 }`）。
+写真の切り替えはこの区間の `VARIANT_SPAN` に収まるので、倍率がそのまま「切り替えに
+使えるスクロール量」になる。モバイルは指の一振りで大きく動くぶん、同じ倍率だと
+切り替えも次のレイヤーへの移行も速すぎるので多めに取る。増やすとページ全長も
+1 レイヤーあたり H の差分だけ伸びる。
+
+幅で切り替える仕組みは、**inline style の中ではメディアクエリが書けない**ことから
+決まっている。`StackSection` は倍率 2 つ（`--s-hold-sm` / `--s-hold-md`、単位なし）を
+流し込むだけで、どちらを使うかは CSS 側（`--s-hold-ratio`）のメディアクエリが選ぶ。
+JS 側は `gsap.matchMedia()` を **動きあり × 幅 2 本 + 動きを減らす設定 1 本 =
+排他な 3 本**にして、幅ごとに timeline を組み直す（hold が変われば区切りの progress も
+変わるため）。境界の 768px だけは `SkillLayerTimeline` の `HOLD_BREAKPOINT` と
+`styles/SkillStack.module.css` の `@media` に二重に出る（CSS の `@media` の値を JS から
+参照する手段が無い）。JS 側は `max-width: 767.98px` / `min-width: 768px` にして、
+小数の幅でも隙間ができないようにしてある。
 
 スキルごとの見せ方（`variant`）は**同じ timeline に載せる**。README の
 「1 つのプロパティを複数の ScrollTrigger で触らない」を守るため、レイヤー内で
@@ -178,14 +194,61 @@ transform を持つ要素の持ち主を timeline 1 本に寄せている。
 stage）は不透明なまま置いておく。
 
 見出しのレイヤー（`sections/SkillHero`）も重ね積みに参加する。最初から見えているので
-立ち上がりも `hold` も要らず、`useSkillHeroTimeline` が退場だけを持つ。これが無いと
-1 枚目が覆いきるまでの間、見出しが residue のように残って見える。
+立ち上がりは要らず、`useSkillHeroTimeline` が退場だけを持つ。これが無いと 1 枚目が
+覆いきるまでの間、見出しが residue のように残って見える。`hold` は
+`HERO_HOLD_RATIO`（0.4）を持つ — 0 だと開いた直後から 1 枚目が乗り上げ始めてしまう。
+**こちらは幅で分けない**（分けると退場の `coverAt` も幅で分岐させることになるが、
+見出しは読ませる文章が短いので得るものが少ない）。
 
 以前はここに `webgl/SkillScene3D`（スクロールでロゴへ寄っていく 3D 背景）を敷いて
 いたが、レイヤーを全画面・不透明にした時点でほぼ見えなくなったので外した。
 戻すなら git 履歴から。
 
+### canvas を 2 枚にする例外（`webgl/splitStage`）
+
+原則は「canvas は 1 枚だけ」（WebGL コンテキストが増えるため）。**`/skills` の見出しだけ
+2 枚にしている。** DOM を canvas のあいだに挟まないと「被写体の一部が文字より前、
+残りが後ろ」が作れないため。`/skills` には他に canvas が無いので合計 2 で収まる。
+
+`splitStage.ts` がその土台。1 つの Scene と 1 つの PerspectiveCamera を共有し、
+`THREE.Layers` で前後を分けて 2 回描く。
+
+```
+camera.layers.set(BACK);  backRenderer.render(scene, camera)
+camera.layers.set(FRONT); frontRenderer.render(scene, camera)
+```
+
+呼び出し側が守ること。
+
+- **2 枚の canvas は完全に同じ箱にする。** 位置・寸法・transform のどれかが食い違うと
+  前後の絵が繋がらず段差になる。ラッパーの class を定数で export して共有する
+  （`SKILL_INTRO_TILT_CLASS`）
+- **手前の canvas には `pointer-events-none`。** 文字やリンクの上に乗るので、
+  付け忘れると下が押せなくなる
+- 手前に出すものは `mesh.layers.set(LAYER_FRONT)`。既定（0）に置いたものが奥に出る
+
+土台が持つもの: 2 つの renderer（生成は個別に try/catch）、ループ、止める理由の
+Set 管理（タブ非表示 / 画面外 / reduced-motion）、resize、dispose。
+
+**縮退**: `front` が無い・作れない場合は全部を back に描く。前後には分かれないが
+絵は欠けない。WebGL コンテキスト数に厳しい環境の保険にもなる（`front: null` を
+渡して実際に確認済み）。
+
+**`onResize` で大きさを決め直す口がある。** カメラの画角と距離を固定すると
+「見える範囲の高さ」は一定だが**幅は aspect 次第**なので、縦長の箱では被写体が
+相対的に巨大になる。実際に円柱が視野幅の 87% を占めてモバイルの本文を潰したので、
+`visibleWidth` / `visibleHeight` を受けて大きさと位置を比で決めている。
+
+`BackgroundStage` / `NeonParticleStars` / `LogoCarousel3D` も同種のループと停止条件を
+それぞれ持っているので、あとから寄せられる（今は寄せていない）。
+
 ### 回る円柱（`webgl/SkillIntroStage`）
+
+follow.art のヒーローを参考にしているが、**あちらは前後に分けていない。**
+アーカイブの CSS を読むと canvas は 2 枚あるものの、1 枚目（`canvas:first-child`、
+`z-index: -1`）は `rotate` の掛かっていない全画面の背景で、35deg 傾いた面は
+2 枚目だけ。つまり**傾いた面は丸ごと見出しの前**にある。こちらは前後に分けて
+「文字を縫う」ようにしてあるので、そこだけ作りが違う。
 
 Skills の見出しに敷いている、枠なしの写真 6 枚が円柱状に並んで回る面。
 follow.art のヒーローと同じ組み方で、**「回転」と「斜め」を別々の層で作る**。
@@ -194,12 +257,18 @@ follow.art のヒーローと同じ組み方で、**「回転」と「斜め」�
 |---|---|
 | 回転 | WebGL。6 枚を Y 軸まわりの円周に置き、Group ごと Y 軸で回す |
 | 斜め | canvas を包むラッパーに CSS で `rotate(35deg)`。3D 側は一切傾けない |
-| 登場 | さらに外側のラッパーを GSAP が `yPercent: 100 → 0`（`useSkillIntroEntrance`） |
+| 前後 | `webgl/splitStage`。奥・手前の 2 枚の canvas で見出しを挟む |
 
 円柱の軸は 3D では真っ直ぐ縦。それを画面ごと 35deg 回すので、結果として
 「斜めに倒れた円柱が回っている」ように見える。斜め軸まわりの回転
-（`rotate3d(1,1,0,…)`）で作ろうとすると角度の制御が難しい。**3 層に分けているのは、
-静的な `rotate` と GSAP の transform を同じ要素に書かないため**（下の決まりごと参照）。
+（`rotate3d(1,1,0,…)`）で作ろうとすると角度の制御が難しい。層を分けているのは、
+静的な `rotate` と GSAP の transform を同じ要素に書かないため（下の決まりごと参照）。
+
+**登場アニメーションは持たない。** 以前は外側のラッパーを GSAP が
+`yPercent: 100 → 0`（`delay: 1` / `duration: 1.5`）で下から入れていたが、開いてから
+2.5 秒たつまで面が所定の位置に来ず、その間は下の IntersectionObserver が画面外と
+判定して回転も止まっていた。**開いた最初の描画から面があること**を取ったので外した。
+戻すなら git 履歴から。
 
 **CSS 3D ではなく WebGL を選んだ理由。** `perspective` + `transform-style: preserve-3d`
 でも円柱は作れるが、祖先の `overflow` / `filter` / `opacity` が preserve-3d を潰す。
@@ -220,6 +289,10 @@ WebGL は preserve-3d を使わないのでこの衝突が無く、`overflow-hid
   サイトマップ）は文字が鏡文字になって崩れる。外向きと内向きの 2 枚を置けば、
   手前でも奥でも「表」を見せられる。カメラを向いていない側はカリングで捨てられるので
   同じ位置に 2 枚あっても z ファイティングは起きない。
+- **前後の振り分けは静的に決まる。** 背中合わせの 2 枚のうち、外向きが見えるのは
+  円柱の手前にいる間だけ、内向きは奥にいる間だけ（`FrontSide` のカリング）。だから
+  外向きを FRONT、内向きを BACK に一度置けば、回転に伴って自動で
+  「奥 → 手前 → 奥」と入れ替わる。毎フレームの判定は要らない。
 - **奥向きの面は `opacity` を落とす。** 手前と同じ濃さだと重なって絵が混み、
   目次の文字まで読みにくくなる。落とすと「奥にある」ことが濃さで分かる。
   material は写真 1 枚につき 2 つになるので、dispose は作った側で集めた配列を回す
@@ -243,7 +316,7 @@ WebGL は preserve-3d を使わないのでこの衝突が無く、`overflow-hid
 | 止める条件 | 手段 |
 |---|---|
 | タブが非表示 | `visibilitychange`（`BackgroundStage` と同じ） |
-| 見出しが画面外 | `IntersectionObserver`。ページは 10 画面ぶんあり、覆われた後も回ってしまう |
+| 見出しが画面外 | `IntersectionObserver`。ページは 15 画面ぶん（モバイルでは 18 画面ぶん）あり、覆われた後も回ってしまう |
 | 動きを減らす設定 | ループを作らず 1 枚だけ描く |
 
 ### 書くときの決まりごと
@@ -275,7 +348,7 @@ WebGL は preserve-3d を使わないのでこの衝突が無く、`overflow-hid
 | ファイル | 使用技術 |
 |---|---|
 | `TopSection.tsx` | なし。100vh の場所取りのみ（描画は `webgl/BackgroundStage` が担当） |
-| `ProjectsIntoro.tsx` | Swiper + `webgl/DistortOverlay`。イントロ演出は `gsap/ProjectsIntroReel` に委譲 |
+| `ProjectsIntoro.tsx` | Swiper + `webgl/DistortOverlay`。イントロ演出は `gsap/ProjectsIntroReel` に委譲。送りボタンは自前（下記） |
 | `AboutSection.tsx` | IntersectionObserver（歪み演出のみ）。動きは `gsap/HeroBandParallax` / `gsap/CharReveal` / `gsap/StrengthParallax` に委譲 |
 | `HobbySection.tsx` | CSS チルト + `ui/CurtainModal` 風のズームモーダル。開閉は `gsap/ZoomFlip` に委譲 |
 | `SkillBarsAbout.tsx` | CSS transition + IntersectionObserver |
@@ -300,6 +373,39 @@ WebGL は preserve-3d を使わないのでこの衝突が無く、`overflow-hid
 | `InfiniteMarquee.tsx` | 無限スクロール。レイアウト計算のみ担当し、動きは `gsap/MarqueeLoop` に委譲 |
 | `CurtainModal.tsx` | Works の詳細モーダル |
 | `StackSection.tsx` | 張り付いたまま次が乗り上げてくる重ね積みセクションの器。動きは CSS のみ（`styles/SkillStack.module.css`） |
+
+### Swiper の送りボタンは自前のものに置き換えてある
+
+`sections/ProjectsIntoro` は **`swiper/css/navigation` を読んでいない。**
+読むと `.swiper-button-*` の既定（`#007aff` / 画面端 10px / `swiper-icons` フォント）が
+効いてしまう。素のままだと次の 4 点が問題になる。
+
+- 色 `#007aff` が Swiper 既定のテーマ色で、サイトのパレット（cyan / purple / amber /
+  neon white）に無い
+- 画面の左右端 10px に張り付き、中央のカードとの関係が読めない
+- 字形が `content: "prev" / "next"` を `swiper-icons` で置換する作りなので、
+  **フォントの読み込みに失敗すると英単語がそのまま出る**
+- `aria-label` が付かない（`a11y` モジュール未導入）
+
+代わりに `<button type="button">` + インライン SVG を自前で置き、
+`onBeforeInit` で `prevEl` / `nextEl` に差し込んでいる。
+
+```
+navigation={{ prevEl: prevRef.current, nextEl: nextRef.current }}
+onBeforeInit={(swiper) => { /* ここで ref を入れ直す */ }}
+```
+
+**`navigation` に `prevRef.current` を渡すだけでは効かない。** ref が埋まるのは
+React の commit 後で、Swiper の初期化がそれより先に走ることがあり `null` が入る。
+`onBeforeInit` の中で代入し直すのが Swiper React の定石。
+
+見た目は `styles/ProjectsSwiper.module.css` の `.navBtn` / `.navPrev` / `.navNext`。
+位置はカードの左右の端に合わせてあり、写真に 44px ぶん重なる。写真の上に乗るので
+板は敷かず `drop-shadow` だけで輪郭を確保している。
+
+**モバイルのカード幅 `--max-w` は 80vw に戻した。** 以前 68vw まで下げていたのは、
+画面端に居る既定の矢印との隙間が 3〜10px しか残らず「写真に矢印がめり込んで見える」
+のを避けるための妥協だった。ボタンをカードの縁へ寄せたのでその制約は無くなった。
 
 ## 注意
 

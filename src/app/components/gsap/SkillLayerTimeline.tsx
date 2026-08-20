@@ -28,9 +28,8 @@
 import { useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { CustomEase } from "gsap/CustomEase";
 
-gsap.registerPlugin(ScrollTrigger, CustomEase);
+gsap.registerPlugin(ScrollTrigger);
 
 export type SkillVariant = "flip" | "loop" | "depth" | "split";
 
@@ -41,8 +40,23 @@ export type SkillVariant = "flip" | "loop" | "depth" | "split";
  * 唯一の持ち主**で、CSS 側は値を持たない。0 にすると次のレイヤーが張り付き開始と
  * 同時に上がってくるので、そのレイヤーが完全に見えるのは一瞬だけになる
  * （follow.art 本家はこの状態。流れる演出には合うが、読ませる文章があると読めない）。
+ *
+ * **幅で 2 つ持つ。** 写真の切り替え（flip / split）はこの区間の VARIANT_SPAN に
+ * 収まるので、倍率がそのまま「切り替えに使えるスクロール量」になる。モバイルは
+ * 指の一振りで大きく動くぶん、同じ倍率だと切り替えも次のレイヤーへの移行も
+ * 速すぎるので多めに取る。増やすとページ全長も 1 レイヤーあたり H の差分ぶん伸びる。
  */
-export const HOLD_RATIO = 0.6;
+export const HOLD_RATIO = { sm: 1.8, md: 1.2 };
+
+/**
+ * hold を切り替える幅の境界(px)。**`styles/SkillStack.module.css` の @media と
+ * 揃えること**（CSS の @media の値を JS から参照する手段が無いので、ここだけは
+ * 二重に持つことになる）。
+ *
+ * こちらは max-width: (境界 - 0.02)px / min-width: 境界px の排他な 2 本にして、
+ * 小数の幅でもどちらにも当たらない隙間ができないようにしている。
+ */
+export const HOLD_BREAKPOINT = 768;
 
 /**
  * timeline 上の区切り。総尺は 1 に固定しているので position = progress。
@@ -92,16 +106,14 @@ const HERO_TO_SCALE = 0.94;
 const HERO_TO_Y = "-8svh";
 
 /**
- * 斜めの面が下から入ってくるときの尺と曲線。follow.art の実測値
- * （transition: transform 1.5s cubic-bezier(.55,0,.1,1) / transition-delay: 1s）。
+ * 見出しレイヤーが覆われずに待つ区間（可視高 H の倍数）。
  *
- * この曲線は中盤で一気に詰める非対称なもので、組み込みの power*.inOut では出ない
- * （t=0.25 で 0.136 / t=0.5 で 0.796 に対し、power3.inOut は 0.031 / 0.500）。
- * gsap 3.13 は CustomEase を同梱しているので追加インストールは要らない。
+ * 0 だと開いた直後から 1 枚目が乗り上げ始めるので、少しだけ持たせて見出しを
+ * 見せる時間を作る。**スキルのレイヤーと違い幅で分けない。** 分けると
+ * `useSkillHeroTimeline` の coverAt も幅で分岐させることになるが、見出しは
+ * 読ませる文章が短いので得るものが少ない。
  */
-const INTRO_DURATION = 1.5;
-const INTRO_DELAY = 1;
-const INTRO_EASE = CustomEase.create("skillIntro", "0.55, 0, 0.1, 1");
+export const HERO_HOLD_RATIO = 0.4;
 
 /* ----------------------------------------------------------------------------
    スキルのレイヤー
@@ -132,10 +144,15 @@ export function useSkillLayerTimeline({
     const inner = stage.querySelector<HTMLElement>("[data-inner]");
     const reveals = q("[data-reveal]");
 
-    const stops = stopsFor(HOLD_RATIO, isLast);
     const mm = gsap.matchMedia();
 
-    mm.add("(prefers-reduced-motion: no-preference)", () => {
+    /**
+     * 動きありのときの timeline。hold は幅で変わり、区切りの progress も
+     * それに従って動くので、分岐ごとに組み直す必要がある。返す関数が後片付け
+     */
+    const build = (hold: number) => {
+      const stops = stopsFor(hold, isLast);
+
       const tl = gsap.timeline();
       // 総尺を 1 に固定するための空トゥイーン。以降 position 引数 = progress
       tl.to({}, { duration: 1 }, 0);
@@ -258,10 +275,22 @@ export function useSkillLayerTimeline({
         st.kill();
         tl.kill();
       };
-    });
+    };
+
+    // 動きあり × 幅の 2 本。動きを減らす設定の 1 本と合わせて排他な 3 本で
+    // 全域を覆う（片方だけだと逆の条件で丸ごと動かない）
+    mm.add(
+      `(prefers-reduced-motion: no-preference) and (max-width: ${HOLD_BREAKPOINT - 0.02}px)`,
+      () => build(HOLD_RATIO.sm)
+    );
+    mm.add(
+      `(prefers-reduced-motion: no-preference) and (min-width: ${HOLD_BREAKPOINT}px)`,
+      () => build(HOLD_RATIO.md)
+    );
 
     // 動きを減らす設定。素の状態は「隠れている」（初期状態を JSX の inline style で
-    // 書いているため）なので、ここで見えるところまで進めてやる必要がある
+    // 書いているため）なので、ここで見えるところまで進めてやる必要がある。
+    // hold に依らないので幅で分けない
     mm.add("(prefers-reduced-motion: reduce)", () => {
       if (reveals.length) gsap.set(reveals, { y: 0, autoAlpha: 1 });
       const items = q("[data-split]");
@@ -281,8 +310,7 @@ export function useSkillLayerTimeline({
  * 見出しレイヤーの退場だけを作る。
  *
  * 見出しはページの先頭にあって最初から見えているので立ち上がりは要らない。
- * 必要なのは「1 枚目が乗り上げてくる間に引いていく」ぶんだけで、それは
- * このレイヤーの張り付き区間 = progress 0.5 〜 1 にあたる。
+ * 必要なのは「1 枚目が乗り上げてくる間に引いていく」ぶんだけ。
  *
  * これが無いと、1 枚目のレイヤーが覆いきるまでの間ずっと見出しが residue の
  * ように残って見える。
@@ -305,9 +333,10 @@ export function useSkillHeroTimeline({
     const mm = gsap.matchMedia();
 
     mm.add("(prefers-reduced-motion: no-preference)", () => {
-      // 見出しは hold を持たない（ページ先頭なので最初から読める）。
-      // 箱は「H + 覆われる H」なので、覆われ始めるのはちょうど中央
-      const coverAt = 0.5;
+      // 箱は「H + 待つ hold*H + 覆われる H」だが、見出しは最初から見えているので
+      // trigger 区間の頭 1 H ぶんは進まない。区切りはスキルのレイヤーと同じ式
+      // （stopsFor の coverAt）で出る
+      const coverAt = (1 + HERO_HOLD_RATIO) / (2 + HERO_HOLD_RATIO);
 
       const tl = gsap.timeline();
       tl.to({}, { duration: 1 }, 0);
@@ -339,44 +368,4 @@ export function useSkillHeroTimeline({
 
     return () => mm.revert();
   }, [sectionRef, stageRef]);
-}
-
-/**
- * 見出しの斜めの面（`webgl/SkillIntroStage`）を下から入れる。
- *
- * 動かすのは**このラッパーだけ**。canvas 自身は静的な rotate(35deg) を持っていて、
- * そこに GSAP が transform を書くと打ち消し合う（README の「静的なずらしと GSAP の
- * アニメーションを両方 transform で書かない」）。だから 2 要素に分けている。
- *
- * 退場のフェードは持たせていない。次のレイヤーが不透明な全画面で下から覆うので、
- * 面は「隠れる」だけでよく、本家もフェードさせていない。
- */
-export function useSkillIntroEntrance(ref: React.RefObject<HTMLElement | null>) {
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-
-    const mm = gsap.matchMedia();
-
-    mm.add("(prefers-reduced-motion: no-preference)", () => {
-      const tween = gsap.fromTo(
-        el,
-        { yPercent: 100 },
-        {
-          yPercent: 0,
-          duration: INTRO_DURATION,
-          delay: INTRO_DELAY,
-          ease: INTRO_EASE,
-        }
-      );
-      return () => tween.kill();
-    });
-
-    // 動きを減らす設定では最初から所定の位置に置く
-    mm.add("(prefers-reduced-motion: reduce)", () => {
-      gsap.set(el, { yPercent: 0 });
-    });
-
-    return () => mm.revert();
-  }, [ref]);
 }

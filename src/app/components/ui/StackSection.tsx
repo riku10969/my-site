@@ -21,6 +21,12 @@
  * くるので、そのセクションが完全に見えるのは一瞬だけになる。値は
  * `gsap/SkillLayerTimeline` の `HOLD_RATIO` を渡すこと（CSS と JS で二重に
  * 持たないため）。
+ *
+ * `hold` は `{ sm, md }` の 2 つを渡す。モバイルは指の一振りで大きく動くので、
+ * 同じ倍率だと切り替えが速すぎるため幅で変えている。inline style の中では
+ * メディアクエリが書けないので、**ここは 2 つとも流し込むだけ**で、どちらを使うかは
+ * CSS 側（`--s-hold-ratio`）のメディアクエリが選ぶ。境界は
+ * `SkillLayerTimeline` の `HOLD_BREAKPOINT`。
  */
 "use client";
 
@@ -31,8 +37,9 @@ type Props = {
   children: React.ReactNode;
   /** 次のセクションが 1 画面ぶん乗り上げてくる。最後のセクションだけ false */
   underNext?: boolean;
-  /** 覆われずに張り付いて待つ区間の長さ（可視高の倍数）。読ませる時間になる */
-  hold?: number;
+  /** 覆われずに張り付いて待つ区間の長さ（可視高の倍数）。読ませる時間になる。
+      幅ごとに 2 つ渡す（どちらを使うかは CSS のメディアクエリが選ぶ） */
+  hold?: { sm: number; md: number };
   id?: string;
   /** 外枠（張り付き区間を含む背の高い箱）に足す class */
   className?: string;
@@ -46,7 +53,7 @@ type Props = {
 export default function StackSection({
   children,
   underNext = false,
-  hold = 0,
+  hold = { sm: 0, md: 0 },
   id,
   className = "",
   stageClassName = "",
@@ -58,8 +65,13 @@ export default function StackSection({
       ref={sectionRef}
       id={id}
       className={`${styles.section} ${underNext ? styles.underNext : ""} ${className}`}
-      // --s-visible は .section 自身が定義しているので、同じ要素の inline style から参照できる
-      style={{ "--s-hold": `calc(var(--s-visible) * ${hold})` } as React.CSSProperties}
+      // 単位なしの倍率だけを渡す。可視高を掛けるのは CSS 側（--s-hold）
+      style={
+        {
+          "--s-hold-sm": `${hold.sm}`,
+          "--s-hold-md": `${hold.md}`,
+        } as React.CSSProperties
+      }
     >
       <div ref={stageRef} className={`${styles.stage} ${stageClassName}`}>
         {children}
