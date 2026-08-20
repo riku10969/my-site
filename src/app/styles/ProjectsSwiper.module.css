@@ -24,6 +24,10 @@
 
 /* Swiper を画面内に収める */
 .swiperWrapper {
+  /* 送りボタン（.navBtn）の位置決めの基準。
+     クロスフェード中は ProjectsIntoro が inline style でも relative を当てるが、
+     ボタンは常に居るのでここで持たせる */
+  position: relative;
   width: 100%;
   max-width: 100%;
   min-width: 0; /* grid 子がはみ出さないように */
@@ -122,14 +126,18 @@
 /* レスポンシブ。
    カードは画像に合わせて縮むので、指定するのは画像の上限だけでよい。
 
-   モバイル：80vw だと Swiper 既定の矢印（左右 10px の位置に約 27px 幅）との
-   隙間が 360〜430px の端末で 3〜10px しか残らず、写真に矢印がめり込んで見える。
-   68vw まで下げて 21〜32px 確保する。高さも同じ比率で下げる。 */
+   モバイルは 80vw。以前は 68vw まで下げていた。これは Swiper 既定の矢印が
+   画面端 10px に居て、カードとの隙間が 3〜10px しか残らず「写真に矢印が
+   めり込んで見える」状態を避けるための妥協だった。
+
+   送りボタンを自前のものに差し替えてカードの縁へ寄せた（.navBtn 参照）ので、
+   その妥協は要らなくなった。今は写真の縁に 44px ぶん重なる置き方を意図して
+   選んでいる。 */
 @media (max-width: 768px) {
   .card,
   .cardInitial {
-    --max-w: 68vw;
-    --max-h: 37vh;
+    --max-w: 80vw;
+    --max-h: 43vh;
     border-radius: 12px;
   }
 }
@@ -157,4 +165,90 @@
   opacity: 0;
   pointer-events: none;
   transition: opacity .25s ease;
+}
+
+/* =============================================================================
+   送りボタン
+
+   Swiper 既定の矢印は使わない（`ProjectsIntoro` が `swiper/css/navigation` を
+   読まず、自前の <button> を prevEl / nextEl として渡している）。素のままだと
+
+     - 色が #007aff（Swiper 既定のテーマ色）で、サイトのパレットに無い
+     - 画面の左右端 10px に張り付き、中央のカードと関係が読めない
+     - 字形が `swiper-icons` Web フォント頼みで、読み込みに失敗すると
+       「prev」「next」という英単語がそのまま出る
+     - aria-label が付かない
+
+   という 4 点が問題だった。字形はインライン SVG で持つのでフォント依存が無い。
+   ============================================================================= */
+
+.navBtn {
+  position: absolute;
+  top: 50%;
+  translate: 0 -50%;
+  /* .swiper-slide が 1、.swiper-slide-active が 10 を使うので、その上に出す */
+  z-index: 20;
+
+  display: grid;
+  place-items: center;
+  /* 線は細いが、指で押せる大きさは確保する */
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+  /* 0.55 だと Works の写真（矢印が乗る領域の平均輝度 110/255）で弱かった。
+     操作するものなので見つけやすさを優先して上げている */
+  color: rgba(255, 255, 255, 0.72);
+  transition: color 0.25s ease;
+}
+
+.navBtn svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  /* 写真の上に重なるので、板を敷かずに影だけで輪郭を確保する */
+  filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.95)) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8));
+  transition: filter 0.25s ease;
+}
+
+.navBtn:hover,
+.navBtn:focus-visible {
+  color: #fff;
+}
+
+/* globals.css の .neon-white と同じ光り方に寄せる */
+.navBtn:hover svg,
+.navBtn:focus-visible svg {
+  filter:
+    drop-shadow(0 0 4px rgba(255, 255, 255, 0.9))
+    drop-shadow(0 0 12px rgba(255, 255, 255, 0.55));
+}
+
+/* Footer と同じ見え方（ring-2 / white-40）に合わせる */
+.navBtn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4);
+}
+
+/*
+  位置はカードの左右の端に合わせる。カードは中央寄せで、幅は
+  min(--max-w, --max-h * --ar)。その最大幅にあたる min(40vw, 320px) を
+  中心から測って置いている。
+
+  カードが比率のほうで頭打ちになって縮んだときはボタンが写真の少し外へ出るが、
+  カードとの関係が崩れる向きではないのでこれでよい。max() は狭い画面で
+  画面外へ出さないための下限。
+*/
+.navPrev {
+  left: max(6px, calc(50% - min(40vw, 320px)));
+}
+.navNext {
+  right: max(6px, calc(50% - min(40vw, 320px)));
 }

@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styles from "../../styles/ProjectsSwiper.module.css";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Navigation } from "swiper/modules";
 import "swiper/css";
-import "swiper/css/navigation";
+// swiper/css/navigation は読まない。矢印は自前の <button> + SVG に置き換えてあり、
+// これを読むと .swiper-button-* の既定（#007aff / 画面端 10px）が効いてしまう
+
 import { usePageTransition } from "../ui/PageTransition";
 import { useProjectsIntroReel } from "../gsap/ProjectsIntroReel";
 import Loader from "../ui/Loader";
@@ -42,6 +44,9 @@ export default function ProjectsIntro() {
   const [distortSettled, setDistortSettled] = useState(false); // とどまった直後のゆがみ切り替えを遅らせる
   const [activeIndex, setActiveIndex] = useState(0);
   const { push } = usePageTransition();
+  // 送りボタン。Swiper に prevEl / nextEl として渡す
+  const prevRef = useRef<HTMLButtonElement | null>(null);
+  const nextRef = useRef<HTMLButtonElement | null>(null);
   const [imagesLoaded, setImagesLoaded] = useState(false);
 
   // イントロのリール演出とクロスフェードは gsap/ProjectsIntroReel に委譲。
@@ -164,7 +169,19 @@ export default function ProjectsIntro() {
             <Swiper
               modules={[Autoplay, Navigation]}
               autoplay={{ delay: 3000, disableOnInteraction: false }}
-              navigation
+              navigation={{ prevEl: prevRef.current, nextEl: nextRef.current }}
+              /*
+               * ref に入るのは React の commit 後で、Swiper の初期化がそれより先に
+               * 走ることがある。navigation に prevRef.current をそのまま渡すだけだと
+               * null が入って押しても効かないので、初期化の直前にここで差し込む。
+               */
+              onBeforeInit={(swiper) => {
+                const nav = swiper.params.navigation;
+                if (nav && typeof nav !== "boolean") {
+                  nav.prevEl = prevRef.current;
+                  nav.nextEl = nextRef.current;
+                }
+              }}
               loop
               centeredSlides
               slidesPerView={1}
@@ -187,6 +204,31 @@ export default function ProjectsIntro() {
                 </SwiperSlide>
               ))}
             </Swiper>
+
+            {/* 送りボタン。字形はインライン SVG なので Web フォントに依存しない。
+                意味は aria-label が持ち、SVG 自体は読み上げから外す */}
+            <button
+              type="button"
+              ref={prevRef}
+              className={`${styles.navBtn} ${styles.navPrev}`}
+              aria-label="前の作品を見る"
+              data-nav="prev"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden focusable="false">
+                <path d="M15 4 L7 12 L15 20" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              ref={nextRef}
+              className={`${styles.navBtn} ${styles.navNext}`}
+              aria-label="次の作品を見る"
+              data-nav="next"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden focusable="false">
+                <path d="M9 4 L17 12 L9 20" />
+              </svg>
+            </button>
        
        <div
   className={`${styles.titleArea} ${
