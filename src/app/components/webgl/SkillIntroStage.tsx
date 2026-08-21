@@ -111,20 +111,21 @@ const CYL_TILT_X = -0.11;
  * 符号を落とすと右ではなく下へ逃げる（実際に一度そうなった）。
  */
 /**
- * 寄せ方は画面の形で変える。横長（デスクトップ）と縦長（モバイル）で
- * 文字の置かれ方が違うため。
+ * 円柱をどこへ置くか。**見出しの文字を基準にする。**
  *
- * 横長では見出しが左から伸びるので、右へ寄せすぎると**文字に一度も重ならず**、
- * 「隙間を縫う」動きが出ない（0.18 だと円柱の中心が文字の右外に出ていた）。
- * 中心を文字の帯へ寄せ、説明文（左半分・幅の狭い塊）は避ける。
+ * 以前は「箱の中心から視野幅の何割」で置いていたが、文字は左端（ステージの
+ * パディング）に固定なのに箱の中心は画面幅の半分なので、**横長になるほど円柱が
+ * 文字から離れていく**。1440x900（aspect 1.7）では重なっていたのに
+ * 1643x792（aspect 2.3）では文字の右外に出ていた。
  *
- * 縦長では説明文が幅いっぱいに 3 行流れるので、円柱を下に置くと本文を潰す。
- * 見出しの帯まで上げて、そこで「文字を縫う」役に集中させる。
+ * そこで文字の矩形を実測し、その右寄りの一点を狙って置く。どの画面比でも
+ * 「文字の終わりのあたりを円柱が横切る」状態が保たれる。
  */
-const CYL_LAYOUT_WIDE = { right: 0.0, up: 0.22 }; // aspect 1.7 あたり
-const CYL_LAYOUT_TALL = { right: 0.24, up: 0.34 }; // aspect 0.55 あたり
-const ASPECT_WIDE = 1.7;
-const ASPECT_TALL = 0.55;
+/** 文字の矩形のどこを狙うか（0 = 左端, 1 = 右端） */
+const FOCUS_X_RATIO = 0.86;
+/** 狙う点から画面上へどれだけ持ち上げるか（文字の高さに対する倍率） */
+const FOCUS_UP_RATIO = 0.25;
+
 const TILT_RAD = (35 * Math.PI) / 180;
 
 /**
@@ -137,14 +138,28 @@ const SCALE_EXPONENT = 0.6;
 /** 縮めすぎて見えなくならないための下限 */
 const MIN_SCALE = 0.42;
 
+/** 文字を測れなかったときの逃げ道（箱の中心のやや上） */
+const FALLBACK_UP_RATIO = 0.22;
+
 /**
- * 視野の広さから円柱の大きさと位置を決める。`splitStage` の onResize から呼ぶ。
+ * 円柱の大きさと位置を決める。`splitStage` の onResize から呼ぶ。
+ *
+ * 箱（canvas のラッパー）は CSS で 35deg 回してあるので、**画面上で右・上に
+ * 動かすにはその回転の逆を掛けた成分をワールドに入れる**。
+ *
+ *   画面の (右 r, 上 u) に動かしたい
+ *   → 箱の座標系でのずれ (dx, dy) = R(-35deg) · (r, -u)   ※ 画面の y は下向き
+ *   → three は y が上向きなので  x = dx, y = -dy
+ *   → まとめると  x = r·cosθ - u·sinθ ,  y = r·sinθ + u·cosθ
+ *
+ * 符号を落とすと右ではなく下へ逃げる（実際に一度そうなった）。
  */
 function layoutCylinder(
   group: THREE.Group,
+  canvas: HTMLCanvasElement,
+  focus: HTMLElement | null,
   visibleWidth: number,
-  visibleHeight: number,
-  aspect: number
+  visibleHeight: number
 ) {
   const k = Math.max(
     MIN_SCALE,
@@ -152,16 +167,27 @@ function layoutCylinder(
   );
   group.scale.setScalar(k);
 
-  // 横長 ↔ 縦長のあいだを補間する。段差で切り替えると回転中の端末で跳ねる
-  const t = THREE.MathUtils.clamp(
-    (aspect - ASPECT_TALL) / (ASPECT_WIDE - ASPECT_TALL),
-    0,
-    1
-  );
-  const right =
-    visibleWidth * THREE.MathUtils.lerp(CYL_LAYOUT_TALL.right, CYL_LAYOUT_WIDE.right, t);
-  const up =
-    visibleHeight * THREE.MathUtils.lerp(CYL_LAYOUT_TALL.up, CYL_LAYOUT_WIDE.up, t);
+  // 箱の中心。ラッパーは回転しているが、回転は中心を動かさないので rect の中心で足りる
+  const wrapper = canvas.parentElement;
+  const boxRect = wrapper?.getBoundingClientRect();
+  // ワールド 1 に対する CSS ピクセル。視野の高さは canvas の高さに対応する
+  const pxPerWorld = canvas.clientHeight / visibleHeight;
+
+  let rightPx = 0;
+  let upPx = visibleHeight * FALLBACK_UP_RATIO * pxPerWorld;
+
+  if (boxRect && focus) {
+    const f = focus.getBoundingClientRect();
+    if (f.width > 0 && f.height > 0) {
+      const targetX = f.left + f.width * FOCUS_X_RATIO;
+      const targetY = f.top + f.height / 2 - f.height * FOCUS_UP_RATIO;
+      rightPx = targetX - (boxRect.left + boxRect.width / 2);
+      upPx = boxRect.top + boxRect.height / 2 - targetY;
+    }
+  }
+
+  const right = rightPx / pxPerWorld;
+  const up = upPx / pxPerWorld;
   group.position.set(
     right * Math.cos(TILT_RAD) - up * Math.sin(TILT_RAD),
     right * Math.sin(TILT_RAD) + up * Math.cos(TILT_RAD),
@@ -225,7 +251,9 @@ function coverTexture(tex: THREE.Texture) {
 
 export function useSkillIntroStage(
   backRef: React.RefObject<HTMLCanvasElement | null>,
-  frontRef: React.RefObject<HTMLCanvasElement | null>
+  frontRef: React.RefObject<HTMLCanvasElement | null>,
+  /** 円柱を横切らせたい要素（見出しの文字）。無くても動く */
+  focusRef?: React.RefObject<HTMLElement | null>
 ) {
   useEffect(() => {
     const back = backRef.current;
@@ -330,8 +358,16 @@ export function useSkillIntroStage(
         if (cylinder) cylinder.rotation.y += (dt / REVOLUTION_SECONDS) * Math.PI * 2;
       },
 
-      onResize: ({ visibleWidth, visibleHeight, aspect }) => {
-        if (cylinder) layoutCylinder(cylinder, visibleWidth, visibleHeight, aspect);
+      onResize: ({ visibleWidth, visibleHeight }) => {
+        if (cylinder) {
+          layoutCylinder(
+            cylinder,
+            back,
+            focusRef?.current ?? null,
+            visibleWidth,
+            visibleHeight
+          );
+        }
       },
     });
 
@@ -364,5 +400,5 @@ export function useSkillIntroStage(
       window.removeEventListener("resize", stage.resize);
       stage.dispose();
     };
-  }, [backRef, frontRef]);
+  }, [backRef, frontRef, focusRef]);
 }
