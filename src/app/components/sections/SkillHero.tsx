@@ -25,9 +25,12 @@ export default function SkillHero({ skills }: { skills: Skill[] }) {
   // 円柱を奥と手前の 2 枚に分けて描く。見出しはそのあいだに挟まる
   const introBackRef = useRef<HTMLCanvasElement | null>(null);
   const introFrontRef = useRef<HTMLCanvasElement | null>(null);
+  // 円柱に横切らせたい対象。文字を基準に置くことで、画面比が変わっても
+  // 「文字の終わりのあたりを横切る」状態が保たれる
+  const headingRef = useRef<HTMLSpanElement | null>(null);
 
   useSkillHeroTimeline({ sectionRef, stageRef });
-  useSkillIntroStage(introBackRef, introFrontRef);
+  useSkillIntroStage(introBackRef, introFrontRef, headingRef);
 
   return (
     <StackSection
@@ -74,7 +77,10 @@ export default function SkillHero({ skills }: { skills: Skill[] }) {
             文字の隙間が大きいほど「縫う」動きが見える。
             折り返しても崩れないよう leading を詰めている */}
         <h1 className="font-serif text-[clamp(2.75rem,10.5vw,9rem)] leading-[0.95] font-semibold tracking-tight">
-          <span className="text-white [text-shadow:_0_0_24px_rgba(44,205,185,.28),_0_0_60px_rgba(0,0,0,.9)]">
+          <span
+            ref={headingRef}
+            className="text-white [text-shadow:_0_0_24px_rgba(44,205,185,.28),_0_0_60px_rgba(0,0,0,.9)]"
+          >
             Skill Detail
           </span>
         </h1>
